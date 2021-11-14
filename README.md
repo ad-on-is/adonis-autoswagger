@@ -11,10 +11,10 @@ Auto-Generate swagger docs for AdonisJS
 In your `routes.ts`
 
 ```js
-const swagger = require("adonis-autoswagger");
+import AutoSwagger from "adonis-autoswagger";
 // returns swagger in YAML
 Route.get("/swagger", async () => {
-  return swagger.docs(Route.toJSON(), {
+  return AutoSwagger.docs(Route.toJSON(), {
     modelPath: __dirname.replace("/start", "") + "/app/Models",
     title: "Foo",
     version: "1.0.0",
@@ -23,6 +23,6 @@ Route.get("/swagger", async () => {
 
 // Renders Swagger-UI and passes YAML-output of /swagger
 Route.get("/docs", async () => {
-  return swagger.ui("/swagger");
+  return AutoSwagger.ui("/swagger");
 });
 ```
