@@ -1,0 +1,18 @@
+{
+  "name": "adonis-autoswagger",
+  "version": "1.0.0",
+  "description": "Auto-Generate swagger docs for AdonisJS",
+  "main": "index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Adis Durakovic <adis.durakovic@gmail.com>",
+  "repository": {"type": "git", "url": ""},
+  "license": "ISC",
+  "dependencies": {
+    "json-to-pretty-yaml": "^1.2.2"
+  },
+  "devDependencies": {
+    "@types/node": "^16.11.7"
+  }
+}
