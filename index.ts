@@ -1,12 +1,12 @@
-const YAML = require("json-to-pretty-yaml");
+const YAML = require('json-to-pretty-yaml')
 // const extract = require("extract-comments");
 
-class Adonis5AutoSwagger {
-  public modelPath: string;
+class AutoSwagger {
+	public modelPath: string
 
-  public ui(url: string) {
-    return (
-      `<!DOCTYPE html>
+	public ui(url: string) {
+		return (
+			`<!DOCTYPE html>
 		<html lang="en">
 		<head>
 				<meta charset="UTF-8">
@@ -26,8 +26,8 @@ class Adonis5AutoSwagger {
 						window.onload = function() {
 							SwaggerUIBundle({
 								url: "` +
-      url +
-      `",
+			url +
+			`",
 								dom_id: '#swagger-ui',
 								presets: [
 									SwaggerUIBundle.presets.apis,
@@ -39,201 +39,183 @@ class Adonis5AutoSwagger {
 				</script>
 		</body>
 		</html>`
-    );
-  }
+		)
+	}
 
-  public docs(routes, options) {
-    routes = routes.root;
-    this.modelPath = options.modelPath;
-    // return routes
-    const docs = {
-      openapi: "3.0.0",
-      info: {
-        title: options.title,
-        version: options.version,
-      },
+	public docs(routes, options) {
+		routes = routes.root
+		this.modelPath = options.modelPath
+		// return routes
+		const docs = {
+			openapi: '3.0.0',
+			info: {
+				title: options.title,
+				version: options.version,
+			},
 
-      components: {
-        securitySchemes: {
-          ApiKeyAuth: { type: "apiKey", in: "header", name: "APIKEY" },
-        },
-        schemas: this.getSchemas(),
-      },
-      paths: {},
-    };
-    let paths = {};
+			components: {
+				securitySchemes: {
+					ApiKeyAuth: { type: 'apiKey', in: 'header', name: 'APIKEY' },
+				},
+				schemas: this.getSchemas(),
+			},
+			paths: {},
+		}
+		let paths = {}
 
-    routes.forEach((route) => {
-      let methods = {};
-      let parameters = [];
-      let pattern = "";
-      let tags = [];
-      let security = [];
-      const responseCodes = {
-        GET: "200",
-        POST: "201",
-        DELETE: "201",
-        PUT: "203",
-      };
-      if (
-        route.middleware.length > 0 &&
-        route.middleware["auth:api"] !== null
-      ) {
-        security = [{ ApiKeyAuth: ["write"] }];
-      }
+		routes.forEach((route) => {
+			let methods = {}
+			let parameters = []
+			let pattern = ''
+			let tags = []
+			let security = []
+			const responseCodes = {
+				GET: '200',
+				POST: '201',
+				DELETE: '201',
+				PUT: '203',
+			}
+			if (route.middleware.length > 0 && route.middleware['auth:api'] !== null) {
+				security = [{ ApiKeyAuth: ['write'] }]
+			}
 
-      if (route.meta.resolvedHandler !== null) {
-        const customAnnotations = this.getCustomAnnotations(
-          route.meta.resolvedHandler.namespace
-        );
-        // console.log(file)
-      }
+			if (route.meta.resolvedHandler !== null) {
+				const customAnnotations = this.getCustomAnnotations(route.meta.resolvedHandler.namespace)
+				// console.log(file)
+			}
 
-      const split = route.pattern.split("/");
-      if (split.length > 2) {
-        tags = [split[2].toUpperCase()];
-      }
-      split.forEach((part) => {
-        if (part.startsWith(":")) {
-          const param = part.replace(":", "");
-          part = "{" + param + "}";
-          parameters.push({
-            in: "path",
-            name: param,
-            schema: {
-              type:
-                param === "id" || param.endsWith("_id") ? "integer" : "string",
-            },
-            required: true,
-          });
-        }
-        pattern += "/" + part;
-      });
+			const split = route.pattern.split('/')
+			if (split.length > 2) {
+				tags = [split[2].toUpperCase()]
+			}
+			split.forEach((part) => {
+				if (part.startsWith(':')) {
+					const param = part.replace(':', '')
+					part = '{' + param + '}'
+					parameters.push({
+						in: 'path',
+						name: param,
+						schema: {
+							type: param === 'id' || param.endsWith('_id') ? 'integer' : 'string',
+						},
+						required: true,
+					})
+				}
+				pattern += '/' + part
+			})
 
-      const sourceFile =
-        typeof route.meta.resolvedHandler.namespace === "undefined"
-          ? ""
-          : route.meta.resolvedHandler.namespace +
-            "." +
-            route.meta.resolvedHandler.method;
+			const sourceFile = typeof route.meta.resolvedHandler.namespace === 'undefined' ? '' : route.meta.resolvedHandler.namespace + '.' + route.meta.resolvedHandler.method
 
-      route.methods.forEach((method) => {
-        let responses = {
-          "404": { description: "Not found" },
-        };
-        if (method === "HEAD") return;
-        if (
-          route.methods["PUT"] !== null &&
-          route.methods["PATCH"] !== null &&
-          method === "PATCH"
-        )
-          return;
-        responses[responseCodes[method]] = {
-          description: "Some desc response",
-        };
-        methods[method.toLowerCase()] = {
-          summary: sourceFile,
-          description: "Some description",
-          parameters: parameters,
-          tags: tags,
-          responses: responses,
-          security: security,
-        };
-      });
-      pattern = pattern.slice(1);
-      paths[pattern] = methods;
-      docs.paths = paths;
-    });
-    return YAML.stringify(docs);
-  }
+			route.methods.forEach((method) => {
+				let responses = {
+					'404': { description: 'Not found' },
+				}
+				if (method === 'HEAD') return
+				if (route.methods['PUT'] !== null && route.methods['PATCH'] !== null && method === 'PATCH') return
+				responses[responseCodes[method]] = {
+					description: 'Some desc response',
+				}
+				methods[method.toLowerCase()] = {
+					summary: sourceFile,
+					description: 'Some description',
+					parameters: parameters,
+					tags: tags,
+					responses: responses,
+					security: security,
+				}
+			})
+			pattern = pattern.slice(1)
+			paths[pattern] = methods
+			docs.paths = paths
+		})
+		return YAML.stringify(docs)
+	}
 
-  private getCustomAnnotations(file: string) {
-    if (typeof file === "undefined") return;
-    file = file.replace("App/", "app/") + ".ts";
-    const fs = require("fs");
-    fs.readFile(file, "utf8", (err, data) => {
-      if (err) {
-        console.error(err);
-        return;
-      }
-      // console.log(file)
-      // const comments = extract(data);
-      // if (comments.length > 0) {
-      //   let comment = comments[0];
-      //   if (comment.type !== "BlockComment") return;
-      //   // comment.replace('\\n', '')
-      //   // comment.replace('\t', '')
-      //   console.log(this.parseComment(comment));
-      // }
-      // comments.foreach((comment) => {
-      // console.log(comment.length)
-      // })
-      // console.log(comments)
-    });
-    // console.log(file)
-  }
+	private getCustomAnnotations(file: string) {
+		if (typeof file === 'undefined') return
+		file = file.replace('App/', 'app/') + '.ts'
+		const fs = require('fs')
+		fs.readFile(file, 'utf8', (err, data) => {
+			if (err) {
+				console.error(err)
+				return
+			}
+			// console.log(file)
+			// const comments = extract(data);
+			// if (comments.length > 0) {
+			//   let comment = comments[0];
+			//   if (comment.type !== "BlockComment") return;
+			//   // comment.replace('\\n', '')
+			//   // comment.replace('\t', '')
+			//   console.log(this.parseComment(comment));
+			// }
+			// comments.foreach((comment) => {
+			// console.log(comment.length)
+			// })
+			// console.log(comments)
+		})
+		// console.log(file)
+	}
 
-  private getSchemas() {
-    const schemas = {};
-    const files = this.getFiles(this.modelPath, []);
-    files.forEach((file) => {
-      console.log(file);
-      // file = file.replace('.ts', '')
-      const split = file.split("/");
-      const name = split[split.length - 1].replace(".ts", "");
-      file = file.replace("app/", "/app/");
-      const model = require(file).default;
-      let schema = { type: "object", properties: this.getProperties(model) };
-      schemas[name] = schema;
-    });
-    return schemas;
-  }
+	private getSchemas() {
+		const schemas = {}
+		const files = this.getFiles(this.modelPath, [])
+		files.forEach((file) => {
+			console.log(file)
+			// file = file.replace('.ts', '')
+			const split = file.split('/')
+			const name = split[split.length - 1].replace('.ts', '')
+			file = file.replace('app/', '/app/')
+			const model = require(file).default
+			let schema = { type: 'object', properties: this.getProperties(model) }
+			schemas[name] = schema
+		})
+		return schemas
+	}
 
-  private getTypeofProperty<T, K extends keyof T>(o: T, name: K) {
-    return typeof o[name];
-  }
+	private getTypeofProperty<T, K extends keyof T>(o: T, name: K) {
+		return typeof o[name]
+	}
 
-  private getProperties(model) {
-    let props = {};
-    model.$columnsDefinitions.forEach((col) => {
-      props[col.columnName] = {
-        type: typeof col.meta !== "undefined" ? col.meta.type : "string",
-      };
-    });
-    model.$computedDefinitions.forEach((col) => {
-      props[col.serializeAs] = {
-        type: typeof col.meta !== "undefined" ? col.meta.type : "string",
-      };
-    });
+	private getProperties(model) {
+		let props = {}
+		model.$columnsDefinitions.forEach((col) => {
+			props[col.columnName] = {
+				type: typeof col.meta !== 'undefined' ? col.meta.type : 'string',
+			}
+		})
+		model.$computedDefinitions.forEach((col) => {
+			props[col.serializeAs] = {
+				type: typeof col.meta !== 'undefined' ? col.meta.type : 'string',
+			}
+		})
 
-    model.$relationsDefinitions.forEach((col) => {
-      props[col.relationName] =
-        col.type === "hasMany" || col.type === "manyToMany"
-          ? { type: "array", items: { type: col.relatedModel().name } }
-          : { type: col.relatedModel().name };
-    });
-    return props;
-  }
+		model.$relationsDefinitions.forEach((col) => {
+			props[col.relationName] =
+				col.type === 'hasMany' || col.type === 'manyToMany' ? { type: 'array', items: { type: col.relatedModel().name } } : { type: col.relatedModel().name }
+		})
+		return props
+	}
 
-  private getFiles(dir, files_) {
-    const fs = require("fs");
-    files_ = files_ || [];
-    var files = fs.readdirSync(dir);
-    for (var i in files) {
-      var name = dir + "/" + files[i];
-      if (fs.statSync(name).isDirectory()) {
-        this.getFiles(name, files_);
-      } else {
-        files_.push(name);
-      }
-    }
-    return files_;
-  }
+	private getFiles(dir, files_) {
+		const fs = require('fs')
+		files_ = files_ || []
+		var files = fs.readdirSync(dir)
+		for (var i in files) {
+			var name = dir + '/' + files[i]
+			if (fs.statSync(name).isDirectory()) {
+				this.getFiles(name, files_)
+			} else {
+				files_.push(name)
+			}
+		}
+		return files_
+	}
 
-  private parseComment(comment: string) {
-    // console.log(comment)
-    return "adfadf";
-  }
+	private parseComment(comment: string) {
+		// console.log(comment)
+		return 'adfadf'
+	}
 }
 
-export = new Adonis5AutoSwagger();
+export default new AutoSwagger()
