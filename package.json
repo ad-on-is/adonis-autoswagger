@@ -8,7 +8,7 @@
   },
   "author": "Adis Durakovic <adis.durakovic@gmail.com>",
   "repository": {"type": "git", "url": ""},
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "json-to-pretty-yaml": "^1.2.2"
   },
