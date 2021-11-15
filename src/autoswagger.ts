@@ -3,10 +3,10 @@ const fs = require("fs");
 const util = require("util");
 // const extract = require("extract-comments");
 
-export default class AutoSwagger {
+export class AutoSwagger {
   public modelPath: string;
 
-  public ui(url: string) {
+  ui(url: string) {
     return (
       `<!DOCTYPE html>
 		<html lang="en">
@@ -44,7 +44,7 @@ export default class AutoSwagger {
     );
   }
 
-  public async docs(routes, options) {
+  async docs(routes, options) {
     routes = routes.root;
     this.modelPath = options.modelPath;
     // return routes

@@ -1,8 +1,9 @@
 {
   "name": "adonis-autoswagger",
-  "version": "1.0.7",
+  "version": "1.0.12",
   "description": "Auto-Generate swagger docs for AdonisJS",
-  "main": "index.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -15,7 +16,9 @@
   "devDependencies": {
     "@types/node": "^16.11.7"
   },
-  "files": [
-    "src"
+
+  "files":[
+    "/dist"
   ]
+ 
 }
