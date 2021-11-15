@@ -8,17 +8,20 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Adis Durakovic <adis.durakovic@gmail.com>",
-  "repository": {"type": "git", "url": "https://github.com/ad-on-is/adonis-autoswagger"},
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ad-on-is/adonis-autoswagger"
+  },
   "license": "MIT",
   "dependencies": {
+    "extract-comments": "^1.1.0",
+    "http-status-code": "^2.1.0",
     "json-to-pretty-yaml": "^1.2.2"
   },
   "devDependencies": {
     "@types/node": "^16.11.7"
   },
-
-  "files":[
+  "files": [
     "/dist"
   ]
- 
 }

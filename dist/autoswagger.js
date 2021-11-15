@@ -63,8 +63,20 @@ class AutoSwagger {
                 },
                 components: {
                     responses: {
-                        UnauthorizedError: {
+                        Forbidden: {
                             description: "Acces token is missing or invalid",
+                        },
+                        Accepted: {
+                            description: "The request was accepted",
+                        },
+                        Created: {
+                            description: "The resource has been created",
+                        },
+                        NotFound: {
+                            description: "The resource has been created",
+                        },
+                        NotAcceptable: {
+                            description: "The resource has been created",
                         },
                     },
                     securitySchemes: {
@@ -120,7 +132,7 @@ class AutoSwagger {
                 const sourceFile = typeof route.meta.resolvedHandler.namespace === "undefined"
                     ? ""
                     : route.meta.resolvedHandler.namespace +
-                        "." +
+                        "::" +
                         route.meta.resolvedHandler.method;
                 route.methods.forEach((method) => {
                     let responses = {

@@ -15,7 +15,7 @@ import AutoSwagger from "adonis-autoswagger";
 // returns swagger in YAML
 Route.get("/swagger", async () => {
   return AutoSwagger.docs(Route.toJSON(), {
-    modelPath: __dirname.replace("/start", "") + "/app/Models",
+    modelPath: __dirname,
     title: "Foo",
     version: "1.0.0",
   });
