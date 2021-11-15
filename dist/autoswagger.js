@@ -8,13 +8,25 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __asyncValues = (this && this.__asyncValues) || function (o) {
+    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+    var m = o[Symbol.asyncIterator], i;
+    return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
+    function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
+    function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AutoSwagger = void 0;
 const YAML = require("json-to-pretty-yaml");
 const fs = require("fs");
 const util = require("util");
-// const extract = require("extract-comments");
+const extract = require("extract-comments");
+const HTTPStatusCode = require("http-status-code");
 class AutoSwagger {
+    constructor() {
+        this.parsedFiles = [];
+        this.tagIndex = 2;
+    }
     ui(url) {
         return (`<!DOCTYPE html>
 		<html lang="en">
@@ -51,9 +63,12 @@ class AutoSwagger {
 		</html>`);
     }
     docs(routes, options) {
+        var routes_1, routes_1_1;
+        var e_1, _a;
         return __awaiter(this, void 0, void 0, function* () {
             routes = routes.root;
-            this.modelPath = options.modelPath;
+            this.path = options.path.replace("/start", "") + "/app";
+            this.tagIndex = options.tagIndex;
             // return routes
             const docs = {
                 openapi: "3.0.0",
@@ -90,108 +105,194 @@ class AutoSwagger {
                 paths: {},
             };
             let paths = {};
-            routes.forEach((route) => {
-                let methods = {};
-                let parameters = [];
-                let pattern = "";
-                let tags = [];
-                let security = [];
-                const responseCodes = {
-                    GET: "200",
-                    POST: "201",
-                    DELETE: "201",
-                    PUT: "203",
-                };
-                if (route.middleware.length > 0 &&
-                    route.middleware["auth:api"] !== null) {
-                    security = [{ BearerAuth: ["write"] }];
-                }
-                if (route.meta.resolvedHandler !== null) {
-                    const customAnnotations = this.getCustomAnnotations(route.meta.resolvedHandler.namespace);
-                    // console.log(file)
-                }
-                const split = route.pattern.split("/");
-                if (split.length > 2) {
-                    tags = [split[2].toUpperCase()];
-                }
-                split.forEach((part) => {
-                    if (part.startsWith(":")) {
-                        const param = part.replace(":", "");
-                        part = "{" + param + "}";
-                        parameters.push({
-                            in: "path",
-                            name: param,
-                            schema: {
-                                type: param === "id" || param.endsWith("_id") ? "integer" : "string",
-                            },
-                            required: true,
-                        });
+            console.log(options.ignore);
+            try {
+                for (routes_1 = __asyncValues(routes); routes_1_1 = yield routes_1.next(), !routes_1_1.done;) {
+                    const route = routes_1_1.value;
+                    if (options.ignore.includes(route.pattern))
+                        continue;
+                    let methods = {};
+                    let security = [];
+                    const responseCodes = {
+                        GET: "200",
+                        POST: "201",
+                        DELETE: "200",
+                        PUT: "203",
+                    };
+                    if (route.middleware.length > 0 &&
+                        route.middleware["auth:api"] !== null) {
+                        security = [{ BearerAuth: ["write"] }];
                     }
-                    pattern += "/" + part;
-                });
-                const sourceFile = typeof route.meta.resolvedHandler.namespace === "undefined"
-                    ? ""
-                    : route.meta.resolvedHandler.namespace +
-                        "::" +
-                        route.meta.resolvedHandler.method;
-                route.methods.forEach((method) => {
-                    let responses = {
-                        "404": { description: "Not found" },
-                    };
-                    if (method === "HEAD")
-                        return;
-                    if (route.methods["PUT"] !== null &&
-                        route.methods["PATCH"] !== null &&
-                        method === "PATCH")
-                        return;
-                    responses[responseCodes[method]] = {
-                        description: "Some desc response",
-                    };
-                    methods[method.toLowerCase()] = {
-                        summary: sourceFile,
-                        description: "Some description",
-                        parameters: parameters,
-                        tags: tags,
-                        responses: responses,
-                        security: security,
-                    };
-                });
-                pattern = pattern.slice(1);
-                paths[pattern] = methods;
-                docs.paths = paths;
-            });
+                    let sourceFile = "";
+                    let action = "";
+                    let customAnnotations;
+                    if (route.meta.resolvedHandler !== null) {
+                        if (typeof route.meta.resolvedHandler.namespace !== "undefined") {
+                            sourceFile = route.meta.resolvedHandler.namespace;
+                            action = route.meta.resolvedHandler.method;
+                            if (sourceFile !== "" && action !== "") {
+                                customAnnotations = yield this.getCustomAnnotations(sourceFile, action);
+                            }
+                        }
+                    }
+                    let { tags, parameters, pattern } = this.extractInfos(route.pattern);
+                    route.methods.forEach((method) => {
+                        let responses = {};
+                        if (method === "HEAD")
+                            return;
+                        if (route.methods["PUT"] !== null &&
+                            route.methods["PATCH"] !== null &&
+                            method === "PATCH")
+                            return;
+                        let description = "initial desc";
+                        responses[responseCodes[method]] = {
+                            description: description,
+                            content: {
+                                "application/json": {
+                                // schema: { $ref: "#/components/schemas/Product" },
+                                },
+                            },
+                        };
+                        if (security.length > 0) {
+                            responses["401"] = {
+                                description: HTTPStatusCode.getMessage(401),
+                            };
+                        }
+                        if (action !== "" && typeof customAnnotations[action] !== "undefined") {
+                            description = customAnnotations[action].description;
+                            responses = customAnnotations[action].responses;
+                        }
+                        methods[method.toLowerCase()] = {
+                            summary: sourceFile === "" && action == "" ? "" : sourceFile + "::" + action,
+                            description: description,
+                            parameters: parameters,
+                            tags: tags,
+                            responses: responses,
+                            security: security,
+                        };
+                    });
+                    pattern = pattern.slice(1);
+                    paths[pattern] = methods;
+                    docs.paths = paths;
+                }
+            }
+            catch (e_1_1) { e_1 = { error: e_1_1 }; }
+            finally {
+                try {
+                    if (routes_1_1 && !routes_1_1.done && (_a = routes_1.return)) yield _a.call(routes_1);
+                }
+                finally { if (e_1) throw e_1.error; }
+            }
             return YAML.stringify(docs);
         });
     }
-    getCustomAnnotations(file) {
-        if (typeof file === "undefined")
-            return;
-        file = file.replace("App/", "app/") + ".ts";
-        fs.readFile(file, "utf8", (err, data) => {
-            if (err) {
-                console.error(err);
+    getCustomAnnotations(file, action) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let annotations = {};
+            if (typeof file === "undefined")
                 return;
+            if (typeof this.parsedFiles[file] !== "undefined")
+                return;
+            this.parsedFiles.push(file);
+            file = file.replace("App/", "app/") + ".ts";
+            const readFile = util.promisify(fs.readFile);
+            const data = yield readFile(file, "utf8");
+            const comments = extract(data);
+            if (comments.length > 0) {
+                comments.forEach((comment) => {
+                    if (comment.type !== "BlockComment")
+                        return;
+                    if (!comment.value.includes("@" + action))
+                        return;
+                    let lines = comment.value.split("\n");
+                    lines = lines.filter((l) => l != "");
+                    annotations[action] = this.parseAnnotations(lines);
+                });
             }
-            // console.log(file)
-            // const comments = extract(data);
-            // if (comments.length > 0) {
-            //   let comment = comments[0];
-            //   if (comment.type !== "BlockComment") return;
-            //   // comment.replace('\\n', '')
-            //   // comment.replace('\t', '')
-            //   console.log(this.parseComment(comment));
-            // }
-            // comments.foreach((comment) => {
-            // console.log(comment.length)
-            // })
-            // console.log(comments)
+            return annotations;
         });
-        // console.log(file)
+    }
+    parseAnnotations(lines) {
+        let description = "somedesc";
+        let responses = {};
+        lines.forEach((line) => {
+            if (line.startsWith("@description")) {
+                description = line.replace("@description ", "");
+            }
+            if (line.startsWith("@response")) {
+                line = line.replace("@response ", "");
+                let [s, d] = line.split(" - ");
+                if (typeof s === "undefined")
+                    return;
+                responses[s] = {};
+                if (typeof d === "undefined") {
+                    d = HTTPStatusCode.getMessage(s);
+                }
+                else {
+                    let ref = d.substring(d.indexOf("{") + 1, d.lastIndexOf("}"));
+                    if (ref !== "") {
+                        d = "Returns a single instance of type " + ref;
+                        if (ref.includes("[]")) {
+                            ref = ref.replace("[]", "");
+                            d = "Returns an array of type " + ref;
+                            responses[s]["content"] = {
+                                "application/json": {
+                                    schema: {
+                                        type: "array",
+                                        items: { $ref: "#/components/schemas/" + ref },
+                                    },
+                                },
+                            };
+                        }
+                        else {
+                            responses[s]["content"] = {
+                                "application/json": {
+                                    schema: { $ref: "#/components/schemas/" + ref },
+                                },
+                            };
+                        }
+                    }
+                }
+                responses[s]["description"] = d;
+            }
+        });
+        return {
+            description: description,
+            responses: responses,
+        };
+    }
+    /*
+      extract path-variables, tags and the uri-pattern
+    */
+    extractInfos(p) {
+        let parameters = [];
+        let pattern = "";
+        let tags = [];
+        const split = p.split("/");
+        if (split.length > this.tagIndex) {
+            tags = [split[this.tagIndex].toUpperCase()];
+        }
+        split.forEach((part) => {
+            if (part.startsWith(":")) {
+                const param = part.replace(":", "");
+                part = "{" + param + "}";
+                parameters.push({
+                    in: "path",
+                    name: param,
+                    schema: {
+                        type: param === "id" || param.endsWith("_id") ? "integer" : "string",
+                    },
+                    required: true,
+                });
+            }
+            pattern += "/" + part;
+        });
+        return { tags, parameters, pattern };
     }
     getSchemas() {
         return __awaiter(this, void 0, void 0, function* () {
             const schemas = {};
-            const files = yield this.getFiles(this.modelPath, []);
+            const files = yield this.getFiles(this.path + "/Models", []);
             const readFile = util.promisify(fs.readFile);
             for (let file of files) {
                 const data = yield readFile(file, "utf8");
@@ -274,10 +375,6 @@ class AutoSwagger {
             }
             return files_;
         });
-    }
-    parseComment(comment) {
-        // console.log(comment)
-        return "adfadf";
     }
 }
 exports.AutoSwagger = AutoSwagger;

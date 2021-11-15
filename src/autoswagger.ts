@@ -7,6 +7,7 @@ const HTTPStatusCode = require("http-status-code");
 export class AutoSwagger {
   public path: string;
   private parsedFiles: string[] = [];
+  private tagIndex = 2;
 
   ui(url: string) {
     return (
@@ -49,6 +50,7 @@ export class AutoSwagger {
   async docs(routes, options) {
     routes = routes.root;
     this.path = options.path.replace("/start", "") + "/app";
+    this.tagIndex = options.tagIndex;
     // return routes
     const docs = {
       openapi: "3.0.0",
@@ -86,8 +88,10 @@ export class AutoSwagger {
       paths: {},
     };
     let paths = {};
-
+    console.log(options.ignore);
     for await (const route of routes) {
+      if (options.ignore.includes(route.pattern)) continue;
+
       let methods = {};
 
       let security = [];
@@ -250,8 +254,8 @@ export class AutoSwagger {
     let pattern = "";
     let tags = [];
     const split = p.split("/");
-    if (split.length > 2) {
-      tags = [split[2].toUpperCase()];
+    if (split.length > this.tagIndex) {
+      tags = [split[this.tagIndex].toUpperCase()];
     }
     split.forEach((part) => {
       if (part.startsWith(":")) {
