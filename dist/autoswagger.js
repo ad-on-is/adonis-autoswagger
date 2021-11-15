@@ -100,7 +100,7 @@ class AutoSwagger {
                             scheme: "bearer",
                         },
                     },
-                    schemas: yield this.getSchemas(),
+                    models: yield this.getModels(),
                 },
                 paths: {},
             };
@@ -147,9 +147,7 @@ class AutoSwagger {
                         responses[responseCodes[method]] = {
                             description: description,
                             content: {
-                                "application/json": {
-                                // schema: { $ref: "#/components/schemas/Product" },
-                                },
+                                "application/json": {},
                             },
                         };
                         if (security.length > 0) {
@@ -238,7 +236,7 @@ class AutoSwagger {
                                 "application/json": {
                                     schema: {
                                         type: "array",
-                                        items: { $ref: "#/components/schemas/" + ref },
+                                        items: { $ref: "#/components/models/" + ref },
                                     },
                                 },
                             };
@@ -246,7 +244,7 @@ class AutoSwagger {
                         else {
                             responses[s]["content"] = {
                                 "application/json": {
-                                    schema: { $ref: "#/components/schemas/" + ref },
+                                    schema: { $ref: "#/components/models/" + ref },
                                 },
                             };
                         }
@@ -288,9 +286,9 @@ class AutoSwagger {
         });
         return { tags, parameters, pattern };
     }
-    getSchemas() {
+    getModels() {
         return __awaiter(this, void 0, void 0, function* () {
-            const schemas = {};
+            const models = {};
             const files = yield this.getFiles(this.path + "/Models", []);
             const readFile = util.promisify(fs.readFile);
             for (let file of files) {
@@ -302,9 +300,9 @@ class AutoSwagger {
                 file = file.replace("app/", "/app/");
                 // // const model = require(file).default;
                 let schema = { type: "object", properties: this.parseProperties(data) };
-                schemas[name] = schema;
+                models[name] = schema;
             }
-            return schemas;
+            return models;
         });
     }
     parseProperties(data) {
@@ -338,7 +336,7 @@ class AutoSwagger {
             let t = "type";
             if (propv.includes("typeof")) {
                 s = propv.split("typeof ");
-                propv = "#/components/schemas/" + s[1].slice(0, -1);
+                propv = "#/components/models/" + s[1].slice(0, -1);
                 t = "$ref";
             }
             else {
