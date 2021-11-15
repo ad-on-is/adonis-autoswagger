@@ -83,7 +83,7 @@ export class AutoSwagger {
             scheme: "bearer",
           },
         },
-        schemas: await this.getSchemas(),
+        schemas: await this.getModels(),
       },
       paths: {},
     };
@@ -141,9 +141,7 @@ export class AutoSwagger {
         responses[responseCodes[method]] = {
           description: description,
           content: {
-            "application/json": {
-              // schema: { $ref: "#/components/schemas/Product" },
-            },
+            "application/json": {},
           },
         };
         if (security.length > 0) {
@@ -276,8 +274,8 @@ export class AutoSwagger {
     return { tags, parameters, pattern };
   }
 
-  private async getSchemas() {
-    const schemas = {};
+  private async getModels() {
+    const models = {};
     const files = await this.getFiles(this.path + "/Models", []);
     const readFile = util.promisify(fs.readFile);
     for (let file of files) {
@@ -289,10 +287,10 @@ export class AutoSwagger {
       file = file.replace("app/", "/app/");
       // // const model = require(file).default;
       let schema = { type: "object", properties: this.parseProperties(data) };
-      schemas[name] = schema;
+      models[name] = schema;
     }
 
-    return schemas;
+    return models;
   }
 
   private parseProperties(data) {
