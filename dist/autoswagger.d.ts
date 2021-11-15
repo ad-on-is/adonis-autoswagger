@@ -7,7 +7,7 @@ export declare class AutoSwagger {
     private getCustomAnnotations;
     private parseAnnotations;
     private extractInfos;
-    private getModels;
+    private getSchemas;
     private parseProperties;
     private getFiles;
 }

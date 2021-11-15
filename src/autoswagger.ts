@@ -83,7 +83,7 @@ export class AutoSwagger {
             scheme: "bearer",
           },
         },
-        models: await this.getModels(),
+        schemas: await this.getSchemas(),
       },
       paths: {},
     };
@@ -141,7 +141,9 @@ export class AutoSwagger {
         responses[responseCodes[method]] = {
           description: description,
           content: {
-            "application/json": {},
+            "application/json": {
+              // schema: { $ref: "#/components/schemas/Product" },
+            },
           },
         };
         if (security.length > 0) {
@@ -221,14 +223,14 @@ export class AutoSwagger {
                 "application/json": {
                   schema: {
                     type: "array",
-                    items: { $ref: "#/components/models/" + ref },
+                    items: { $ref: "#/components/schemas/" + ref },
                   },
                 },
               };
             } else {
               responses[s]["content"] = {
                 "application/json": {
-                  schema: { $ref: "#/components/models/" + ref },
+                  schema: { $ref: "#/components/schemas/" + ref },
                 },
               };
             }
@@ -274,8 +276,8 @@ export class AutoSwagger {
     return { tags, parameters, pattern };
   }
 
-  private async getModels() {
-    const models = {};
+  private async getSchemas() {
+    const schemas = {};
     const files = await this.getFiles(this.path + "/Models", []);
     const readFile = util.promisify(fs.readFile);
     for (let file of files) {
@@ -287,10 +289,10 @@ export class AutoSwagger {
       file = file.replace("app/", "/app/");
       // // const model = require(file).default;
       let schema = { type: "object", properties: this.parseProperties(data) };
-      models[name] = schema;
+      schemas[name] = schema;
     }
 
-    return models;
+    return schemas;
   }
 
   private parseProperties(data) {
@@ -329,7 +331,7 @@ export class AutoSwagger {
 
       if (propv.includes("typeof")) {
         s = propv.split("typeof ");
-        propv = "#/components/models/" + s[1].slice(0, -1);
+        propv = "#/components/schemas/" + s[1].slice(0, -1);
         t = "$ref";
       } else {
         propv = propv.toLowerCase();
