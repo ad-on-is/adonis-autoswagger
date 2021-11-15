@@ -56,8 +56,16 @@ class AutoSwagger {
       },
 
       components: {
+        responses: {
+          UnauthorizedError: {
+            description: "Acces token is missing or invalid",
+          },
+        },
         securitySchemes: {
-          ApiKeyAuth: { type: "apiKey", in: "header", name: "APIKEY" },
+          BearerAuth: {
+            type: "http",
+            scheme: "bearer",
+          },
         },
         schemas: await this.getSchemas(),
       },
@@ -81,7 +89,7 @@ class AutoSwagger {
         route.middleware.length > 0 &&
         route.middleware["auth:api"] !== null
       ) {
-        security = [{ ApiKeyAuth: ["write"] }];
+        security = [{ BearerAuth: ["write"] }];
       }
 
       if (route.meta.resolvedHandler !== null) {
@@ -216,7 +224,7 @@ class AutoSwagger {
       let propv = s2[1];
 
       if (typeof propv === "undefined") {
-        propv = "undefined";
+        propv = "string";
       }
 
       propn = propn.trim();
@@ -226,16 +234,26 @@ class AutoSwagger {
       propn = propn.replace("get ", "");
       propv = propv.replace("{", "");
 
+      let t = "type";
+
       if (propv.includes("typeof")) {
         s = propv.split("typeof ");
-        propv = s[1].slice(0, -1);
+        propv = "#/components/schemas/" + s[1].slice(0, -1);
+        t = "$ref";
       } else {
         propv = propv.toLowerCase();
       }
+
+      propv = propv.replace("datetime", "string");
+      propv = propv.replace("any", "string");
+      propv = propv.trim();
+
+      let prop = {};
+      prop[t] = propv;
       if (line.includes("HasMany") || line.includes("ManyToMany")) {
-        props[propn] = { type: "array", items: { type: propv } };
+        props[propn] = { type: "array", items: prop };
       } else {
-        props[propn] = { type: propv };
+        props[propn] = prop;
       }
     });
     return props;
