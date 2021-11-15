@@ -88,7 +88,6 @@ export class AutoSwagger {
       paths: {},
     };
     let paths = {};
-    console.log(options.ignore);
     for await (const route of routes) {
       if (options.ignore.includes(route.pattern)) continue;
 

@@ -105,7 +105,6 @@ class AutoSwagger {
                 paths: {},
             };
             let paths = {};
-            console.log(options.ignore);
             try {
                 for (routes_1 = __asyncValues(routes); routes_1_1 = yield routes_1.next(), !routes_1_1.done;) {
                     const route = routes_1_1.value;
