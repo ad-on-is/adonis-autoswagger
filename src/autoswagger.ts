@@ -3,7 +3,7 @@ const fs = require("fs");
 const util = require("util");
 // const extract = require("extract-comments");
 
-class AutoSwagger {
+export default class AutoSwagger {
   public modelPath: string;
 
   public ui(url: string) {
@@ -279,5 +279,3 @@ class AutoSwagger {
     return "adfadf";
   }
 }
-
-export default new AutoSwagger();
