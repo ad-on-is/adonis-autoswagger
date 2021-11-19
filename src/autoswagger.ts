@@ -285,12 +285,10 @@ export class AutoSwagger {
     const readFile = util.promisify(fs.readFile);
     for (let file of files) {
       const data = await readFile(file, "utf8");
-      // this.parseProperties(data);
       file = file.replace(".ts", "");
       const split = file.split("/");
       const name = split[split.length - 1].replace(".ts", "");
       file = file.replace("app/", "/app/");
-      // // const model = require(file).default;
       let schema = { type: "object", properties: this.parseProperties(data) };
       schemas[name] = schema;
     }
@@ -303,7 +301,8 @@ export class AutoSwagger {
     data = data.replace(/\t/g, "").replace(/^(?=\n)$|^\s*|\s*$|\n\n+/gm, "");
     const lines = data.split("\n");
 
-    lines.forEach((line) => {
+    lines.forEach((line, index) => {
+      if (index > 0 && lines[index - 1].includes("serializeAs: null")) return;
       if (!line.startsWith("public ") && !line.startsWith("public get")) return;
       if (line.includes("(") && !line.startsWith("public get")) return;
       // if (line.includes("<")) return;
