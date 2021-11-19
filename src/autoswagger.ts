@@ -4,6 +4,7 @@ const util = require("util");
 const extract = require("extract-comments");
 const HTTPStatusCode = require("http-status-code");
 const _ = require("lodash/core");
+import { camelCase, snakeCase } from "change-case";
 
 export class AutoSwagger {
   public path: string;
@@ -280,7 +281,14 @@ export class AutoSwagger {
   }
 
   private async getSchemas() {
-    const schemas = {};
+    const schemas = {
+      DateTime: {
+        description: "Luxon DateTime",
+      },
+      Any: {
+        description: "Any JSON object not defined as schema",
+      },
+    };
     const files = await this.getFiles(this.path + "/Models", []);
     const readFile = util.promisify(fs.readFile);
     for (let file of files) {
@@ -323,6 +331,7 @@ export class AutoSwagger {
       }
 
       propn = propn.trim();
+
       propv = propv.trim();
 
       propn = propn.replace("()", "");
@@ -331,6 +340,7 @@ export class AutoSwagger {
 
       let t = "type";
 
+      // if relation to another model
       if (propv.includes("typeof")) {
         s = propv.split("typeof ");
         propv = "#/components/schemas/" + s[1].slice(0, -1);
@@ -339,8 +349,18 @@ export class AutoSwagger {
         propv = propv.toLowerCase();
       }
 
-      propv = propv.replace("datetime", "string");
-      propv = propv.replace("any", "string");
+      // propv = propv.replace("datetime", "string");
+      // propv = propv.replace("any", "string");
+      propn = snakeCase(propn);
+
+      if (propv === "datetime") {
+        t = "$ref";
+        propv = "#/components/schemas/DateTime";
+      }
+      if (propv === "any") {
+        t = "$ref";
+        propv = "#/components/schemas/Any";
+      }
       propv = propv.trim();
 
       let prop = {};
