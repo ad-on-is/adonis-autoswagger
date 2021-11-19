@@ -19,7 +19,7 @@ import AutoSwagger from "adonis-autoswagger";
 // returns swagger in YAML
 Route.get("/swagger", async () => {
   return AutoSwagger.docs(Route.toJSON(), {
-    modelPath: __dirname,
+    path: __dirname,
     title: "Foo",
     version: "1.0.0",
     tagIndex: 2,
