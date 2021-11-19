@@ -3,6 +3,7 @@ const fs = require("fs");
 const util = require("util");
 const extract = require("extract-comments");
 const HTTPStatusCode = require("http-status-code");
+const _ = require("lodash/core");
 
 export class AutoSwagger {
   public path: string;
@@ -88,7 +89,6 @@ export class AutoSwagger {
       paths: {},
     };
     let paths = {};
-    console.log(options.ignore);
     for await (const route of routes) {
       if (options.ignore.includes(route.pattern)) continue;
 
@@ -98,8 +98,8 @@ export class AutoSwagger {
       const responseCodes = {
         GET: "200",
         POST: "201",
-        DELETE: "200",
-        PUT: "203",
+        DELETE: "202",
+        PUT: "204",
       };
       if (
         route.middleware.length > 0 &&
@@ -137,16 +137,8 @@ export class AutoSwagger {
         )
           return;
 
-        let description = "initial desc";
+        let description = "";
 
-        responses[responseCodes[method]] = {
-          description: description,
-          content: {
-            "application/json": {
-              // schema: { $ref: "#/components/schemas/Product" },
-            },
-          },
-        };
         if (security.length > 0) {
           responses["401"] = {
             description: HTTPStatusCode.getMessage(401),
@@ -155,7 +147,16 @@ export class AutoSwagger {
 
         if (action !== "" && typeof customAnnotations[action] !== "undefined") {
           description = customAnnotations[action].description;
-          responses = customAnnotations[action].responses;
+          responses = { ...responses, ...customAnnotations[action].responses };
+        }
+
+        if (_.isEmpty(responses)) {
+          responses[responseCodes[method]] = {
+            description: HTTPStatusCode.getMessage(responseCodes[method]),
+            content: {
+              "application/json": {},
+            },
+          };
         }
 
         methods[method.toLowerCase()] = {
@@ -213,6 +214,7 @@ export class AutoSwagger {
         if (typeof d === "undefined") {
           d = HTTPStatusCode.getMessage(s);
         } else {
+          d = HTTPStatusCode.getMessage(s) + ": " + d;
           let ref = d.substring(d.indexOf("{") + 1, d.lastIndexOf("}"));
 
           if (ref !== "") {
