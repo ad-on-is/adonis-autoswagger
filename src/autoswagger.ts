@@ -10,6 +10,7 @@ export class AutoSwagger {
   public path: string;
   private parsedFiles: string[] = [];
   private tagIndex = 2;
+  private schemas = {};
 
   ui(url: string) {
     return (
@@ -53,6 +54,7 @@ export class AutoSwagger {
     routes = routes.root;
     this.path = options.path.replace("/start", "") + "/app";
     this.tagIndex = options.tagIndex;
+    this.schemas = await this.getSchemas();
     // return routes
     const docs = {
       openapi: "3.0.0",
@@ -85,7 +87,7 @@ export class AutoSwagger {
             scheme: "bearer",
           },
         },
-        schemas: await this.getSchemas(),
+        schemas: this.schemas,
       },
       paths: {},
     };
@@ -146,9 +148,12 @@ export class AutoSwagger {
           };
         }
 
+        let requestBody = {};
+
         if (action !== "" && typeof customAnnotations[action] !== "undefined") {
           description = customAnnotations[action].description;
           responses = { ...responses, ...customAnnotations[action].responses };
+          requestBody = customAnnotations[action].requestBody;
         }
 
         if (_.isEmpty(responses)) {
@@ -162,11 +167,14 @@ export class AutoSwagger {
 
         methods[method.toLowerCase()] = {
           summary:
-            sourceFile === "" && action == "" ? "" : sourceFile + "::" + action,
+            sourceFile === "" && action == ""
+              ? ""
+              : sourceFile.replace("App/Controllers/Http/", "") + "::" + action,
           description: description,
           parameters: parameters,
           tags: tags,
           responses: responses,
+          requestBody: requestBody,
           security: security,
         };
       });
@@ -203,10 +211,32 @@ export class AutoSwagger {
   private parseAnnotations(lines: string[]) {
     let description = "somedesc";
     let responses = {};
+    let requestBody = {};
+    // requestBody = {
+    //   content: {
+    //     "application/json": {
+    //       schema: {
+    //         $ref: "#/components/schemas/Product",
+    //       },
+    //     },
+    //   },
+    // };
     lines.forEach((line) => {
       if (line.startsWith("@description")) {
         description = line.replace("@description ", "");
       }
+      // if (line.startsWith("@requestBody")) {
+      //   line = line.replace("@requestBody ", "");
+      //   requestBody = {
+      //     content: {
+      //       "application/json": {
+      //         schema: {
+      //           $ref: "#/components/schemas/Product",
+      //         },
+      //       },
+      //     },
+      //   };
+      // }
       if (line.startsWith("@response")) {
         line = line.replace("@response ", "");
         let [s, d] = line.split(" - ");
@@ -216,10 +246,18 @@ export class AutoSwagger {
           d = HTTPStatusCode.getMessage(s);
         } else {
           d = HTTPStatusCode.getMessage(s) + ": " + d;
-          let ref = d.substring(d.indexOf("{") + 1, d.lastIndexOf("}"));
-
+          let ref = line.substring(
+            line.indexOf("{") + 1,
+            line.lastIndexOf("}")
+          );
+          // references a schema
           if (ref !== "") {
+            let inc = d
+              .substring(d.indexOf("with("), d.lastIndexOf(")"))
+              .replace("with(", "");
+            let only = d.substring(d.indexOf("only(") + 1, d.lastIndexOf(")"));
             d = "Returns a single instance of type " + ref;
+            // references a schema array
             if (ref.includes("[]")) {
               ref = ref.replace("[]", "");
               d = "Returns an array of type " + ref;
@@ -229,12 +267,14 @@ export class AutoSwagger {
                     type: "array",
                     items: { $ref: "#/components/schemas/" + ref },
                   },
+                  example: [this.getSchemaExampleBasedOnAnnotation(ref, inc)],
                 },
               };
             } else {
               responses[s]["content"] = {
                 "application/json": {
                   schema: { $ref: "#/components/schemas/" + ref },
+                  example: this.getSchemaExampleBasedOnAnnotation(ref, inc),
                 },
               };
             }
@@ -246,7 +286,44 @@ export class AutoSwagger {
     return {
       description: description,
       responses: responses,
+      requestBody: requestBody,
     };
+  }
+
+  private getSchemaExampleBasedOnAnnotation(schema, inc = "", parent = "") {
+    let props = {};
+    let properties = this.schemas[schema].properties;
+    let include = inc.toString().split(",");
+    if (typeof properties === "undefined") return;
+    for (const [key, value] of Object.entries(properties)) {
+      if (typeof value["$ref"] !== "undefined") {
+        if (
+          parent === "" &&
+          !include.includes("relations") &&
+          !include.includes(key)
+        ) {
+          continue;
+        }
+
+        if (
+          parent !== "" &&
+          !include.includes(parent + ".relations") &&
+          !include.includes(parent + "." + key)
+        ) {
+          continue;
+        }
+
+        const rel = value["$ref"].replace("#/components/schemas/", "");
+        props[key] = this.getSchemaExampleBasedOnAnnotation(
+          rel,
+          inc,
+          parent === "" ? key : parent + "." + key
+        );
+      } else {
+        props[key] = value["example"];
+      }
+    }
+    return props;
   }
 
   /*
@@ -282,9 +359,6 @@ export class AutoSwagger {
 
   private async getSchemas() {
     const schemas = {
-      DateTime: {
-        description: "Luxon DateTime",
-      },
       Any: {
         description: "Any JSON object not defined as schema",
       },
@@ -323,52 +397,84 @@ export class AutoSwagger {
         let s2 = s[1].split(":");
       }
 
-      let propn = s2[0];
-      let propv = s2[1];
+      let field = s2[0];
+      let type = s2[1];
 
-      if (typeof propv === "undefined") {
-        propv = "string";
+      let format = "";
+
+      if (typeof type === "undefined") {
+        type = "string";
+        format = "undefined";
       }
 
-      propn = propn.trim();
+      field = field.trim();
 
-      propv = propv.trim();
+      type = type.trim();
 
-      propn = propn.replace("()", "");
-      propn = propn.replace("get ", "");
-      propv = propv.replace("{", "");
+      field = field.replace("()", "");
+      field = field.replace("get ", "");
+      type = type.replace("{", "");
 
-      let t = "type";
+      let indicator = "type";
+      let example: any = "string";
 
       // if relation to another model
-      if (propv.includes("typeof")) {
-        s = propv.split("typeof ");
-        propv = "#/components/schemas/" + s[1].slice(0, -1);
-        t = "$ref";
+      if (type.includes("typeof")) {
+        s = type.split("typeof ");
+        type = "#/components/schemas/" + s[1].slice(0, -1);
+        indicator = "$ref";
       } else {
-        propv = propv.toLowerCase();
+        type = type.toLowerCase();
       }
 
-      // propv = propv.replace("datetime", "string");
-      // propv = propv.replace("any", "string");
-      propn = snakeCase(propn);
+      field = snakeCase(field);
 
-      if (propv === "datetime") {
-        t = "$ref";
-        propv = "#/components/schemas/DateTime";
+      if (field == "id" || field.includes("_id")) {
+        type = "integer";
       }
-      if (propv === "any") {
-        t = "$ref";
-        propv = "#/components/schemas/Any";
+
+      if (type === "datetime") {
+        indicator = "type";
+        type = "string";
+        format = "date-time";
+        example = "21.10.2021";
       }
-      propv = propv.trim();
+
+      if (type === "integer" || type === "number") {
+        example = 123;
+      }
+
+      if (field === "email") {
+        indicator = "type";
+        type = "string";
+        format = "email";
+        example = "johndoe@example.com";
+      }
+      if (field === "password") {
+        indicator = "type";
+        type = "string";
+        format = "password";
+      }
+      if (type === "any") {
+        indicator = "$ref";
+        type = "#/components/schemas/Any";
+      }
+      type = type.trim();
 
       let prop = {};
-      prop[t] = propv;
-      if (line.includes("HasMany") || line.includes("ManyToMany")) {
-        props[propn] = { type: "array", items: prop };
+      prop[indicator] = type;
+      prop["example"] = example;
+      if (
+        line.includes("HasMany") ||
+        line.includes("ManyToMany") ||
+        line.includes("HasManyThrough")
+      ) {
+        props[field] = { type: "array", items: prop };
       } else {
-        props[propn] = prop;
+        props[field] = prop;
+        if (format !== "") {
+          props[field][format] = format;
+        }
       }
     });
     return props;
