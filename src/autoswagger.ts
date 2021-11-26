@@ -129,7 +129,6 @@ export class AutoSwagger {
       }
 
       let { tags, parameters, pattern } = this.extractInfos(route.pattern);
-
       route.methods.forEach((method) => {
         let responses = {};
         if (method === "HEAD") return;
@@ -139,7 +138,6 @@ export class AutoSwagger {
           method === "PATCH"
         )
           return;
-
         let description = "";
 
         if (security.length > 0) {
@@ -169,7 +167,7 @@ export class AutoSwagger {
           };
         }
 
-        methods[method.toLowerCase()] = {
+        let m = {
           summary:
             sourceFile === "" && action == ""
               ? ""
@@ -180,13 +178,19 @@ export class AutoSwagger {
           responses: responses,
           security: security,
         };
+
         if (method !== "GET" && method !== "DELETE") {
-          methods[method.toLowerCase()]["requestBody"] = requestBody;
+          m["requestBody"] = requestBody;
         }
+
+        pattern = pattern.slice(1);
+
+        paths = {
+          ...paths,
+          [pattern]: { ...paths[pattern], [method.toLowerCase()]: m },
+        };
       });
 
-      pattern = pattern.slice(1);
-      paths[pattern] = methods;
       docs.paths = paths;
     }
     return YAML.stringify(docs);
