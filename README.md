@@ -49,6 +49,12 @@ Tags endpoints automatically
 - If your routes are `/v1/products/...` then your tagIndex should be `2`
 - If your routes are `/products/...` then your tagIndex should be `1`
 
+## ignore[]
+
+Ignores specified paths.
+
+---
+
 ## Extend
 
 Add additional documentation to your Controller-files.
@@ -59,11 +65,16 @@ Add additional documentation to your Controller-files.
 @response <status> - Some text
 @response <status> // returns standard <status> message
 @response <status> - {Schema} // returns schema specification
+@response <status> - {Schema}.exclude(property1, property2) // returns schema specification
 @response <status> - {Schema[]} // returns schema-array specification
-@response <status> - {Schema}.with(relations, property, property.relations, property.otherproperty) // returns a schema and a defined relation
+@response <status> - {Schema}.with(relations, property1, property2.relations, property3.property4) // returns a schema and a defined relation
+@requestBody {Schema} // Expects schema specification
+@requestBody {Schema.with(relations)} // Expects schema and its relations
 ```
 
 **@description** (only one)
+
+**@requestBody** (only one)
 
 ### **Examples**
 
@@ -87,6 +98,7 @@ Add additional documentation to your Controller-files.
 	 * @update
 	 * @response 200
    * @response 404 - Product could not be found
+	 * @requestBody {Product}
 	 */
 	public async update({ request, response }: HttpContextContract) {}
 
@@ -103,6 +115,12 @@ AutoSwagger tries to extracat as much information as possible to generate swagge
 Automatically generates swagger path-descriptions, based on your application routes. It also detects endpoints, protected by the auth-middlware.
 
 ![paths](https://i.imgur.com/EnPw6xT.png)
+
+### Responses and RequestBody
+
+Generates responses and requestBody based on your simple Controller-Annotation (see Examples)
+
+---
 
 ## Schemas
 
