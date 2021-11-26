@@ -219,96 +219,15 @@ export class AutoSwagger {
     let description = "somedesc";
     let responses = {};
     let requestBody = {};
-    // requestBody = {
-    //   content: {
-    //     "application/json": {
-    //       schema: {
-    //         $ref: "#/components/schemas/Product",
-    //       },
-    //     },
-    //   },
-    // };
     lines.forEach((line) => {
       if (line.startsWith("@description")) {
         description = line.replace("@description ", "");
       }
-      // if (line.startsWith("@requestBody")) {
-      //   line = line.replace("@requestBody ", "");
-      //   requestBody = {
-      //     content: {
-      //       "application/json": {
-      //         schema: {
-      //           $ref: "#/components/schemas/Product",
-      //         },
-      //       },
-      //     },
-      //   };
-      // }
       if (line.startsWith("@response")) {
-        line = line.replace("@response ", "");
-        let [s, d] = line.split(" - ");
-        if (typeof s === "undefined") return;
-        responses[s] = {};
-        if (typeof d === "undefined") {
-          d = HTTPStatusCode.getMessage(s);
-        } else {
-          d = HTTPStatusCode.getMessage(s) + ": " + d;
-          let ref = line.substring(
-            line.indexOf("{") + 1,
-            line.lastIndexOf("}")
-          );
-          // references a schema
-          if (ref !== "") {
-            let inc,
-              exc = "";
-
-            // parse with()
-            let match = d.match(/with\(([^()]*)\)/g);
-            if (match !== null) {
-              inc = match[0]
-                .replace("with(", "")
-                .replace(")", "")
-                .replace(/ /g, "");
-            }
-            // parse exclude()
-            match = d.match(/exclude\(([^()]*)\)/g);
-            if (match !== null) {
-              exc = match[0]
-                .replace("exclude(", "")
-                .replace(")", "")
-                .replace(/ /g, "");
-            }
-            d = "Returns a single instance of type " + ref;
-            // references a schema array
-            if (ref.includes("[]")) {
-              ref = ref.replace("[]", "");
-              d = "Returns an array of type " + ref;
-              responses[s]["content"] = {
-                "application/json": {
-                  schema: {
-                    type: "array",
-                    items: { $ref: "#/components/schemas/" + ref },
-                  },
-                  example: [
-                    this.getSchemaExampleBasedOnAnnotation(ref, inc, exc),
-                  ],
-                },
-              };
-            } else {
-              responses[s]["content"] = {
-                "application/json": {
-                  schema: { $ref: "#/components/schemas/" + ref },
-                  example: this.getSchemaExampleBasedOnAnnotation(
-                    ref,
-                    inc,
-                    exc
-                  ),
-                },
-              };
-            }
-          }
-        }
-        responses[s]["description"] = d;
+        responses = { ...responses, ...this.parseResponse(line) };
+      }
+      if (line.startsWith("@requestBody")) {
+        requestBody = this.parseRequestBody(line);
       }
     });
     return {
@@ -316,6 +235,104 @@ export class AutoSwagger {
       responses: responses,
       requestBody: requestBody,
     };
+  }
+
+  private parseResponse(line) {
+    let responses = {};
+    line = line.replace("@response ", "");
+    let [status, res] = line.split(" - ");
+    if (typeof status === "undefined") return;
+    responses[status] = {};
+    if (typeof res === "undefined") {
+      res = HTTPStatusCode.getMessage(status);
+    } else {
+      res = HTTPStatusCode.getMessage(status) + ": " + res;
+      let ref = line.substring(line.indexOf("{") + 1, line.lastIndexOf("}"));
+      // references a schema
+      if (ref !== "") {
+        const inc = this.getBetweenBrackets(res, "with");
+        const exc = this.getBetweenBrackets(res, "exclude");
+
+        res = "Returns a single instance of type " + ref;
+        // references a schema array
+        if (ref.includes("[]")) {
+          ref = ref.replace("[]", "");
+          res = "Returns an array of type " + ref;
+          responses[status]["content"] = {
+            "application/json": {
+              schema: {
+                type: "array",
+                items: { $ref: "#/components/schemas/" + ref },
+              },
+              example: [this.getSchemaExampleBasedOnAnnotation(ref, inc, exc)],
+            },
+          };
+        } else {
+          responses[status]["content"] = {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/" + ref },
+              example: this.getSchemaExampleBasedOnAnnotation(ref, inc, exc),
+            },
+          };
+        }
+      }
+    }
+    responses[status]["description"] = res;
+    return responses;
+  }
+
+  private parseRequestBody(line) {
+    let requestBody = {};
+    line = line.replace("@requestBody ", "");
+
+    let ref = line.substring(line.indexOf("{") + 1, line.lastIndexOf("}"));
+    // references a schema
+    if (ref !== "") {
+      const inc = this.getBetweenBrackets(line, "with");
+      const exc = this.getBetweenBrackets(line, "exclude");
+
+      // references a schema array
+      if (ref.includes("[]")) {
+        ref = ref.replace("[]", "");
+        requestBody = {
+          content: {
+            "application/json": {
+              description: "Expects an array of type " + ref,
+              schema: {
+                type: "array",
+                items: { $ref: "#/components/schemas/" + ref },
+              },
+              example: [this.getSchemaExampleBasedOnAnnotation(ref, inc, exc)],
+            },
+          },
+        };
+      } else {
+        requestBody = {
+          content: {
+            "application/json": {
+              description: "Expects a single instance of type " + ref,
+              schema: {
+                $ref: "#/components/schemas/" + ref,
+              },
+              example: this.getSchemaExampleBasedOnAnnotation(ref, inc, exc),
+            },
+          },
+        };
+      }
+    }
+    return requestBody;
+  }
+
+  private getBetweenBrackets(value, start) {
+    let match = value.match(new RegExp(start + "\\(([^()]*)\\)", "g"));
+    if (match !== null) {
+      const m = match[0]
+        .replace(start + "(", "")
+        .replace(")", "")
+        .replace(/ /g, "");
+      return m;
+    }
+    return "";
   }
 
   private getSchemaExampleBasedOnAnnotation(
@@ -380,6 +397,9 @@ export class AutoSwagger {
       } else {
         props[key] = value["example"];
       }
+      // if (typeof props[key + "_id"] !== "undefined") {
+      //   delete props[key + "_id"];
+      // }
     }
     return props;
   }
@@ -571,10 +591,6 @@ export class AutoSwagger {
       }
       if (enums.length > 0) {
         props[field]["enum"] = enums;
-      }
-      // remove unnecessary xxx_id on relations
-      if (isRelation && typeof props[field + "_id"] !== "undefined") {
-        delete props[field + "_id"];
       }
     });
 
