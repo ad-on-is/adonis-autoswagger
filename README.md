@@ -59,24 +59,36 @@ Ignores specified paths.
 
 Add additional documentation to your Controller-files.
 
-**@response** (multiple)
-
-```ts
-@response <status> - Some text
-@response <status> // returns standard <status> message
-@response <status> - {Schema} // returns schema specification
-@response <status> - {Schema}.exclude(property1, property2) // returns schema specification
-@response <status> - {Schema[]} // returns schema-array specification
-@response <status> - {Schema}.with(relations, property1, property2.relations, property3.property4) // returns a schema and a defined relation
-@requestBody {Schema} // Expects schema specification
-@requestBody {Schema.with(relations)} // Expects schema and its relations
-```
-
 **@description** (only one)
 A description of what that action does.
 
+**@response** (multiple)
+
+```ts
+@response <status> - Lorem ipsum Dolor sit amet
+
+@response <status> // returns standard <status> message
+
+@response <status> - <Model> // returns model specification
+
+@response <status> - <Model[]> // returns model-array specification
+
+@response <status> - <Model>.with(relations, property1, property2.relations, property3.property4) // returns a model and a defined relation
+
+@response <status> - <Model[]>.with(relations).exclude(property1, property2) // returns model specification
+
+@response <status> - {"foo": "bar"} //returns custom json
+```
+
 **@requestBody** (only one)
 A definition of the expected requestBody
+
+```ts
+// basicaly same as @response, just without a status
+@requestBody <Model> // Expects model specification
+@requestBody <Model>.with(relations) // Expects model and its relations
+@requestBody {"foo": "bar"} // Expects a specific JSON
+```
 
 ### **Examples**
 
@@ -84,14 +96,14 @@ A definition of the expected requestBody
 /**
 	 * @index
    * @description Returns array of producs and it's relations
-	 * @response 200 - {Product[]}.with(relations)
+	 * @response 200 - <Product[]>.with(relations)
 	 */
 	public async index({ request, response }: HttpContextContract) {}
 
 /**
 	 * @show
 	 * @description Returns a product with it's relation on user and user relations
-	 * @response 200 - {Product}.with(user, user.relations)
+	 * @response 200 - <Product>.with(user, user.relations)
    * @response 404
 	 */
 	public async show({ request, response }: HttpContextContract) {}
@@ -100,9 +112,16 @@ A definition of the expected requestBody
 	 * @update
 	 * @response 200
    * @response 404 - Product could not be found
-	 * @requestBody {Product}
+	 * @requestBody <Product>
 	 */
 	public async update({ request, response }: HttpContextContract) {}
+
+
+	/**
+	 * @custom
+   * @response 400 - {"foo": "bar"}
+	 */
+	public async custom({ request, response }: HttpContextContract) {}
 
 ```
 
@@ -124,15 +143,23 @@ Generates responses and requestBody based on your simple Controller-Annotation (
 
 ---
 
-## Schemas
+## Models (schemas)
 
-Automatically generates swagger schema-descriptions based on your models
+Automatically generates swagger model-descriptions based on your models
 
 ![alt](https://i.imgur.com/FEdLplp.png)
 
 ## Extend Models
 
 Add additional documentation to your Models properties.
+
+---
+
+## Attention!
+
+The below comments MUST be placed **1 line** above the property.
+
+---
 
 **@no-swagger**
 Although, autoswagger detects `serializeAs: null` fields automatically, and does not show them. You can use @no-swagger for other fields.

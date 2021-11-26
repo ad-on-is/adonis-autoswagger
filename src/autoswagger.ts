@@ -251,7 +251,20 @@ export class AutoSwagger {
       res = HTTPStatusCode.getMessage(status);
     } else {
       res = HTTPStatusCode.getMessage(status) + ": " + res;
-      let ref = line.substring(line.indexOf("{") + 1, line.lastIndexOf("}"));
+      let ref = line.substring(line.indexOf("<") + 1, line.lastIndexOf(">"));
+      let json = line.substring(line.indexOf("{") + 1, line.lastIndexOf("}"));
+      if (json !== "") {
+        console.log("{" + json + "}");
+        const j = JSON.parse("{" + json + "}");
+        responses[status]["content"] = {
+          "application/json": {
+            schema: {
+              type: "object",
+            },
+            example: j,
+          },
+        };
+      }
       // references a schema
       if (ref !== "") {
         const inc = this.getBetweenBrackets(res, "with");
@@ -289,7 +302,23 @@ export class AutoSwagger {
     let requestBody = {};
     line = line.replace("@requestBody ", "");
 
-    let ref = line.substring(line.indexOf("{") + 1, line.lastIndexOf("}"));
+    let json = line.substring(line.indexOf("{") + 1, line.lastIndexOf("}"));
+    if (json !== "") {
+      console.log("{" + json + "}");
+      const j = JSON.parse("{" + json + "}");
+      requestBody = {
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+            },
+            example: j,
+          },
+        },
+      };
+    }
+
+    let ref = line.substring(line.indexOf("<") + 1, line.lastIndexOf(">"));
     // references a schema
     if (ref !== "") {
       const inc = this.getBetweenBrackets(line, "with");
