@@ -64,7 +64,7 @@ A description of what that action does.
 
 **@response** (multiple)
 
-```ts
+```js
 @response <status> - Lorem ipsum Dolor sit amet
 
 @response <status> // returns standard <status> message
@@ -83,7 +83,7 @@ A description of what that action does.
 **@requestBody** (only one)
 A definition of the expected requestBody
 
-```ts
+```js
 // basicaly same as @response, just without a status
 @requestBody <Model> // Expects model specification
 @requestBody <Model>.with(relations) // Expects model and its relations
@@ -92,7 +92,7 @@ A definition of the expected requestBody
 
 ### **Examples**
 
-```ts
+```js
 /**
 * @index
 * @description Returns array of producs and it's relations
@@ -172,7 +172,7 @@ Use this field to provide own example values for specific fields
 
 Product.js
 
-```ts
+```js
 @hasMany(() => ProductView)
 // @no-swagger
 public views: HasMany<typeof ProductView>
