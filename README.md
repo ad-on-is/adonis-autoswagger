@@ -60,6 +60,7 @@ Add additional documentation to your Controller-files.
 @response <status> // returns standard <status> message
 @response <status> - {Schema} // returns schema specification
 @response <status> - {Schema[]} // returns schema-array specification
+@response <status> - {Schema}.with(relations, property, property.relations, property.otherproperty) // returns a schema and a defined relation
 ```
 
 **@description** (only one)
@@ -69,14 +70,15 @@ Add additional documentation to your Controller-files.
 ```js
 /**
 	 * @index
-   * @description (optional) Describe what your controller-action does
-	 * @response 200 - {Product[]}
+   * @description Returns array of producs and it's relations
+	 * @response 200 - {Product[]}.with(relations)
 	 */
 	public async index({ request, response }: HttpContextContract) {}
 
 /**
 	 * @show
-	 * @response 200 - {Product}
+	 * @description Returns a product with it's relation on user and user relations
+	 * @response 200 - {Product}.with(user, user.relations)
    * @response 404
 	 */
 	public async show({ request, response }: HttpContextContract) {}

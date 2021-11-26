@@ -108,7 +108,7 @@ export class AutoSwagger {
         route.middleware.length > 0 &&
         route.middleware["auth:api"] !== null
       ) {
-        security = [{ BearerAuth: ["write"] }];
+        security = [{ BearerAuth: ["access"] }];
       }
 
       let sourceFile = "";
@@ -148,7 +148,11 @@ export class AutoSwagger {
           };
         }
 
-        let requestBody = {};
+        let requestBody = {
+          content: {
+            "application/json": {},
+          },
+        };
 
         if (action !== "" && typeof customAnnotations[action] !== "undefined") {
           description = customAnnotations[action].description;
@@ -174,10 +178,13 @@ export class AutoSwagger {
           parameters: parameters,
           tags: tags,
           responses: responses,
-          requestBody: requestBody,
           security: security,
         };
+        if (method !== "GET" && method !== "DELETE") {
+          methods[method.toLowerCase()]["requestBody"] = requestBody;
+        }
       });
+
       pattern = pattern.slice(1);
       paths[pattern] = methods;
       docs.paths = paths;
@@ -252,10 +259,25 @@ export class AutoSwagger {
           );
           // references a schema
           if (ref !== "") {
-            let inc = d
-              .substring(d.indexOf("with("), d.lastIndexOf(")"))
-              .replace("with(", "");
-            let only = d.substring(d.indexOf("only(") + 1, d.lastIndexOf(")"));
+            let inc,
+              exc = "";
+
+            // parse with()
+            let match = d.match(/with\(([^()]*)\)/g);
+            if (match !== null) {
+              inc = match[0]
+                .replace("with(", "")
+                .replace(")", "")
+                .replace(/ /g, "");
+            }
+            // parse exclude()
+            match = d.match(/exclude\(([^()]*)\)/g);
+            if (match !== null) {
+              exc = match[0]
+                .replace("exclude(", "")
+                .replace(")", "")
+                .replace(/ /g, "");
+            }
             d = "Returns a single instance of type " + ref;
             // references a schema array
             if (ref.includes("[]")) {
@@ -267,14 +289,20 @@ export class AutoSwagger {
                     type: "array",
                     items: { $ref: "#/components/schemas/" + ref },
                   },
-                  example: [this.getSchemaExampleBasedOnAnnotation(ref, inc)],
+                  example: [
+                    this.getSchemaExampleBasedOnAnnotation(ref, inc, exc),
+                  ],
                 },
               };
             } else {
               responses[s]["content"] = {
                 "application/json": {
                   schema: { $ref: "#/components/schemas/" + ref },
-                  example: this.getSchemaExampleBasedOnAnnotation(ref, inc),
+                  example: this.getSchemaExampleBasedOnAnnotation(
+                    ref,
+                    inc,
+                    exc
+                  ),
                 },
               };
             }
@@ -290,13 +318,25 @@ export class AutoSwagger {
     };
   }
 
-  private getSchemaExampleBasedOnAnnotation(schema, inc = "", parent = "") {
+  private getSchemaExampleBasedOnAnnotation(
+    schema,
+    inc = "",
+    exc = "",
+    parent = ""
+  ) {
     let props = {};
     let properties = this.schemas[schema].properties;
     let include = inc.toString().split(",");
+    let exclude = exc.toString().split(",");
     if (typeof properties === "undefined") return;
     for (const [key, value] of Object.entries(properties)) {
-      if (typeof value["$ref"] !== "undefined") {
+      if (exclude.includes(key)) continue;
+      if (
+        typeof value["$ref"] !== "undefined" ||
+        (typeof value["items"] !== "undefined" &&
+          typeof value["items"]["$ref"] !== "undefined")
+      ) {
+        // skip relations of main schema
         if (
           parent === "" &&
           !include.includes("relations") &&
@@ -305,6 +345,7 @@ export class AutoSwagger {
           continue;
         }
 
+        // skip relations of nested schema
         if (
           parent !== "" &&
           !include.includes(parent + ".relations") &&
@@ -313,12 +354,29 @@ export class AutoSwagger {
           continue;
         }
 
-        const rel = value["$ref"].replace("#/components/schemas/", "");
-        props[key] = this.getSchemaExampleBasedOnAnnotation(
+        let rel = "";
+        let isArray = false;
+        if (typeof value["$ref"] !== "undefined") {
+          rel = value["$ref"].replace("#/components/schemas/", "");
+        }
+
+        if (
+          typeof value["items"] !== "undefined" &&
+          typeof value["items"]["$ref"] !== "undefined"
+        ) {
+          rel = value["items"]["$ref"].replace("#/components/schemas/", "");
+          isArray = true;
+        }
+        if (rel == "") {
+          return;
+        }
+        const propdata = this.getSchemaExampleBasedOnAnnotation(
           rel,
           inc,
+          exc,
           parent === "" ? key : parent + "." + key
         );
+        props[key] = isArray ? [propdata] : propdata;
       } else {
         props[key] = value["example"];
       }
@@ -380,31 +438,60 @@ export class AutoSwagger {
 
   private parseProperties(data) {
     let props = {};
+    // remove empty lines
     data = data.replace(/\t/g, "").replace(/^(?=\n)$|^\s*|\s*$|\n\n+/gm, "");
     const lines = data.split("\n");
 
     lines.forEach((line, index) => {
+      line = line.trim();
+      // skip comments
+      if (
+        line.startsWith("//") ||
+        line.startsWith("/*") ||
+        line.startsWith("*")
+      )
+        return;
       if (index > 0 && lines[index - 1].includes("serializeAs: null")) return;
+      if (index > 0 && lines[index - 1].includes("@no-swagger")) return;
       if (!line.startsWith("public ") && !line.startsWith("public get")) return;
       if (line.includes("(") && !line.startsWith("public get")) return;
-      // if (line.includes("<")) return;
       let s = line.split("public ");
       let s2 = s[1].split(":");
       if (line.startsWith("public get")) {
-        //   line = line.replace("()", "");
-        //   line = line.slice(0, -1);
         s = line.split("public get");
         let s2 = s[1].split(":");
       }
 
       let field = s2[0];
       let type = s2[1];
-
+      let enums = [];
       let format = "";
+      let example: any = this.examples(field);
+      if (index > 0 && lines[index - 1].includes("@enum")) {
+        const l = lines[index - 1];
+        let match = l.match(/enum\(([^()]*)\)/g);
+        if (match !== null) {
+          const en = match[0]
+            .replace("enum(", "")
+            .replace(")", "")
+            .replace(/ /g, "");
+          enums = en.split(",");
+          example = enums[0];
+        }
+      }
+
+      if (index > 0 && lines[index - 1].includes("@example")) {
+        const l = lines[index - 1];
+        let match = l.match(/example\(([^()]*)\)/g);
+        if (match !== null) {
+          const m = match[0].replace("example(", "").replace(")", "");
+          example = m;
+        }
+      }
 
       if (typeof type === "undefined") {
         type = "string";
-        format = "undefined";
+        format = "";
       }
 
       field = field.trim();
@@ -414,20 +501,25 @@ export class AutoSwagger {
       field = field.replace("()", "");
       field = field.replace("get ", "");
       type = type.replace("{", "");
+      field = snakeCase(field);
 
       let indicator = "type";
-      let example: any = "string";
+
+      if (example === null) {
+        example = "string";
+      }
+
+      let isRelation = false;
 
       // if relation to another model
       if (type.includes("typeof")) {
         s = type.split("typeof ");
         type = "#/components/schemas/" + s[1].slice(0, -1);
         indicator = "$ref";
+        isRelation = true;
       } else {
         type = type.toLowerCase();
       }
-
-      field = snakeCase(field);
 
       if (field == "id" || field.includes("_id")) {
         type = "integer";
@@ -437,11 +529,7 @@ export class AutoSwagger {
         indicator = "type";
         type = "string";
         format = "date-time";
-        example = "21.10.2021";
-      }
-
-      if (type === "integer" || type === "number") {
-        example = 123;
+        example = "2021-03-23T16:13:08.489+01:00";
       }
 
       if (field === "email") {
@@ -462,6 +550,11 @@ export class AutoSwagger {
       type = type.trim();
 
       let prop = {};
+      if (type === "integer" || type === "number") {
+        if (example === null || example === "string") {
+          example = 1;
+        }
+      }
       prop[indicator] = type;
       prop["example"] = example;
       if (
@@ -473,11 +566,45 @@ export class AutoSwagger {
       } else {
         props[field] = prop;
         if (format !== "") {
-          props[field][format] = format;
+          props[field]["format"] = format;
         }
       }
+      if (enums.length > 0) {
+        props[field]["enum"] = enums;
+      }
+      // remove unnecessary xxx_id on relations
+      if (isRelation && typeof props[field + "_id"] !== "undefined") {
+        delete props[field + "_id"];
+      }
     });
+
     return props;
+  }
+
+  private examples(field) {
+    const ex = {
+      title: "Lorem Ipsum",
+      description: "Lorem ipsum dolor sit amet",
+      name: "John Doe",
+      full_name: "John Doe",
+      first_name: "John",
+      last_name: "Doe",
+      email: "johndoe@example.com",
+      address: "1028 Farland Street",
+      country: "United States of America",
+      country_code: "US",
+      zip: 60617,
+      city: "Chicago",
+      lat: 41.705,
+      long: -87.475,
+      price: 10.5,
+      avatar: "https://example.com/avatar.png",
+      url: "https://example.com",
+    };
+    if (typeof ex[field] === "undefined") {
+      return null;
+    }
+    return ex[field];
   }
 
   private async getFiles(dir, files_) {
