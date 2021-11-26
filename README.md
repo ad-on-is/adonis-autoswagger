@@ -55,13 +55,13 @@ Ignores specified paths.
 
 ---
 
-## Extend
+## Extend Controllers
 
 Add additional documentation to your Controller-files.
 
 **@response** (multiple)
 
-```js
+```ts
 @response <status> - Some text
 @response <status> // returns standard <status> message
 @response <status> - {Schema} // returns schema specification
@@ -73,12 +73,14 @@ Add additional documentation to your Controller-files.
 ```
 
 **@description** (only one)
+A description of what that action does.
 
 **@requestBody** (only one)
+A definition of the expected requestBody
 
 ### **Examples**
 
-```js
+```ts
 /**
 	 * @index
    * @description Returns array of producs and it's relations
@@ -127,3 +129,33 @@ Generates responses and requestBody based on your simple Controller-Annotation (
 Automatically generates swagger schema-descriptions based on your models
 
 ![alt](https://i.imgur.com/FEdLplp.png)
+
+## Extend Models
+
+Add additional documentation to your Models properties.
+
+**@no-swagger**
+Although, autoswagger detects `serializeAs: null` fields automatically, and does not show them. You can use @no-swagger for other fields.
+
+**@enum(foo, bar)**
+If a field has defined values, you can add them into an enum. This is usesfull for something like a status field.
+
+**@example(foo bar)**
+Use this field to provide own example values for specific fields
+
+Product.js
+
+```ts
+@hasMany(() => ProductView)
+// @no-swagger
+public views: HasMany<typeof ProductView>
+
+
+@column()
+// @enum(pending, active, deleted)
+public status: string
+
+@column()
+// @example(johndoe@example.com)
+public email: string
+```
