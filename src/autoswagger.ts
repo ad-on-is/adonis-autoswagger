@@ -183,7 +183,7 @@ export class AutoSwagger {
           m["requestBody"] = requestBody;
         }
 
-        // pattern = pattern.slice(1);
+        pattern = pattern.slice(1);
 
         paths = {
           ...paths,
