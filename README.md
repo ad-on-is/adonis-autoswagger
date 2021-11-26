@@ -94,33 +94,33 @@ A definition of the expected requestBody
 
 ```ts
 /**
-	 * @index
-   * @description Returns array of producs and it's relations
-	 * @response 200 - <Product[]>.with(relations)
-	 */
+* @index
+* @description Returns array of producs and it's relations
+* @response 200 - <Product[]>.with(relations)
+*/
 	public async index({ request, response }: HttpContextContract) {}
 
 /**
-	 * @show
-	 * @description Returns a product with it's relation on user and user relations
-	 * @response 200 - <Product>.with(user, user.relations)
-   * @response 404
-	 */
+* @show
+* @description Returns a product with it's relation on user and user relations
+* @response 200 - <Product>.with(user, user.relations)
+* @response 404
+*/
 	public async show({ request, response }: HttpContextContract) {}
 
 /**
-	 * @update
-	 * @response 200
-   * @response 404 - Product could not be found
-	 * @requestBody <Product>
-	 */
+* @update
+* @response 200
+* @response 404 - Product could not be found
+* @requestBody <Product>
+*/
 	public async update({ request, response }: HttpContextContract) {}
 
 
-	/**
-	 * @custom
-   * @response 400 - {"foo": "bar"}
-	 */
+/**
+* @custom
+* @response 400 - {"foo": "bar"}
+*/
 	public async custom({ request, response }: HttpContextContract) {}
 
 ```
