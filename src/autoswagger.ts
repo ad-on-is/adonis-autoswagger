@@ -254,16 +254,19 @@ export class AutoSwagger {
       let ref = line.substring(line.indexOf("<") + 1, line.lastIndexOf(">"));
       let json = line.substring(line.indexOf("{") + 1, line.lastIndexOf("}"));
       if (json !== "") {
-        console.log("{" + json + "}");
-        const j = JSON.parse("{" + json + "}");
-        responses[status]["content"] = {
-          "application/json": {
-            schema: {
-              type: "object",
+        try {
+          const j = JSON.parse("{" + json + "}");
+          responses[status]["content"] = {
+            "application/json": {
+              schema: {
+                type: "object",
+              },
+              example: j,
             },
-            example: j,
-          },
-        };
+          };
+        } catch {
+          console.log("Invalid JSON for: " + line);
+        }
       }
       // references a schema
       if (ref !== "") {
@@ -304,18 +307,21 @@ export class AutoSwagger {
 
     let json = line.substring(line.indexOf("{") + 1, line.lastIndexOf("}"));
     if (json !== "") {
-      console.log("{" + json + "}");
-      const j = JSON.parse("{" + json + "}");
-      requestBody = {
-        content: {
-          "application/json": {
-            schema: {
-              type: "object",
+      try {
+        const j = JSON.parse("{" + json + "}");
+        requestBody = {
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+              },
+              example: j,
             },
-            example: j,
           },
-        },
-      };
+        };
+      } catch {
+        console.log("Invalid JSON for " + line);
+      }
     }
 
     let ref = line.substring(line.indexOf("<") + 1, line.lastIndexOf(">"));
