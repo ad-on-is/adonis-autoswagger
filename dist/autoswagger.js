@@ -22,10 +22,13 @@ const fs = require("fs");
 const util = require("util");
 const extract = require("extract-comments");
 const HTTPStatusCode = require("http-status-code");
+const _ = require("lodash/core");
+const change_case_1 = require("change-case");
 class AutoSwagger {
     constructor() {
         this.parsedFiles = [];
         this.tagIndex = 2;
+        this.schemas = {};
     }
     ui(url) {
         return (`<!DOCTYPE html>
@@ -69,6 +72,7 @@ class AutoSwagger {
             routes = routes.root;
             this.path = options.path.replace("/start", "") + "/app";
             this.tagIndex = options.tagIndex;
+            this.schemas = yield this.getSchemas();
             // return routes
             const docs = {
                 openapi: "3.0.0",
@@ -100,28 +104,26 @@ class AutoSwagger {
                             scheme: "bearer",
                         },
                     },
-                    schemas: yield this.getSchemas(),
+                    schemas: this.schemas,
                 },
                 paths: {},
             };
             let paths = {};
-            console.log(options.ignore);
             try {
                 for (routes_1 = __asyncValues(routes); routes_1_1 = yield routes_1.next(), !routes_1_1.done;) {
                     const route = routes_1_1.value;
                     if (options.ignore.includes(route.pattern))
                         continue;
-                    let methods = {};
                     let security = [];
                     const responseCodes = {
                         GET: "200",
                         POST: "201",
-                        DELETE: "200",
-                        PUT: "203",
+                        DELETE: "202",
+                        PUT: "204",
                     };
                     if (route.middleware.length > 0 &&
                         route.middleware["auth:api"] !== null) {
-                        security = [{ BearerAuth: ["write"] }];
+                        security = [{ BearerAuth: ["access"] }];
                     }
                     let sourceFile = "";
                     let action = "";
@@ -144,35 +146,86 @@ class AutoSwagger {
                             route.methods["PATCH"] !== null &&
                             method === "PATCH")
                             return;
-                        let description = "initial desc";
-                        responses[responseCodes[method]] = {
-                            description: description,
-                            content: {
-                                "application/json": {
-                                // schema: { $ref: "#/components/schemas/Product" },
-                                },
-                            },
-                        };
+                        let description = "";
+                        let summary = "";
                         if (security.length > 0) {
                             responses["401"] = {
                                 description: HTTPStatusCode.getMessage(401),
                             };
                         }
+                        let requestBody = {
+                            content: {
+                                "application/json": {},
+                            },
+                        };
+                        let actionParams = {};
                         if (action !== "" && typeof customAnnotations[action] !== "undefined") {
                             description = customAnnotations[action].description;
-                            responses = customAnnotations[action].responses;
+                            summary = customAnnotations[action].summary;
+                            responses = Object.assign(Object.assign({}, responses), customAnnotations[action].responses);
+                            requestBody = customAnnotations[action].requestBody;
+                            actionParams = customAnnotations[action].parameters;
                         }
-                        methods[method.toLowerCase()] = {
-                            summary: sourceFile === "" && action == "" ? "" : sourceFile + "::" + action,
+                        parameters = this.mergeParams(parameters, actionParams);
+                        if (_.isEmpty(responses)) {
+                            responses[responseCodes[method]] = {
+                                description: HTTPStatusCode.getMessage(responseCodes[method]),
+                                content: {
+                                    "application/json": {},
+                                },
+                            };
+                        }
+                        else {
+                            if (typeof responses[responseCodes[method]] !== "undefined" &&
+                                typeof responses[responseCodes[method]]["summary"] !== "undefined") {
+                                if (summary === "") {
+                                    summary = responses[responseCodes[method]]["summary"];
+                                }
+                                delete responses[responseCodes[method]]["summary"];
+                            }
+                            if (typeof responses[responseCodes[method]] !== "undefined" &&
+                                typeof responses[responseCodes[method]]["description"] !==
+                                    "undefined") {
+                                description = responses[responseCodes[method]]["description"];
+                            }
+                        }
+                        if (action !== "" && summary === "") {
+                            switch (action) {
+                                case "index":
+                                    summary = "Get a list of " + tags[0].toLowerCase();
+                                    break;
+                                case "show":
+                                    summary = "Get a single instance of " + tags[0].toLowerCase();
+                                    break;
+                                case "update":
+                                    summary = "Update " + tags[0].toLowerCase();
+                                    break;
+                                case "destroy":
+                                    summary = "Delete " + tags[0].toLowerCase();
+                                    break;
+                            }
+                        }
+                        let m = {
+                            summary: sourceFile === "" && action == ""
+                                ? summary + " (route.ts)"
+                                : summary +
+                                    " (" +
+                                    sourceFile.replace("App/Controllers/Http/", "") +
+                                    "::" +
+                                    action +
+                                    ")",
                             description: description,
                             parameters: parameters,
                             tags: tags,
                             responses: responses,
                             security: security,
                         };
+                        if (method !== "GET" && method !== "DELETE") {
+                            m["requestBody"] = requestBody;
+                        }
+                        pattern = pattern.slice(1);
+                        paths = Object.assign(Object.assign({}, paths), { [pattern]: Object.assign(Object.assign({}, paths[pattern]), { [method.toLowerCase()]: m }) });
                     });
-                    pattern = pattern.slice(1);
-                    paths[pattern] = methods;
                     docs.paths = paths;
                 }
             }
@@ -185,6 +238,14 @@ class AutoSwagger {
             }
             return YAML.stringify(docs);
         });
+    }
+    mergeParams(initial, custom) {
+        let merge = Object.assign(initial, custom);
+        let params = [];
+        for (const [key, value] of Object.entries(merge)) {
+            params.push(value);
+        }
+        return params;
     }
     getCustomAnnotations(file, action) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -213,59 +274,356 @@ class AutoSwagger {
         });
     }
     parseAnnotations(lines) {
-        let description = "somedesc";
+        let summary = "";
+        let description = "";
         let responses = {};
+        let requestBody = {};
+        let parameters = {};
+        let headers = {};
         lines.forEach((line) => {
+            if (line.startsWith("@summary")) {
+                summary = line.replace("@summary ", "");
+            }
             if (line.startsWith("@description")) {
                 description = line.replace("@description ", "");
             }
-            if (line.startsWith("@response")) {
-                line = line.replace("@response ", "");
-                let [s, d] = line.split(" - ");
-                if (typeof s === "undefined")
-                    return;
-                responses[s] = {};
-                if (typeof d === "undefined") {
-                    d = HTTPStatusCode.getMessage(s);
-                }
-                else {
-                    let ref = d.substring(d.indexOf("{") + 1, d.lastIndexOf("}"));
-                    if (ref !== "") {
-                        d = "Returns a single instance of type " + ref;
-                        if (ref.includes("[]")) {
-                            ref = ref.replace("[]", "");
-                            d = "Returns an array of type " + ref;
-                            responses[s]["content"] = {
-                                "application/json": {
-                                    schema: {
-                                        type: "array",
-                                        items: { $ref: "#/components/schemas/" + ref },
-                                    },
-                                },
-                            };
-                        }
-                        else {
-                            responses[s]["content"] = {
-                                "application/json": {
-                                    schema: { $ref: "#/components/schemas/" + ref },
-                                },
-                            };
-                        }
-                    }
-                }
-                responses[s]["description"] = d;
+            if (line.startsWith("@responseBody")) {
+                responses = Object.assign(Object.assign({}, responses), this.parseResponse(line));
+            }
+            if (line.startsWith("@responseHeader")) {
+                const header = this.parseResponseHeader(line);
+                headers[header["status"]] = Object.assign(Object.assign({}, headers[header["status"]]), header["header"]);
+            }
+            if (line.startsWith("@requestBody")) {
+                requestBody = this.parseRequestBody(line);
+            }
+            if (line.startsWith("@param")) {
+                parameters = Object.assign(Object.assign({}, parameters), this.parseParam(line));
             }
         });
+        for (const [key, value] of Object.entries(responses)) {
+            if (typeof headers[key] !== undefined) {
+                responses[key]["headers"] = headers[key];
+            }
+        }
         return {
             description: description,
             responses: responses,
+            requestBody: requestBody,
+            parameters: parameters,
+            summary: summary,
         };
+    }
+    parseParam(line) {
+        let where = "path";
+        let required = true;
+        let type = "string";
+        let example = null;
+        let enums = [];
+        if (line.startsWith("@paramPath")) {
+            required = true;
+        }
+        if (line.startsWith("@paramQuery")) {
+            required = false;
+        }
+        let m = line.match("@param([a-zA-Z]*)");
+        if (m !== null) {
+            where = m[1].toLowerCase();
+            line = line.replace(m[0] + " ", "");
+        }
+        let [param, des, meta] = line.split(" - ");
+        if (typeof des === "undefined") {
+            des = "";
+        }
+        if (typeof meta !== "undefined") {
+            if (meta.includes("@required")) {
+                required = true;
+            }
+            let en = this.getBetweenBrackets(meta, "enum");
+            example = this.getBetweenBrackets(meta, "example");
+            const mtype = this.getBetweenBrackets(meta, "type");
+            if (mtype !== "") {
+                type = mtype;
+            }
+            if (en !== "") {
+                enums = en.split(",");
+                example = enums[0];
+            }
+        }
+        type = param === "id" || param.endsWith("_id") ? "integer" : type;
+        if (example === "" || example === null) {
+            switch (type) {
+                case "string":
+                    example = "string";
+                    break;
+                case "integer":
+                    example = 1;
+                    break;
+                case "float":
+                    example = 1.5;
+                    break;
+            }
+        }
+        let p = {
+            in: where,
+            name: param,
+            description: des,
+            schema: {
+                example: example,
+                type: type,
+            },
+            required: required,
+        };
+        if (enums.length > 1) {
+            p["schema"]["enum"] = enums;
+        }
+        return { [param]: p };
+    }
+    parseResponseHeader(line) {
+        let description = "";
+        let example = "";
+        let type = "string";
+        let enums = [];
+        line = line.replace("@responseHeader ", "");
+        let [status, name, desc, meta] = line.split(" - ");
+        if (typeof status === "undefined" || typeof name === "undefined")
+            return;
+        if (typeof desc !== "undefined") {
+            description = desc;
+        }
+        if (typeof meta !== "undefined") {
+            example = this.getBetweenBrackets(meta, "example");
+            const mtype = this.getBetweenBrackets(meta, "type");
+            if (mtype !== "") {
+                type = mtype;
+            }
+        }
+        if (example === "" || example === null) {
+            switch (type) {
+                case "string":
+                    example = "string";
+                    break;
+                case "integer":
+                    example = 1;
+                    break;
+                case "float":
+                    example = 1.5;
+                    break;
+            }
+        }
+        let h = {
+            schema: { type: type, example: example },
+            description: description,
+        };
+        if (enums.length > 1) {
+            h["schema"]["enum"] = enums;
+        }
+        return {
+            status: status,
+            header: {
+                [name]: h,
+            },
+        };
+    }
+    parseResponse(line) {
+        let responses = {};
+        line = line.replace("@responseBody ", "");
+        let [status, res] = line.split(" - ");
+        let sum = "";
+        if (typeof status === "undefined")
+            return;
+        responses[status] = {};
+        if (typeof res === "undefined") {
+            res = HTTPStatusCode.getMessage(status);
+        }
+        else {
+            res = HTTPStatusCode.getMessage(status) + ": " + res;
+            let ref = line.substring(line.indexOf("<") + 1, line.lastIndexOf(">"));
+            let json = line.substring(line.indexOf("{") + 1, line.lastIndexOf("}"));
+            if (json !== "") {
+                try {
+                    const j = JSON.parse("{" + json + "}");
+                    responses[status]["content"] = {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                            },
+                            example: j,
+                        },
+                    };
+                }
+                catch (_a) {
+                    console.error("Invalid JSON for: " + line);
+                }
+            }
+            // references a schema
+            if (ref !== "") {
+                const inc = this.getBetweenBrackets(res, "with");
+                const exc = this.getBetweenBrackets(res, "exclude");
+                res = sum = "Returns a single instance of type " + ref;
+                // references a schema array
+                if (ref.includes("[]")) {
+                    ref = ref.replace("[]", "");
+                    res = sum = "Returns a list of type " + ref;
+                    responses[status]["content"] = {
+                        "application/json": {
+                            schema: {
+                                type: "array",
+                                items: { $ref: "#/components/schemas/" + ref },
+                            },
+                            example: [this.getSchemaExampleBasedOnAnnotation(ref, inc, exc)],
+                        },
+                    };
+                }
+                else {
+                    responses[status]["content"] = {
+                        "application/json": {
+                            schema: { $ref: "#/components/schemas/" + ref },
+                            example: this.getSchemaExampleBasedOnAnnotation(ref, inc, exc),
+                        },
+                    };
+                }
+                if (inc !== "") {
+                    res += " inlcuding " + inc;
+                }
+                else {
+                    res += " without any relations";
+                }
+                if (exc !== "") {
+                    res += " and excludes " + exc;
+                }
+                res += ". Take a look at the example for further details.";
+            }
+        }
+        responses[status]["description"] = res;
+        responses[status]["summary"] = sum;
+        return responses;
+    }
+    parseRequestBody(line) {
+        let requestBody = {};
+        line = line.replace("@requestBody ", "");
+        let json = line.substring(line.indexOf("{") + 1, line.lastIndexOf("}"));
+        if (json !== "") {
+            try {
+                const j = JSON.parse("{" + json + "}");
+                requestBody = {
+                    content: {
+                        "application/json": {
+                            schema: {
+                                type: "object",
+                            },
+                            example: j,
+                        },
+                    },
+                };
+            }
+            catch (_a) {
+                console.error("Invalid JSON for " + line);
+            }
+        }
+        let ref = line.substring(line.indexOf("<") + 1, line.lastIndexOf(">"));
+        // references a schema
+        if (ref !== "") {
+            const inc = this.getBetweenBrackets(line, "with");
+            const exc = this.getBetweenBrackets(line, "exclude");
+            // references a schema array
+            if (ref.includes("[]")) {
+                ref = ref.replace("[]", "");
+                requestBody = {
+                    content: {
+                        "application/json": {
+                            description: "Expects an array of type " + ref,
+                            schema: {
+                                type: "array",
+                                items: { $ref: "#/components/schemas/" + ref },
+                            },
+                            example: [this.getSchemaExampleBasedOnAnnotation(ref, inc, exc)],
+                        },
+                    },
+                };
+            }
+            else {
+                requestBody = {
+                    content: {
+                        "application/json": {
+                            description: "Expects a single instance of type " + ref,
+                            schema: {
+                                $ref: "#/components/schemas/" + ref,
+                            },
+                            example: this.getSchemaExampleBasedOnAnnotation(ref, inc, exc),
+                        },
+                    },
+                };
+            }
+        }
+        return requestBody;
+    }
+    getBetweenBrackets(value, start) {
+        let match = value.match(new RegExp(start + "\\(([^()]*)\\)", "g"));
+        if (match !== null) {
+            let m = match[0].replace(start + "(", "").replace(")", "");
+            if (start !== "example") {
+                m = m.replace(/ /g, "");
+            }
+            return m;
+        }
+        return "";
+    }
+    getSchemaExampleBasedOnAnnotation(schema, inc = "", exc = "", parent = "") {
+        let props = {};
+        let properties = this.schemas[schema].properties;
+        let include = inc.toString().split(",");
+        let exclude = exc.toString().split(",");
+        if (typeof properties === "undefined")
+            return;
+        for (const [key, value] of Object.entries(properties)) {
+            if (exclude.includes(key))
+                continue;
+            if (typeof value["$ref"] !== "undefined" ||
+                (typeof value["items"] !== "undefined" &&
+                    typeof value["items"]["$ref"] !== "undefined")) {
+                // skip relations of main schema
+                if (parent === "" &&
+                    !include.includes("relations") &&
+                    !include.includes(key)) {
+                    continue;
+                }
+                // skip relations of nested schema
+                if (parent !== "" &&
+                    !include.includes(parent + ".relations") &&
+                    !include.includes(parent + "." + key)) {
+                    continue;
+                }
+                let rel = "";
+                let isArray = false;
+                if (typeof value["$ref"] !== "undefined") {
+                    rel = value["$ref"].replace("#/components/schemas/", "");
+                }
+                if (typeof value["items"] !== "undefined" &&
+                    typeof value["items"]["$ref"] !== "undefined") {
+                    rel = value["items"]["$ref"].replace("#/components/schemas/", "");
+                    isArray = true;
+                }
+                if (rel == "") {
+                    return;
+                }
+                const propdata = this.getSchemaExampleBasedOnAnnotation(rel, inc, exc, parent === "" ? key : parent + "." + key);
+                props[key] = isArray ? [propdata] : propdata;
+            }
+            else {
+                props[key] = value["example"];
+            }
+            // if (typeof props[key + "_id"] !== "undefined") {
+            //   delete props[key + "_id"];
+            // }
+        }
+        return props;
     }
     /*
       extract path-variables, tags and the uri-pattern
     */
     extractInfos(p) {
-        let parameters = [];
+        let parameters = {};
         let pattern = "";
         let tags = [];
         const split = p.split("/");
@@ -276,14 +634,14 @@ class AutoSwagger {
             if (part.startsWith(":")) {
                 const param = part.replace(":", "");
                 part = "{" + param + "}";
-                parameters.push({
-                    in: "path",
-                    name: param,
-                    schema: {
-                        type: param === "id" || param.endsWith("_id") ? "integer" : "string",
-                    },
-                    required: true,
-                });
+                parameters = Object.assign(Object.assign({}, parameters), { [param]: {
+                        in: "path",
+                        name: param,
+                        schema: {
+                            type: param === "id" || param.endsWith("_id") ? "integer" : "string",
+                        },
+                        required: true,
+                    } });
             }
             pattern += "/" + part;
         });
@@ -291,17 +649,19 @@ class AutoSwagger {
     }
     getSchemas() {
         return __awaiter(this, void 0, void 0, function* () {
-            const schemas = {};
+            const schemas = {
+                Any: {
+                    description: "Any JSON object not defined as schema",
+                },
+            };
             const files = yield this.getFiles(this.path + "/Models", []);
             const readFile = util.promisify(fs.readFile);
             for (let file of files) {
                 const data = yield readFile(file, "utf8");
-                // this.parseProperties(data);
                 file = file.replace(".ts", "");
                 const split = file.split("/");
                 const name = split[split.length - 1].replace(".ts", "");
                 file = file.replace("app/", "/app/");
-                // // const model = require(file).default;
                 let schema = { type: "object", properties: this.parseProperties(data) };
                 schemas[name] = schema;
             }
@@ -310,54 +670,150 @@ class AutoSwagger {
     }
     parseProperties(data) {
         let props = {};
+        // remove empty lines
         data = data.replace(/\t/g, "").replace(/^(?=\n)$|^\s*|\s*$|\n\n+/gm, "");
         const lines = data.split("\n");
-        lines.forEach((line) => {
+        lines.forEach((line, index) => {
+            line = line.trim();
+            // skip comments
+            if (line.startsWith("//") ||
+                line.startsWith("/*") ||
+                line.startsWith("*"))
+                return;
+            if (index > 0 && lines[index - 1].includes("serializeAs: null"))
+                return;
+            if (index > 0 && lines[index - 1].includes("@no-swagger"))
+                return;
             if (!line.startsWith("public ") && !line.startsWith("public get"))
                 return;
             if (line.includes("(") && !line.startsWith("public get"))
                 return;
-            // if (line.includes("<")) return;
             let s = line.split("public ");
             let s2 = s[1].split(":");
             if (line.startsWith("public get")) {
-                //   line = line.replace("()", "");
-                //   line = line.slice(0, -1);
                 s = line.split("public get");
                 let s2 = s[1].split(":");
             }
-            let propn = s2[0];
-            let propv = s2[1];
-            if (typeof propv === "undefined") {
-                propv = "string";
+            let field = s2[0];
+            let type = s2[1];
+            let enums = [];
+            let format = "";
+            let example = this.examples(field);
+            if (index > 0 && lines[index - 1].includes("@enum")) {
+                const l = lines[index - 1];
+                let en = this.getBetweenBrackets(l, "enum");
+                if (en !== "") {
+                    enums = en.split(",");
+                    example = enums[0];
+                }
             }
-            propn = propn.trim();
-            propv = propv.trim();
-            propn = propn.replace("()", "");
-            propn = propn.replace("get ", "");
-            propv = propv.replace("{", "");
-            let t = "type";
-            if (propv.includes("typeof")) {
-                s = propv.split("typeof ");
-                propv = "#/components/schemas/" + s[1].slice(0, -1);
-                t = "$ref";
+            if (index > 0 && lines[index - 1].includes("@example")) {
+                const l = lines[index - 1];
+                let match = l.match(/example\(([^()]*)\)/g);
+                if (match !== null) {
+                    const m = match[0].replace("example(", "").replace(")", "");
+                    example = m;
+                }
+            }
+            if (typeof type === "undefined") {
+                type = "string";
+                format = "";
+            }
+            field = field.trim();
+            type = type.trim();
+            field = field.replace("()", "");
+            field = field.replace("get ", "");
+            type = type.replace("{", "");
+            field = (0, change_case_1.snakeCase)(field);
+            let indicator = "type";
+            if (example === null) {
+                example = "string";
+            }
+            let isRelation = false;
+            // if relation to another model
+            if (type.includes("typeof")) {
+                s = type.split("typeof ");
+                type = "#/components/schemas/" + s[1].slice(0, -1);
+                indicator = "$ref";
+                isRelation = true;
             }
             else {
-                propv = propv.toLowerCase();
+                type = type.toLowerCase();
             }
-            propv = propv.replace("datetime", "string");
-            propv = propv.replace("any", "string");
-            propv = propv.trim();
+            if (field == "id" || field.includes("_id")) {
+                type = "integer";
+            }
+            if (type === "datetime") {
+                indicator = "type";
+                type = "string";
+                format = "date-time";
+                example = "2021-03-23T16:13:08.489+01:00";
+            }
+            if (field === "email") {
+                indicator = "type";
+                type = "string";
+                format = "email";
+                example = "johndoe@example.com";
+            }
+            if (field === "password") {
+                indicator = "type";
+                type = "string";
+                format = "password";
+            }
+            if (type === "any") {
+                indicator = "$ref";
+                type = "#/components/schemas/Any";
+            }
+            type = type.trim();
             let prop = {};
-            prop[t] = propv;
-            if (line.includes("HasMany") || line.includes("ManyToMany")) {
-                props[propn] = { type: "array", items: prop };
+            if (type === "integer" || type === "number") {
+                if (example === null || example === "string") {
+                    example = 1;
+                }
+            }
+            prop[indicator] = type;
+            prop["example"] = example;
+            if (line.includes("HasMany") ||
+                line.includes("ManyToMany") ||
+                line.includes("HasManyThrough")) {
+                props[field] = { type: "array", items: prop };
             }
             else {
-                props[propn] = prop;
+                props[field] = prop;
+                if (format !== "") {
+                    props[field]["format"] = format;
+                }
+            }
+            if (enums.length > 0) {
+                props[field]["enum"] = enums;
             }
         });
         return props;
+    }
+    examples(field) {
+        const ex = {
+            title: "Lorem Ipsum",
+            description: "Lorem ipsum dolor sit amet",
+            name: "John Doe",
+            full_name: "John Doe",
+            first_name: "John",
+            last_name: "Doe",
+            email: "johndoe@example.com",
+            address: "1028 Farland Street",
+            country: "United States of America",
+            country_code: "US",
+            zip: 60617,
+            city: "Chicago",
+            lat: 41.705,
+            long: -87.475,
+            price: 10.5,
+            avatar: "https://example.com/avatar.png",
+            url: "https://example.com",
+        };
+        if (typeof ex[field] === "undefined") {
+            return null;
+        }
+        return ex[field];
     }
     getFiles(dir, files_) {
         return __awaiter(this, void 0, void 0, function* () {

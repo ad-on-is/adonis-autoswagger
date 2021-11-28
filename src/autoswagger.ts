@@ -95,8 +95,6 @@ export class AutoSwagger {
     for await (const route of routes) {
       if (options.ignore.includes(route.pattern)) continue;
 
-      let methods = {};
-
       let security = [];
       const responseCodes = {
         GET: "200",
@@ -139,6 +137,7 @@ export class AutoSwagger {
         )
           return;
         let description = "";
+        let summary = "";
 
         if (security.length > 0) {
           responses["401"] = {
@@ -152,11 +151,16 @@ export class AutoSwagger {
           },
         };
 
+        let actionParams = {};
+
         if (action !== "" && typeof customAnnotations[action] !== "undefined") {
           description = customAnnotations[action].description;
+          summary = customAnnotations[action].summary;
           responses = { ...responses, ...customAnnotations[action].responses };
           requestBody = customAnnotations[action].requestBody;
+          actionParams = customAnnotations[action].parameters;
         }
+        parameters = this.mergeParams(parameters, actionParams);
 
         if (_.isEmpty(responses)) {
           responses[responseCodes[method]] = {
@@ -165,13 +169,52 @@ export class AutoSwagger {
               "application/json": {},
             },
           };
+        } else {
+          if (
+            typeof responses[responseCodes[method]] !== "undefined" &&
+            typeof responses[responseCodes[method]]["summary"] !== "undefined"
+          ) {
+            if (summary === "") {
+              summary = responses[responseCodes[method]]["summary"];
+            }
+            delete responses[responseCodes[method]]["summary"];
+          }
+          if (
+            typeof responses[responseCodes[method]] !== "undefined" &&
+            typeof responses[responseCodes[method]]["description"] !==
+              "undefined"
+          ) {
+            description = responses[responseCodes[method]]["description"];
+          }
+        }
+
+        if (action !== "" && summary === "") {
+          switch (action) {
+            case "index":
+              summary = "Get a list of " + tags[0].toLowerCase();
+              break;
+            case "show":
+              summary = "Get a single instance of " + tags[0].toLowerCase();
+              break;
+            case "update":
+              summary = "Update " + tags[0].toLowerCase();
+              break;
+            case "destroy":
+              summary = "Delete " + tags[0].toLowerCase();
+              break;
+          }
         }
 
         let m = {
           summary:
             sourceFile === "" && action == ""
-              ? ""
-              : sourceFile.replace("App/Controllers/Http/", "") + "::" + action,
+              ? summary + " (route.ts)"
+              : summary +
+                " (" +
+                sourceFile.replace("App/Controllers/Http/", "") +
+                "::" +
+                action +
+                ")",
           description: description,
           parameters: parameters,
           tags: tags,
@@ -194,6 +237,16 @@ export class AutoSwagger {
       docs.paths = paths;
     }
     return YAML.stringify(docs);
+  }
+
+  private mergeParams(initial, custom) {
+    let merge = Object.assign(initial, custom);
+    let params = [];
+    for (const [key, value] of Object.entries(merge)) {
+      params.push(value);
+    }
+
+    return params;
   }
 
   private async getCustomAnnotations(file: string, action: string) {
@@ -220,31 +273,185 @@ export class AutoSwagger {
   }
 
   private parseAnnotations(lines: string[]) {
-    let description = "somedesc";
+    let summary = "";
+    let description = "";
     let responses = {};
     let requestBody = {};
+    let parameters = {};
+    let headers = {};
     lines.forEach((line) => {
+      if (line.startsWith("@summary")) {
+        summary = line.replace("@summary ", "");
+      }
       if (line.startsWith("@description")) {
         description = line.replace("@description ", "");
       }
-      if (line.startsWith("@response")) {
+      if (line.startsWith("@responseBody")) {
         responses = { ...responses, ...this.parseResponse(line) };
+      }
+      if (line.startsWith("@responseHeader")) {
+        const header = this.parseResponseHeader(line);
+        headers[header["status"]] = {
+          ...headers[header["status"]],
+          ...header["header"],
+        };
       }
       if (line.startsWith("@requestBody")) {
         requestBody = this.parseRequestBody(line);
       }
+      if (line.startsWith("@param")) {
+        parameters = { ...parameters, ...this.parseParam(line) };
+      }
     });
+
+    for (const [key, value] of Object.entries(responses)) {
+      if (typeof headers[key] !== undefined) {
+        responses[key]["headers"] = headers[key];
+      }
+    }
+
     return {
       description: description,
       responses: responses,
       requestBody: requestBody,
+      parameters: parameters,
+      summary: summary,
+    };
+  }
+
+  private parseParam(line) {
+    let where = "path";
+    let required = true;
+    let type = "string";
+    let example: any = null;
+    let enums = [];
+
+    if (line.startsWith("@paramPath")) {
+      required = true;
+    }
+    if (line.startsWith("@paramQuery")) {
+      required = false;
+    }
+
+    let m = line.match("@param([a-zA-Z]*)");
+    if (m !== null) {
+      where = m[1].toLowerCase();
+      line = line.replace(m[0] + " ", "");
+    }
+
+    let [param, des, meta] = line.split(" - ");
+
+    if (typeof des === "undefined") {
+      des = "";
+    }
+
+    if (typeof meta !== "undefined") {
+      if (meta.includes("@required")) {
+        required = true;
+      }
+      let en = this.getBetweenBrackets(meta, "enum");
+      example = this.getBetweenBrackets(meta, "example");
+      const mtype = this.getBetweenBrackets(meta, "type");
+      if (mtype !== "") {
+        type = mtype;
+      }
+      if (en !== "") {
+        enums = en.split(",");
+        example = enums[0];
+      }
+    }
+
+    type = param === "id" || param.endsWith("_id") ? "integer" : type;
+
+    if (example === "" || example === null) {
+      switch (type) {
+        case "string":
+          example = "string";
+          break;
+        case "integer":
+          example = 1;
+          break;
+        case "float":
+          example = 1.5;
+          break;
+      }
+    }
+
+    let p = {
+      in: where,
+      name: param,
+      description: des,
+      schema: {
+        example: example,
+        type: type,
+      },
+      required: required,
+    };
+
+    if (enums.length > 1) {
+      p["schema"]["enum"] = enums;
+    }
+
+    return { [param]: p };
+  }
+
+  private parseResponseHeader(line) {
+    let description = "";
+    let example: any = "";
+    let type = "string";
+    let enums = [];
+    line = line.replace("@responseHeader ", "");
+    let [status, name, desc, meta] = line.split(" - ");
+
+    if (typeof status === "undefined" || typeof name === "undefined") return;
+
+    if (typeof desc !== "undefined") {
+      description = desc;
+    }
+
+    if (typeof meta !== "undefined") {
+      example = this.getBetweenBrackets(meta, "example");
+      const mtype = this.getBetweenBrackets(meta, "type");
+      if (mtype !== "") {
+        type = mtype;
+      }
+    }
+
+    if (example === "" || example === null) {
+      switch (type) {
+        case "string":
+          example = "string";
+          break;
+        case "integer":
+          example = 1;
+          break;
+        case "float":
+          example = 1.5;
+          break;
+      }
+    }
+
+    let h = {
+      schema: { type: type, example: example },
+      description: description,
+    };
+
+    if (enums.length > 1) {
+      h["schema"]["enum"] = enums;
+    }
+    return {
+      status: status,
+      header: {
+        [name]: h,
+      },
     };
   }
 
   private parseResponse(line) {
     let responses = {};
-    line = line.replace("@response ", "");
+    line = line.replace("@responseBody ", "");
     let [status, res] = line.split(" - ");
+    let sum = "";
     if (typeof status === "undefined") return;
     responses[status] = {};
     if (typeof res === "undefined") {
@@ -265,7 +472,7 @@ export class AutoSwagger {
             },
           };
         } catch {
-          console.log("Invalid JSON for: " + line);
+          console.error("Invalid JSON for: " + line);
         }
       }
       // references a schema
@@ -273,11 +480,11 @@ export class AutoSwagger {
         const inc = this.getBetweenBrackets(res, "with");
         const exc = this.getBetweenBrackets(res, "exclude");
 
-        res = "Returns a single instance of type " + ref;
+        res = sum = "Returns a single instance of type " + ref;
         // references a schema array
         if (ref.includes("[]")) {
           ref = ref.replace("[]", "");
-          res = "Returns an array of type " + ref;
+          res = sum = "Returns a list of type " + ref;
           responses[status]["content"] = {
             "application/json": {
               schema: {
@@ -295,9 +502,19 @@ export class AutoSwagger {
             },
           };
         }
+        if (inc !== "") {
+          res += " inlcuding " + inc;
+        } else {
+          res += " without any relations";
+        }
+        if (exc !== "") {
+          res += " and excludes " + exc;
+        }
+        res += ". Take a look at the example for further details.";
       }
     }
     responses[status]["description"] = res;
+    responses[status]["summary"] = sum;
     return responses;
   }
 
@@ -320,7 +537,7 @@ export class AutoSwagger {
           },
         };
       } catch {
-        console.log("Invalid JSON for " + line);
+        console.error("Invalid JSON for " + line);
       }
     }
 
@@ -364,11 +581,14 @@ export class AutoSwagger {
 
   private getBetweenBrackets(value, start) {
     let match = value.match(new RegExp(start + "\\(([^()]*)\\)", "g"));
+
     if (match !== null) {
-      const m = match[0]
-        .replace(start + "(", "")
-        .replace(")", "")
-        .replace(/ /g, "");
+      let m = match[0].replace(start + "(", "").replace(")", "");
+
+      if (start !== "example") {
+        m = m.replace(/ /g, "");
+      }
+
       return m;
     }
     return "";
@@ -447,7 +667,7 @@ export class AutoSwagger {
     extract path-variables, tags and the uri-pattern
   */
   private extractInfos(p) {
-    let parameters = [];
+    let parameters = {};
     let pattern = "";
     let tags = [];
     const split = p.split("/");
@@ -458,15 +678,18 @@ export class AutoSwagger {
       if (part.startsWith(":")) {
         const param = part.replace(":", "");
         part = "{" + param + "}";
-        parameters.push({
-          in: "path",
-          name: param,
-          schema: {
-            type:
-              param === "id" || param.endsWith("_id") ? "integer" : "string",
+        parameters = {
+          ...parameters,
+          [param]: {
+            in: "path",
+            name: param,
+            schema: {
+              type:
+                param === "id" || param.endsWith("_id") ? "integer" : "string",
+            },
+            required: true,
           },
-          required: true,
-        });
+        };
       }
       pattern += "/" + part;
     });
@@ -528,12 +751,8 @@ export class AutoSwagger {
       let example: any = this.examples(field);
       if (index > 0 && lines[index - 1].includes("@enum")) {
         const l = lines[index - 1];
-        let match = l.match(/enum\(([^()]*)\)/g);
-        if (match !== null) {
-          const en = match[0]
-            .replace("enum(", "")
-            .replace(")", "")
-            .replace(/ /g, "");
+        let en = this.getBetweenBrackets(l, "enum");
+        if (en !== "") {
           enums = en.split(",");
           example = enums[0];
         }
