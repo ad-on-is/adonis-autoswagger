@@ -24,6 +24,10 @@ Route.get("/swagger", async () => {
     version: "1.0.0",
     tagIndex: 2,
     ignore: ["/swagger", "/docs"],
+    common: {
+      paremeters: {}, // OpenAPI conform parameters that are commonly used
+      headers: {}, // OpenAPI confomr headers that are commonly used
+    },
   });
 });
 
@@ -41,7 +45,7 @@ Visit `<url>/docs` to see AutoSwagger in action.
 
 ## Configure
 
-## tagIndex
+### `tagIndex`
 
 Tags endpoints automatically
 
@@ -49,39 +53,74 @@ Tags endpoints automatically
 - If your routes are `/v1/products/...` then your tagIndex should be `2`
 - If your routes are `/products/...` then your tagIndex should be `1`
 
-## ignore[]
+### `ignore`
 
 Ignores specified paths.
 
+### `common`
+
+Sometimes you want to use specific parameters or headers on multiple responses.
+
+_Example:_ Some resources use the same filter parameters or return the same headers.
+
+Here's where you can set these and use them with `@paramUse()` and `@responseHeader() @use()`. See practical example for further details.
+
 ---
 
-## Extend Controllers
+# Extend Controllers
 
 Add additional documentation to your Controller-files.
 
+**@summary** (only one)
+A summary of what the action does
+
 **@description** (only one)
-A description of what that action does.
+A detailed description of what the action does.
 
-**@response** (multiple)
+**@responseBody** (multiple)
 
-```js
-@response <status> - Lorem ipsum Dolor sit amet
+Format: `<status> - <return> - <description>`
 
-@response <status> // returns standard <status> message
+`<return>` can be either a `<Schema>`, `<Schema[]>`or a custom JSON `{}`
 
-@response <status> - <Model> // returns model specification
+**@responseHeader** (multiple)
 
-@response <status> - <Model[]> // returns model-array specification
+Format: `<status> - <name> - <description> - <meta>`
 
-@response <status> - <Model>.with(relations, property1, property2.relations, property3.property4) // returns a model and a defined relation
+**@param`Type`** (multiple)
 
-@response <status> - <Model[]>.with(relations).exclude(property1, property2) // returns model specification
-
-@response <status> - {"foo": "bar"} //returns custom json
-```
+`Type` can be one of [Parameter Types](https://swagger.io/docs/specification/describing-parameters/) (first letter in uppercase)
 
 **@requestBody** (only one)
 A definition of the expected requestBody
+
+Format: `<body>`
+
+`<body>` can be either a `<Schema>`, `<Schema[]>`or a custom JSON `{}`
+
+---
+
+# **Examples**
+
+## `@responseBody` examples
+
+```js
+@responseBody <status> - Lorem ipsum Dolor sit amet
+
+@responseBody <status> // returns standard <status> message
+
+@responseBody <status> - <Model> // returns model specification
+
+@responseBody <status> - <Model[]> // returns model-array specification
+
+@responseBody <status> - <Model>.with(relations, property1, property2.relations, property3.property4) // returns a model and a defined relation
+
+@responseBody <status> - <Model[]>.with(relations).exclude(property1, property2) // returns model specification
+
+@responseBody <status> - {"foo": "bar"} //returns custom json
+```
+
+## `@requestBody` examples
 
 ```js
 // basicaly same as @response, just without a status
@@ -90,28 +129,80 @@ A definition of the expected requestBody
 @requestBody {"foo": "bar"} // Expects a specific JSON
 ```
 
-### **Examples**
+---
+
+# **Practical example**
+
+`routes.js`
+
+```js
+Route.get("/swagger", async () => {
+  return AutoSwagger.docs(Route.toJSON(), {
+    path: __dirname,
+    title: "BlitzCoin",
+    version: "1.0.0",
+    tagIndex: 2,
+    ignore: ["/swagger", "/docs", "/v1", "/"],
+    common: {
+      parameters: {
+        sortable: [
+          {
+            in: "query",
+            name: "sortBy",
+            schema: { type: "string", example: "foo" },
+          },
+          {
+            in: "query",
+            name: "sortType",
+            schema: { type: "string", example: "ASC" },
+          },
+        ],
+      },
+      headers: {
+        paginated: {
+          "X-Total-Pages": {
+            description: "Total amount of pages",
+            schema: { type: "integer", example: 5 },
+          },
+          "X-Total": {
+            description: "Total amount of results",
+            schema: { type: "integer", example: 100 },
+          },
+          "X-Per-Page": {
+            description: "Results per page",
+            schema: { type: "integer", example: 20 },
+          },
+        },
+      },
+    },
+  });
+});
+```
 
 ```js
 /**
 * @index
 * @description Returns array of producs and it's relations
-* @response 200 - <Product[]>.with(relations)
+* @responseBody 200 - <Product[]>.with(relations)
+* @paramUse(sortable, filterable)
+* @responseHeader 200 - @use(paginated)
+* @responseHeader 200 - X-pages - A description of the header - @example(test)
 */
 	public async index({ request, response }: HttpContextContract) {}
 
 /**
 * @show
+* @paramPath id - Describe the param
 * @description Returns a product with it's relation on user and user relations
-* @response 200 - <Product>.with(user, user.relations)
-* @response 404
+* @responseBody 200 - <Product>.with(user, user.relations)
+* @responseBody 404
 */
 	public async show({ request, response }: HttpContextContract) {}
 
 /**
 * @update
-* @response 200
-* @response 404 - Product could not be found
+* @responseBody 200
+* @responseBody 404 - Product could not be found
 * @requestBody <Product>
 */
 	public async update({ request, response }: HttpContextContract) {}
@@ -119,9 +210,12 @@ A definition of the expected requestBody
 
 /**
 * @custom
-* @response 400 - {"foo": "bar"}
+* @summary Lorem ipsum dolor sit amet
+* @paramPath provider - The login provider to be used - @enum(google, facebook, apple)
+* @responseBody 200 - {"token": "xxxxxxx"}
+* @requestBody {"code": "xxxxxx"}
 */
-	public async custom({ request, response }: HttpContextContract) {}
+	public async login({ request, response }: HttpContextContract) {}
 
 ```
 

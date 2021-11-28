@@ -6,10 +6,23 @@ const HTTPStatusCode = require("http-status-code");
 const _ = require("lodash/core");
 import { camelCase, snakeCase } from "change-case";
 
+interface options {
+  title: string;
+  ignore: string[];
+  version: string;
+  path: string;
+  tagIndex: number;
+  common: common;
+}
+
+interface common {
+  headers: any;
+  parameters: any;
+}
+
 export class AutoSwagger {
-  public path: string;
   private parsedFiles: string[] = [];
-  private tagIndex = 2;
+  private options: options;
   private schemas = {};
 
   ui(url: string) {
@@ -50,10 +63,10 @@ export class AutoSwagger {
     );
   }
 
-  async docs(routes, options) {
+  async docs(routes, options: options) {
     routes = routes.root;
-    this.path = options.path.replace("/start", "") + "/app";
-    this.tagIndex = options.tagIndex;
+    this.options = options;
+    this.options.path = this.options.path.replace("/start", "") + "/app";
     this.schemas = await this.getSchemas();
     // return routes
     const docs = {
@@ -326,6 +339,21 @@ export class AutoSwagger {
     let example: any = null;
     let enums = [];
 
+    if (line.startsWith("@paramUse")) {
+      let use = this.getBetweenBrackets(line, "paramUse");
+      const used = use.split(",");
+      let h = {};
+      used.forEach((u) => {
+        if (typeof this.options.common.parameters[u] === "undefined") {
+          return;
+        }
+        const common = this.options.common.parameters[u];
+        h = { ...h, ...common };
+      });
+
+      return h;
+    }
+
     if (line.startsWith("@paramPath")) {
       required = true;
     }
@@ -340,7 +368,9 @@ export class AutoSwagger {
     }
 
     let [param, des, meta] = line.split(" - ");
-
+    if (typeof param === "undefined") {
+      return;
+    }
     if (typeof des === "undefined") {
       des = "";
     }
@@ -407,6 +437,24 @@ export class AutoSwagger {
 
     if (typeof desc !== "undefined") {
       description = desc;
+    }
+
+    if (name.includes("@use")) {
+      let use = this.getBetweenBrackets(name, "use");
+      const used = use.split(",");
+      let h = {};
+      used.forEach((u) => {
+        if (typeof this.options.common.headers[u] === "undefined") {
+          return;
+        }
+        const common = this.options.common.headers[u];
+        h = { ...h, ...common };
+      });
+
+      return {
+        status: status,
+        header: h,
+      };
     }
 
     if (typeof meta !== "undefined") {
@@ -480,11 +528,11 @@ export class AutoSwagger {
         const inc = this.getBetweenBrackets(res, "with");
         const exc = this.getBetweenBrackets(res, "exclude");
 
-        res = sum = "Returns a single instance of type " + ref;
+        res = sum = "Returns a **single** instance of type `" + ref + "`";
         // references a schema array
         if (ref.includes("[]")) {
           ref = ref.replace("[]", "");
-          res = sum = "Returns a list of type " + ref;
+          res = sum = "Returns a **list** of type `" + ref + "`";
           responses[status]["content"] = {
             "application/json": {
               schema: {
@@ -503,12 +551,12 @@ export class AutoSwagger {
           };
         }
         if (inc !== "") {
-          res += " inlcuding " + inc;
+          res += " **inlcuding** _" + inc.replace(/,/g, ", ") + "_";
         } else {
-          res += " without any relations";
+          res += " **without** any _relations_";
         }
         if (exc !== "") {
-          res += " and excludes " + exc;
+          res += " and **excludes** _" + exc.replace(/,/g, ", ") + "_";
         }
         res += ". Take a look at the example for further details.";
       }
@@ -671,8 +719,8 @@ export class AutoSwagger {
     let pattern = "";
     let tags = [];
     const split = p.split("/");
-    if (split.length > this.tagIndex) {
-      tags = [split[this.tagIndex].toUpperCase()];
+    if (split.length > this.options.tagIndex) {
+      tags = [split[this.options.tagIndex].toUpperCase()];
     }
     split.forEach((part) => {
       if (part.startsWith(":")) {
@@ -703,7 +751,7 @@ export class AutoSwagger {
         description: "Any JSON object not defined as schema",
       },
     };
-    const files = await this.getFiles(this.path + "/Models", []);
+    const files = await this.getFiles(this.options.path + "/Models", []);
     const readFile = util.promisify(fs.readFile);
     for (let file of files) {
       const data = await readFile(file, "utf8");
