@@ -1,10 +1,21 @@
-export declare class AutoSwagger {
+interface options {
+    title: string;
+    ignore: string[];
+    version: string;
     path: string;
+    tagIndex: number;
+    common: common;
+}
+interface common {
+    headers: any;
+    parameters: any;
+}
+export declare class AutoSwagger {
     private parsedFiles;
-    private tagIndex;
+    private options;
     private schemas;
     ui(url: string): string;
-    docs(routes: any, options: any): Promise<any>;
+    docs(routes: any, options: options): Promise<any>;
     private mergeParams;
     private getCustomAnnotations;
     private parseAnnotations;
@@ -20,3 +31,4 @@ export declare class AutoSwagger {
     private examples;
     private getFiles;
 }
+export {};

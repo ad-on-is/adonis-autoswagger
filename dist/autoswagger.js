@@ -27,7 +27,6 @@ const change_case_1 = require("change-case");
 class AutoSwagger {
     constructor() {
         this.parsedFiles = [];
-        this.tagIndex = 2;
         this.schemas = {};
     }
     ui(url) {
@@ -70,8 +69,8 @@ class AutoSwagger {
         var e_1, _a;
         return __awaiter(this, void 0, void 0, function* () {
             routes = routes.root;
-            this.path = options.path.replace("/start", "") + "/app";
-            this.tagIndex = options.tagIndex;
+            this.options = options;
+            this.options.path = this.options.path.replace("/start", "") + "/app";
             this.schemas = yield this.getSchemas();
             // return routes
             const docs = {
@@ -320,6 +319,19 @@ class AutoSwagger {
         let type = "string";
         let example = null;
         let enums = [];
+        if (line.startsWith("@paramUse")) {
+            let use = this.getBetweenBrackets(line, "paramUse");
+            const used = use.split(",");
+            let h = {};
+            used.forEach((u) => {
+                if (typeof this.options.common.parameters[u] === "undefined") {
+                    return;
+                }
+                const common = this.options.common.parameters[u];
+                h = Object.assign(Object.assign({}, h), common);
+            });
+            return h;
+        }
         if (line.startsWith("@paramPath")) {
             required = true;
         }
@@ -332,6 +344,9 @@ class AutoSwagger {
             line = line.replace(m[0] + " ", "");
         }
         let [param, des, meta] = line.split(" - ");
+        if (typeof param === "undefined") {
+            return;
+        }
         if (typeof des === "undefined") {
             des = "";
         }
@@ -390,6 +405,22 @@ class AutoSwagger {
             return;
         if (typeof desc !== "undefined") {
             description = desc;
+        }
+        if (name.includes("@use")) {
+            let use = this.getBetweenBrackets(name, "use");
+            const used = use.split(",");
+            let h = {};
+            used.forEach((u) => {
+                if (typeof this.options.common.headers[u] === "undefined") {
+                    return;
+                }
+                const common = this.options.common.headers[u];
+                h = Object.assign(Object.assign({}, h), common);
+            });
+            return {
+                status: status,
+                header: h,
+            };
         }
         if (typeof meta !== "undefined") {
             example = this.getBetweenBrackets(meta, "example");
@@ -460,11 +491,11 @@ class AutoSwagger {
             if (ref !== "") {
                 const inc = this.getBetweenBrackets(res, "with");
                 const exc = this.getBetweenBrackets(res, "exclude");
-                res = sum = "Returns a single instance of type " + ref;
+                res = sum = "Returns a **single** instance of type `" + ref + "`";
                 // references a schema array
                 if (ref.includes("[]")) {
                     ref = ref.replace("[]", "");
-                    res = sum = "Returns a list of type " + ref;
+                    res = sum = "Returns a **list** of type `" + ref + "`";
                     responses[status]["content"] = {
                         "application/json": {
                             schema: {
@@ -484,13 +515,13 @@ class AutoSwagger {
                     };
                 }
                 if (inc !== "") {
-                    res += " inlcuding " + inc;
+                    res += " **inlcuding** _" + inc.replace(/,/g, ", ") + "_";
                 }
                 else {
-                    res += " without any relations";
+                    res += " **without** any _relations_";
                 }
                 if (exc !== "") {
-                    res += " and excludes " + exc;
+                    res += " and **excludes** _" + exc.replace(/,/g, ", ") + "_";
                 }
                 res += ". Take a look at the example for further details.";
             }
@@ -627,8 +658,8 @@ class AutoSwagger {
         let pattern = "";
         let tags = [];
         const split = p.split("/");
-        if (split.length > this.tagIndex) {
-            tags = [split[this.tagIndex].toUpperCase()];
+        if (split.length > this.options.tagIndex) {
+            tags = [split[this.options.tagIndex].toUpperCase()];
         }
         split.forEach((part) => {
             if (part.startsWith(":")) {
@@ -654,7 +685,7 @@ class AutoSwagger {
                     description: "Any JSON object not defined as schema",
                 },
             };
-            const files = yield this.getFiles(this.path + "/Models", []);
+            const files = yield this.getFiles(this.options.path + "/Models", []);
             const readFile = util.promisify(fs.readFile);
             for (let file of files) {
                 const data = yield readFile(file, "utf8");
