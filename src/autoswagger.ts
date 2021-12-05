@@ -551,7 +551,7 @@ export class AutoSwagger {
           };
         }
         if (inc !== "") {
-          res += " **inlcuding** _" + inc.replace(/,/g, ", ") + "_";
+          res += " **including** _" + inc.replace(/,/g, ", ") + "_";
         } else {
           res += " **without** any _relations_";
         }
