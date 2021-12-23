@@ -25,7 +25,7 @@ Route.get("/swagger", async () => {
     tagIndex: 2,
     ignore: ["/swagger", "/docs"],
     common: {
-      paremeters: {}, // OpenAPI conform parameters that are commonly used
+      parameters: {}, // OpenAPI conform parameters that are commonly used
       headers: {}, // OpenAPI confomr headers that are commonly used
     },
   });
