@@ -1,5 +1,6 @@
 const YAML = require("json-to-pretty-yaml");
 const fs = require("fs");
+const path = require('path')
 const util = require("util");
 const extract = require("extract-comments");
 const HTTPStatusCode = require("http-status-code");
@@ -66,7 +67,7 @@ export class AutoSwagger {
   async docs(routes, options: options) {
     routes = routes.root;
     this.options = options;
-    this.options.path = this.options.path.replace("/start", "") + "/app";
+    this.options.path = path.join(this.options.path + "/../app"); 
     this.schemas = await this.getSchemas();
     // return routes
     const docs = {
@@ -751,7 +752,7 @@ export class AutoSwagger {
         description: "Any JSON object not defined as schema",
       },
     };
-    const files = await this.getFiles(this.options.path + "/Models", []);
+    const files = await this.getFiles(path.join(this.options.path , "/Models"), []);
     const readFile = util.promisify(fs.readFile);
     for (let file of files) {
       const data = await readFile(file, "utf8");
