@@ -707,12 +707,15 @@ export class AutoSwagger {
 
     for (const [key, value] of Object.entries(properties)) {
       if (exclude.includes(key)) continue
+      if (exclude.includes(parent + '.' + key)) continue
+
       if (key === 'password' && !include.includes('password')) continue
       if ((key === 'created_at' || key === 'updated_at') && exc.includes('timestamps')) continue
       let rel = ''
       if (typeof value['$ref'] !== 'undefined') {
         rel = value['$ref'].replace('#/components/schemas/', '')
       }
+
       if (
         typeof value['$ref'] !== 'undefined' ||
         (typeof value['items'] !== 'undefined' && typeof value['items']['$ref'] !== 'undefined')

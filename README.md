@@ -124,9 +124,9 @@ Format: `<body>`
 
 @responseBody <status> - <Model[]> // returns model-array specification
 
-@responseBody <status> - <Model>.with(relations, property1, property2.relations, property3.property4) // returns a model and a defined relation
+@responseBody <status> - <Model>.with(relations, property1, property2.relations, property3.subproperty.relations) // returns a model and a defined relation
 
-@responseBody <status> - <Model[]>.with(relations).exclude(property1, property2) // returns model specification
+@responseBody <status> - <Model[]>.with(relations).exclude(property1, property2, property3.subproperty) // returns model specification
 
 @responseBody <status> - <Model[]>.append("some":"valid json") // append additional properties to a Model
 

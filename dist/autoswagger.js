@@ -38,12 +38,9 @@ class AutoSwagger {
 				<meta charset="UTF-8">
 				<meta name="viewport" content="width=device-width, initial-scale=1.0">
 				<meta http-equiv="X-UA-Compatible" content="ie=edge">
-				<script src="//unpkg.com/swagger-ui-dist@3/swagger-ui-standalone-preset.js"></script>
-				<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.1.0/swagger-ui-standalone-preset.js"></script> -->
-				<script src="//unpkg.com/swagger-ui-dist@3/swagger-ui-bundle.js"></script>
-				<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.1.0/swagger-ui-bundle.js"></script> -->
-				<link rel="stylesheet" href="//unpkg.com/swagger-ui-dist@3/swagger-ui.css" />
-				<!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.1.0/swagger-ui.css" /> -->
+				<script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.1.3/swagger-ui-standalone-preset.js"></script>
+				<script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.1.3/swagger-ui-bundle.js"></script>
+				<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.1.3/swagger-ui.css" />
 				<title>Swagger</title>
 		</head>
 		<body>
@@ -317,6 +314,10 @@ class AutoSwagger {
             }
             if (line.startsWith('@responseHeader')) {
                 const header = this.parseResponseHeader(line);
+                if (header === null) {
+                    console.error('Error with line: ' + line);
+                    return;
+                }
                 headers[header['status']] = Object.assign(Object.assign({}, headers[header['status']]), header['header']);
             }
             if (line.startsWith('@requestBody')) {
@@ -427,8 +428,9 @@ class AutoSwagger {
         let enums = [];
         line = line.replace('@responseHeader ', '');
         let [status, name, desc, meta] = line.split(' - ');
-        if (typeof status === 'undefined' || typeof name === 'undefined')
-            return;
+        if (typeof status === 'undefined' || typeof name === 'undefined') {
+            return null;
+        }
         if (typeof desc !== 'undefined') {
             description = desc;
         }
@@ -517,6 +519,12 @@ class AutoSwagger {
             if (ref !== '') {
                 const inc = this.getBetweenBrackets(res, 'with');
                 const exc = this.getBetweenBrackets(res, 'exclude');
+                const append = this.getBetweenBrackets(res, 'append');
+                let app = {};
+                try {
+                    app = JSON.parse('{' + append + '}');
+                }
+                catch (_b) { }
                 res = sum = 'Returns a **single** instance of type `' + ref + '`';
                 // references a schema array
                 if (ref.includes('[]')) {
@@ -528,7 +536,7 @@ class AutoSwagger {
                                 type: 'array',
                                 items: { $ref: '#/components/schemas/' + ref },
                             },
-                            example: [this.getSchemaExampleBasedOnAnnotation(ref, inc, exc)],
+                            example: [Object.assign(this.getSchemaExampleBasedOnAnnotation(ref, inc, exc), app)],
                         },
                     };
                 }
@@ -536,7 +544,7 @@ class AutoSwagger {
                     responses[status]['content'] = {
                         'application/json': {
                             schema: { $ref: '#/components/schemas/' + ref },
-                            example: this.getSchemaExampleBasedOnAnnotation(ref, inc, exc),
+                            example: Object.assign(this.getSchemaExampleBasedOnAnnotation(ref, inc, exc), app),
                         },
                     };
                 }
@@ -583,6 +591,12 @@ class AutoSwagger {
         if (ref !== '') {
             const inc = this.getBetweenBrackets(line, 'with');
             const exc = this.getBetweenBrackets(line, 'exclude');
+            const append = this.getBetweenBrackets(line, 'append');
+            let app = {};
+            try {
+                app = JSON.parse('{' + append + '}');
+            }
+            catch (_b) { }
             // references a schema array
             if (ref.includes('[]')) {
                 ref = ref.replace('[]', '');
@@ -593,7 +607,7 @@ class AutoSwagger {
                                 type: 'array',
                                 items: { $ref: '#/components/schemas/' + ref },
                             },
-                            example: [this.getSchemaExampleBasedOnAnnotation(ref, inc, exc)],
+                            example: [Object.assign(this.getSchemaExampleBasedOnAnnotation(ref, inc, exc), app)],
                         },
                     },
                 };
@@ -605,7 +619,7 @@ class AutoSwagger {
                             schema: {
                                 $ref: '#/components/schemas/' + ref,
                             },
-                            example: this.getSchemaExampleBasedOnAnnotation(ref, inc, exc),
+                            example: Object.assign(this.getSchemaExampleBasedOnAnnotation(ref, inc, exc), app),
                         },
                     },
                 };
@@ -624,7 +638,7 @@ class AutoSwagger {
         }
         return '';
     }
-    getSchemaExampleBasedOnAnnotation(schema, inc = '', exc = '', parent = '') {
+    getSchemaExampleBasedOnAnnotation(schema, inc = '', exc = '', first = '', parent = '', current = '', level = 0) {
         let props = {};
         if (!this.schemas[schema]) {
             return props;
@@ -634,9 +648,24 @@ class AutoSwagger {
         let exclude = exc.toString().split(',');
         if (typeof properties === 'undefined')
             return;
+        // skip nested if not requested
+        if (parent !== '' &&
+            schema !== '' &&
+            parent.includes('.') &&
+            this.schemas[schema].description === 'Model' &&
+            !inc.includes(parent) &&
+            !inc.includes(parent + '.relations') &&
+            !inc.includes(first + '.relations')) {
+            return null;
+        }
         for (const [key, value] of Object.entries(properties)) {
-            // handle exclude()
             if (exclude.includes(key))
+                continue;
+            if (exclude.includes(parent + '.' + key))
+                continue;
+            if (key === 'password' && !include.includes('password'))
+                continue;
+            if ((key === 'created_at' || key === 'updated_at') && exc.includes('timestamps'))
                 continue;
             let rel = '';
             if (typeof value['$ref'] !== 'undefined') {
@@ -652,14 +681,6 @@ class AutoSwagger {
                     !include.includes(key)) {
                     continue;
                 }
-                // skip relations of nested schema
-                if (parent !== '' &&
-                    rel !== '' &&
-                    this.schemas[rel].description === 'Model' &&
-                    !include.includes(parent + '.relations') &&
-                    !include.includes(parent + '.' + key)) {
-                    continue;
-                }
                 let isArray = false;
                 if (typeof value['items'] !== 'undefined' &&
                     typeof value['items']['$ref'] !== 'undefined') {
@@ -669,15 +690,18 @@ class AutoSwagger {
                 if (rel == '') {
                     return;
                 }
-                const propdata = this.getSchemaExampleBasedOnAnnotation(rel, inc, exc, parent === '' ? key : parent + '.' + key);
+                let propdata = '';
+                if (level <= 10) {
+                    propdata = this.getSchemaExampleBasedOnAnnotation(rel, inc, exc, parent, parent === '' ? key : parent + '.' + key, key, level++);
+                }
+                if (propdata === null) {
+                    continue;
+                }
                 props[key] = isArray ? [propdata] : propdata;
             }
             else {
                 props[key] = value['example'];
             }
-            // if (typeof props[key + "_id"] !== "undefined") {
-            //   delete props[key + "_id"];
-            // }
         }
         return props;
     }
@@ -976,6 +1000,7 @@ class AutoSwagger {
             country_code: 'US',
             zip: 60617,
             city: 'Chicago',
+            password: 'ejk=jrtERT$4534(5',
             lat: 41.705,
             long: -87.475,
             price: 10.5,
