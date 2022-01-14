@@ -297,3 +297,23 @@ public status: string
 // @example(johndoe@example.com)
 public email: string
 ```
+
+---
+
+## Production environment
+
+To make it work in production environments, additional steps are required
+
+- Create a new command for `docs:generate` [See official documentation](https://docs.adonisjs.com/guides/ace-commandline#creating-a-new-command)
+
+  - This should create a new file in `commands/DocsGenerate.ts`
+
+- Use the provided `DocsGenerate.ts.examle`and put its contents into your newly created `DocsGenerate.ts`
+
+- Execute the following
+
+```bash
+node ace docs:generate
+node ace build --production
+cp swagger.yml build/
+```
