@@ -10,31 +10,42 @@ Auto-Generate swagger docs for AdonisJS
 
 ---
 
+## Features
+
+- Creates **paths** automatically based on `routes.ts`
+- Creates **schemas** automatically based on `app/Models/*`
+- Creates **schemas** automatically based on `app/Interfaces/*`
+- **Rich configuration** via comments
+- Works also in **production** mode
+- `node ace docs:generate` command
+
+---
+
 ## Usage
 
 In your `routes.ts`
 
 ```js
-import AutoSwagger from "adonis-autoswagger";
+import AutoSwagger from 'adonis-autoswagger'
 // returns swagger in YAML
-Route.get("/swagger", async () => {
+Route.get('/swagger', async () => {
   return AutoSwagger.docs(Route.toJSON(), {
     path: __dirname,
-    title: "Foo",
-    version: "1.0.0",
+    title: 'Foo',
+    version: '1.0.0',
     tagIndex: 2,
-    ignore: ["/swagger", "/docs"],
+    ignore: ['/swagger', '/docs'],
     common: {
       parameters: {}, // OpenAPI conform parameters that are commonly used
       headers: {}, // OpenAPI confomr headers that are commonly used
     },
-  });
-});
+  })
+})
 
 // Renders Swagger-UI and passes YAML-output of /swagger
-Route.get("/docs", async () => {
-  return AutoSwagger.ui("/swagger");
-});
+Route.get('/docs', async () => {
+  return AutoSwagger.ui('/swagger')
+})
 ```
 
 ### Done!
@@ -136,47 +147,47 @@ Format: `<body>`
 `routes.js`
 
 ```js
-Route.get("/swagger", async () => {
+Route.get('/swagger', async () => {
   return AutoSwagger.docs(Route.toJSON(), {
     path: __dirname,
-    title: "BlitzCoin",
-    version: "1.0.0",
+    title: 'BlitzCoin',
+    version: '1.0.0',
     tagIndex: 2,
-    ignore: ["/swagger", "/docs", "/v1", "/"],
+    ignore: ['/swagger', '/docs', '/v1', '/'],
     common: {
       parameters: {
         sortable: [
           {
-            in: "query",
-            name: "sortBy",
-            schema: { type: "string", example: "foo" },
+            in: 'query',
+            name: 'sortBy',
+            schema: { type: 'string', example: 'foo' },
           },
           {
-            in: "query",
-            name: "sortType",
-            schema: { type: "string", example: "ASC" },
+            in: 'query',
+            name: 'sortType',
+            schema: { type: 'string', example: 'ASC' },
           },
         ],
       },
       headers: {
         paginated: {
-          "X-Total-Pages": {
-            description: "Total amount of pages",
-            schema: { type: "integer", example: 5 },
+          'X-Total-Pages': {
+            description: 'Total amount of pages',
+            schema: { type: 'integer', example: 5 },
           },
-          "X-Total": {
-            description: "Total amount of results",
-            schema: { type: "integer", example: 100 },
+          'X-Total': {
+            description: 'Total amount of results',
+            schema: { type: 'integer', example: 100 },
           },
-          "X-Per-Page": {
-            description: "Results per page",
-            schema: { type: "integer", example: 20 },
+          'X-Per-Page': {
+            description: 'Results per page',
+            schema: { type: 'integer', example: 20 },
           },
         },
       },
     },
-  });
-});
+  })
+})
 ```
 
 ```js
@@ -237,11 +248,17 @@ Generates responses and requestBody based on your simple Controller-Annotation (
 
 ---
 
-## Models (schemas)
+## Schemas
 
-Automatically generates swagger model-descriptions based on your models
+### Models
+
+Automatically generates swagger schema-descriptions based on your models
 
 ![alt](https://i.imgur.com/FEdLplp.png)
+
+### Interfaces
+
+Instead of using `param: any` you can now use custom interfaces `param: UserDetails`. The interfaces files need to be located at `app/Interfaces/`
 
 ## Extend Models
 
