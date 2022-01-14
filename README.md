@@ -226,7 +226,7 @@ Route.get('/swagger', async () => {
 * @responseBody 200 - {"token": "xxxxxxx"}
 * @requestBody {"code": "xxxxxx"}
 */
-	public async login({ request, response }: HttpContextContract) {}
+	public async custom({ request, response }: HttpContextContract) {}
 
 ```
 
