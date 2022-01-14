@@ -128,6 +128,8 @@ Format: `<body>`
 
 @responseBody <status> - <Model[]>.with(relations).exclude(property1, property2) // returns model specification
 
+@responseBody <status> - <Model[]>.append("some":"valid json") // append additional properties to a Model
+
 @responseBody <status> - {"foo": "bar"} //returns custom json
 ```
 
@@ -137,6 +139,7 @@ Format: `<body>`
 // basicaly same as @response, just without a status
 @requestBody <Model> // Expects model specification
 @requestBody <Model>.with(relations) // Expects model and its relations
+@requestBody <Model[]>.append("some":"valid json") // append additional properties to a Model
 @requestBody {"foo": "bar"} // Expects a specific JSON
 ```
 
