@@ -14,8 +14,12 @@ export declare class AutoSwagger {
     private parsedFiles;
     private options;
     private schemas;
+    private standardTypes;
     ui(url: string): string;
+    writeFile(routes: any, options: any): Promise<void>;
+    private readFile;
     docs(routes: any, options: options): Promise<any>;
+    generate(routes: any, options: options): Promise<any>;
     private mergeParams;
     private getCustomAnnotations;
     private parseAnnotations;
@@ -27,7 +31,10 @@ export declare class AutoSwagger {
     private getSchemaExampleBasedOnAnnotation;
     private extractInfos;
     private getSchemas;
-    private parseProperties;
+    private getModels;
+    private getInterfaces;
+    private parseInterfaces;
+    private parseModelProperties;
     private examples;
     private getFiles;
 }
