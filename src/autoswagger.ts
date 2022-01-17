@@ -593,6 +593,38 @@ export class AutoSwagger {
     return responses
   }
 
+  private jsonToRef(json) {
+    let out = {}
+    for (let [k, v] of Object.entries(json)) {
+      if (typeof v === 'object') {
+        v = this.jsonToRef(v)
+      }
+      if (typeof v === 'string') {
+        let ref = v.substring(v.indexOf('<') + 1, v.lastIndexOf('>'))
+        if (ref !== '') {
+          const inc = this.getBetweenBrackets(v, 'with')
+          const exc = this.getBetweenBrackets(v, 'exclude')
+          const append = this.getBetweenBrackets(v, 'append')
+
+          let app = {}
+          try {
+            app = JSON.parse('{' + append + '}')
+          } catch {}
+
+          // references a schema array
+          if (ref.includes('[]')) {
+            ref = ref.replace('[]', '')
+            v = [Object.assign(this.getSchemaExampleBasedOnAnnotation(ref, inc, exc), app)]
+          } else {
+            v = Object.assign(this.getSchemaExampleBasedOnAnnotation(ref, inc, exc), app)
+          }
+        }
+      }
+      out[k] = v
+    }
+    return out
+  }
+
   private parseRequestBody(line) {
     let requestBody = {}
     line = line.replace('@requestBody ', '')
@@ -600,8 +632,9 @@ export class AutoSwagger {
     let json = line.substring(line.indexOf('{') + 1, line.lastIndexOf('}'))
     if (json !== '') {
       try {
-        const j = JSON.parse('{' + json + '}')
-        requestBody = {
+        let j = JSON.parse('{' + json + '}')
+        j = this.jsonToRef(j)
+        j = requestBody = {
           content: {
             'application/json': {
               schema: {
@@ -618,7 +651,7 @@ export class AutoSwagger {
 
     let ref = line.substring(line.indexOf('<') + 1, line.lastIndexOf('>'))
     // references a schema
-    if (ref !== '') {
+    if (ref !== '' && json === '') {
       const inc = this.getBetweenBrackets(line, 'with')
       const exc = this.getBetweenBrackets(line, 'exclude')
       const append = this.getBetweenBrackets(line, 'append')
@@ -679,7 +712,6 @@ export class AutoSwagger {
     exc = '',
     first = '',
     parent = '',
-    current = '',
     level = 0
   ) {
     let props = {}
@@ -706,20 +738,32 @@ export class AutoSwagger {
     }
 
     for (const [key, value] of Object.entries(properties)) {
+      let isArray = false
       if (exclude.includes(key)) continue
       if (exclude.includes(parent + '.' + key)) continue
 
       if (key === 'password' && !include.includes('password')) continue
-      if ((key === 'created_at' || key === 'updated_at') && exc.includes('timestamps')) continue
+      if (
+        (key === 'created_at' || key === 'updated_at' || key === 'deleted_at') &&
+        exc.includes('timestamps')
+      )
+        continue
       let rel = ''
+      let example = ''
       if (typeof value['$ref'] !== 'undefined') {
         rel = value['$ref'].replace('#/components/schemas/', '')
       }
 
-      if (
-        typeof value['$ref'] !== 'undefined' ||
-        (typeof value['items'] !== 'undefined' && typeof value['items']['$ref'] !== 'undefined')
-      ) {
+      if (typeof value['items'] !== 'undefined' && typeof value['items']['$ref'] !== 'undefined') {
+        rel = value['items']['$ref'].replace('#/components/schemas/', '')
+      }
+
+      if (typeof value['items'] !== 'undefined') {
+        isArray = true
+        example = value['items']['example']
+      }
+
+      if (rel !== '') {
         // skip related models of main schema
         if (
           parent === '' &&
@@ -731,14 +775,11 @@ export class AutoSwagger {
           continue
         }
 
-        let isArray = false
-
         if (
           typeof value['items'] !== 'undefined' &&
           typeof value['items']['$ref'] !== 'undefined'
         ) {
           rel = value['items']['$ref'].replace('#/components/schemas/', '')
-          isArray = true
         }
         if (rel == '') {
           return
@@ -751,7 +792,6 @@ export class AutoSwagger {
             exc,
             parent,
             parent === '' ? key : parent + '.' + key,
-            key,
             level++
           )
         }
@@ -762,7 +802,7 @@ export class AutoSwagger {
 
         props[key] = isArray ? [propdata] : propdata
       } else {
-        props[key] = value['example']
+        props[key] = isArray ? [example] : example
       }
     }
     return props
@@ -890,8 +930,11 @@ export class AutoSwagger {
       }
 
       let en = this.getBetweenBrackets(meta, 'enum')
+      let example = this.getBetweenBrackets(meta, 'example')
       let enums = []
-      let example = this.examples(field)
+      if (example === '') {
+        example = this.examples(field)
+      }
       if (en !== '') {
         enums = en.split(',')
         example = enums[0]
@@ -914,10 +957,10 @@ export class AutoSwagger {
       prop[indicator] = type
       prop['example'] = example
 
-      if (!isArray) {
-        props[field] = prop
-      } else {
+      if (isArray) {
         props[field] = { type: 'array', items: prop }
+      } else {
+        props[field] = prop
       }
       if (enums.length > 0) {
         props[field]['enum'] = enums
@@ -1006,6 +1049,16 @@ export class AutoSwagger {
         }
       }
       type = type.trim()
+      let isArray = false
+
+      if (
+        line.includes('HasMany') ||
+        line.includes('ManyToMany') ||
+        line.includes('HasManyThrough') ||
+        type.includes('[]')
+      ) {
+        isArray = true
+      }
 
       if (field === 'id' || field.includes('_id')) {
         type = 'integer'
@@ -1044,14 +1097,11 @@ export class AutoSwagger {
       if (type === 'boolean') {
         example = true
       }
+
       prop[indicator] = type
       prop['example'] = example
       // if array
-      if (
-        line.includes('HasMany') ||
-        line.includes('ManyToMany') ||
-        line.includes('HasManyThrough')
-      ) {
+      if (isArray) {
         props[field] = { type: 'array', items: prop }
       } else {
         props[field] = prop

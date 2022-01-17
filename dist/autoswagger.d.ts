@@ -26,6 +26,7 @@ export declare class AutoSwagger {
     private parseParam;
     private parseResponseHeader;
     private parseResponse;
+    private jsonToRef;
     private parseRequestBody;
     private getBetweenBrackets;
     private getSchemaExampleBasedOnAnnotation;
