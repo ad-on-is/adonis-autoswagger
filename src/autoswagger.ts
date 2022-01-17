@@ -749,7 +749,7 @@ export class AutoSwagger {
       )
         continue
       let rel = ''
-      let example = ''
+      let example = value['example']
       if (typeof value['$ref'] !== 'undefined') {
         rel = value['$ref'].replace('#/components/schemas/', '')
       }
