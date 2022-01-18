@@ -519,6 +519,7 @@ class AutoSwagger {
             if (ref !== '') {
                 const inc = this.getBetweenBrackets(res, 'with');
                 const exc = this.getBetweenBrackets(res, 'exclude');
+                const only = this.getBetweenBrackets(res, 'only');
                 const append = this.getBetweenBrackets(res, 'append');
                 let app = {};
                 try {
@@ -536,7 +537,9 @@ class AutoSwagger {
                                 type: 'array',
                                 items: { $ref: '#/components/schemas/' + ref },
                             },
-                            example: [Object.assign(this.getSchemaExampleBasedOnAnnotation(ref, inc, exc), app)],
+                            example: [
+                                Object.assign(this.getSchemaExampleBasedOnAnnotation(ref, inc, exc, only), app),
+                            ],
                         },
                     };
                 }
@@ -544,9 +547,12 @@ class AutoSwagger {
                     responses[status]['content'] = {
                         'application/json': {
                             schema: { $ref: '#/components/schemas/' + ref },
-                            example: Object.assign(this.getSchemaExampleBasedOnAnnotation(ref, inc, exc), app),
+                            example: Object.assign(this.getSchemaExampleBasedOnAnnotation(ref, inc, exc, only), app),
                         },
                     };
+                }
+                if (only !== '') {
+                    res += ' **only containing** _' + only.replace(/,/g, ', ') + '_';
                 }
                 if (inc !== '') {
                     res += ' **including** _' + inc.replace(/,/g, ', ') + '_';
@@ -576,6 +582,7 @@ class AutoSwagger {
                     const inc = this.getBetweenBrackets(v, 'with');
                     const exc = this.getBetweenBrackets(v, 'exclude');
                     const append = this.getBetweenBrackets(v, 'append');
+                    const only = this.getBetweenBrackets(v, 'only');
                     let app = {};
                     try {
                         app = JSON.parse('{' + append + '}');
@@ -584,10 +591,10 @@ class AutoSwagger {
                     // references a schema array
                     if (ref.includes('[]')) {
                         ref = ref.replace('[]', '');
-                        v = [Object.assign(this.getSchemaExampleBasedOnAnnotation(ref, inc, exc), app)];
+                        v = [Object.assign(this.getSchemaExampleBasedOnAnnotation(ref, inc, exc, only), app)];
                     }
                     else {
-                        v = Object.assign(this.getSchemaExampleBasedOnAnnotation(ref, inc, exc), app);
+                        v = Object.assign(this.getSchemaExampleBasedOnAnnotation(ref, inc, exc, only), app);
                     }
                 }
             }
@@ -624,6 +631,7 @@ class AutoSwagger {
             const inc = this.getBetweenBrackets(line, 'with');
             const exc = this.getBetweenBrackets(line, 'exclude');
             const append = this.getBetweenBrackets(line, 'append');
+            const only = this.getBetweenBrackets(line, 'only');
             let app = {};
             try {
                 app = JSON.parse('{' + append + '}');
@@ -639,7 +647,9 @@ class AutoSwagger {
                                 type: 'array',
                                 items: { $ref: '#/components/schemas/' + ref },
                             },
-                            example: [Object.assign(this.getSchemaExampleBasedOnAnnotation(ref, inc, exc), app)],
+                            example: [
+                                Object.assign(this.getSchemaExampleBasedOnAnnotation(ref, inc, exc, only), app),
+                            ],
                         },
                     },
                 };
@@ -651,7 +661,7 @@ class AutoSwagger {
                             schema: {
                                 $ref: '#/components/schemas/' + ref,
                             },
-                            example: Object.assign(this.getSchemaExampleBasedOnAnnotation(ref, inc, exc), app),
+                            example: Object.assign(this.getSchemaExampleBasedOnAnnotation(ref, inc, exc, only), app),
                         },
                     },
                 };
@@ -670,7 +680,7 @@ class AutoSwagger {
         }
         return '';
     }
-    getSchemaExampleBasedOnAnnotation(schema, inc = '', exc = '', first = '', parent = '', level = 0) {
+    getSchemaExampleBasedOnAnnotation(schema, inc = '', exc = '', onl = '', first = '', parent = '', level = 0) {
         let props = {};
         if (!this.schemas[schema]) {
             return props;
@@ -678,6 +688,8 @@ class AutoSwagger {
         let properties = this.schemas[schema].properties;
         let include = inc.toString().split(',');
         let exclude = exc.toString().split(',');
+        let only = onl.toString().split(',');
+        only = only.length === 1 && only[0] === '' ? [] : only;
         if (typeof properties === 'undefined')
             return;
         // skip nested if not requested
@@ -696,13 +708,19 @@ class AutoSwagger {
                 continue;
             if (exclude.includes(parent + '.' + key))
                 continue;
-            if (key === 'password' && !include.includes('password'))
+            if (key === 'password' && !include.includes('password') && !only.includes('password'))
+                continue;
+            if (key === 'password_confirmation' &&
+                !include.includes('password_confirmation') &&
+                !only.includes('password_confirmation'))
                 continue;
             if ((key === 'created_at' || key === 'updated_at' || key === 'deleted_at') &&
                 exc.includes('timestamps'))
                 continue;
             let rel = '';
             let example = value['example'];
+            if (parent === '' && only.length > 0 && !only.includes(key))
+                continue;
             if (typeof value['$ref'] !== 'undefined') {
                 rel = value['$ref'].replace('#/components/schemas/', '');
             }
@@ -731,7 +749,7 @@ class AutoSwagger {
                 }
                 let propdata = '';
                 if (level <= 10) {
-                    propdata = this.getSchemaExampleBasedOnAnnotation(rel, inc, exc, parent, parent === '' ? key : parent + '.' + key, level++);
+                    propdata = this.getSchemaExampleBasedOnAnnotation(rel, inc, exc, onl, parent, parent === '' ? key : parent + '.' + key, level++);
                 }
                 if (propdata === null) {
                     continue;
@@ -1047,7 +1065,8 @@ class AutoSwagger {
             country_code: 'US',
             zip: 60617,
             city: 'Chicago',
-            password: 'ejk=jrtERT$4534(5',
+            password: 'S3cur3P4s5word!',
+            password_confirmation: 'S3cur3P4s5word!',
             lat: 41.705,
             long: -87.475,
             price: 10.5,
