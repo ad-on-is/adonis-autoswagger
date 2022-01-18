@@ -806,6 +806,14 @@ export class AutoSwagger {
           continue
         }
 
+        // if relation and relation_id is set, delete relation_id key
+        if (props[key + '_id'] !== 'undefined') {
+          delete props[key + '_id']
+        }
+
+        // if relation of relation_id exists, skip
+        if (typeof props[key.replace('_id', '')] !== 'undefined') continue
+
         if (
           typeof value['items'] !== 'undefined' &&
           typeof value['items']['$ref'] !== 'undefined'
@@ -838,6 +846,7 @@ export class AutoSwagger {
         props[key] = isArray ? [example] : example
       }
     }
+
     return props
   }
 
