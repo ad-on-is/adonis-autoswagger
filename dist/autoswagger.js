@@ -17,19 +17,25 @@ var __asyncValues = (this && this.__asyncValues) || function (o) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AutoSwagger = void 0;
-const YAML = require('json-to-pretty-yaml');
-const fs = require('fs');
-const path = require('path');
-const util = require('util');
-const extract = require('extract-comments');
-const HTTPStatusCode = require('http-status-code');
-const _ = require('lodash/core');
+const YAML = require("json-to-pretty-yaml");
+const fs = require("fs");
+const path = require("path");
+const util = require("util");
+const extract = require("extract-comments");
+const HTTPStatusCode = require("http-status-code");
+const _ = require("lodash/core");
 const change_case_1 = require("change-case");
 class AutoSwagger {
     constructor() {
         this.parsedFiles = [];
         this.schemas = {};
-        this.standardTypes = ['string', 'number', 'integer', 'datetime', 'boolean'];
+        this.standardTypes = [
+            "string",
+            "number",
+            "integer",
+            "datetime",
+            "boolean",
+        ];
     }
     ui(url) {
         return (`<!DOCTYPE html>
@@ -66,16 +72,16 @@ class AutoSwagger {
     writeFile(routes, options) {
         return __awaiter(this, void 0, void 0, function* () {
             const contents = yield this.generate(routes, options);
-            const filePath = path.join(options.path + '/../swagger.yml');
+            const filePath = path.join(options.path + "/../swagger.yml");
             fs.writeFileSync(filePath, contents);
         });
     }
     readFile(rootPath) {
         return __awaiter(this, void 0, void 0, function* () {
-            const filePath = path.join(rootPath + '/../swagger.yml');
-            const data = fs.readFileSync(filePath, 'utf-8');
+            const filePath = path.join(rootPath + "/../swagger.yml");
+            const data = fs.readFileSync(filePath, "utf-8");
             if (!data) {
-                console.error('Error reading file');
+                console.error("Error reading file");
                 return;
             }
             return data;
@@ -83,7 +89,7 @@ class AutoSwagger {
     }
     docs(routes, options) {
         return __awaiter(this, void 0, void 0, function* () {
-            if (process.env.NODE_ENV !== 'development') {
+            if (process.env.NODE_ENV !== "development") {
                 return this.readFile(options.path);
             }
             return this.generate(routes, options);
@@ -95,10 +101,10 @@ class AutoSwagger {
         return __awaiter(this, void 0, void 0, function* () {
             this.options = options;
             routes = routes.root;
-            this.options.path = path.join(this.options.path + '/../app');
+            this.options.path = path.join(this.options.path + "/../app");
             this.schemas = yield this.getSchemas();
             const docs = {
-                openapi: '3.0.0',
+                openapi: "3.0.0",
                 info: {
                     title: options.title,
                     version: options.version,
@@ -106,25 +112,25 @@ class AutoSwagger {
                 components: {
                     responses: {
                         Forbidden: {
-                            description: 'Acces token is missing or invalid',
+                            description: "Acces token is missing or invalid",
                         },
                         Accepted: {
-                            description: 'The request was accepted',
+                            description: "The request was accepted",
                         },
                         Created: {
-                            description: 'The resource has been created',
+                            description: "The resource has been created",
                         },
                         NotFound: {
-                            description: 'The resource has been created',
+                            description: "The resource has been created",
                         },
                         NotAcceptable: {
-                            description: 'The resource has been created',
+                            description: "The resource has been created",
                         },
                     },
                     securitySchemes: {
                         BearerAuth: {
-                            type: 'http',
-                            scheme: 'bearer',
+                            type: "http",
+                            scheme: "bearer",
                         },
                     },
                     schemas: this.schemas,
@@ -139,22 +145,23 @@ class AutoSwagger {
                         continue;
                     let security = [];
                     const responseCodes = {
-                        GET: '200',
-                        POST: '201',
-                        DELETE: '202',
-                        PUT: '204',
+                        GET: "200",
+                        POST: "201",
+                        DELETE: "202",
+                        PUT: "204",
                     };
-                    if (route.middleware.length > 0 && route.middleware['auth:api'] !== null) {
-                        security = [{ BearerAuth: ['access'] }];
+                    if (route.middleware.length > 0 &&
+                        route.middleware["auth:api"] !== null) {
+                        security = [{ BearerAuth: ["access"] }];
                     }
-                    let sourceFile = '';
-                    let action = '';
+                    let sourceFile = "";
+                    let action = "";
                     let customAnnotations;
                     if (route.meta.resolvedHandler !== null) {
-                        if (typeof route.meta.resolvedHandler.namespace !== 'undefined') {
+                        if (typeof route.meta.resolvedHandler.namespace !== "undefined") {
                             sourceFile = route.meta.resolvedHandler.namespace;
                             action = route.meta.resolvedHandler.method;
-                            if (sourceFile !== '' && action !== '') {
+                            if (sourceFile !== "" && action !== "") {
                                 customAnnotations = yield this.getCustomAnnotations(sourceFile, action);
                             }
                         }
@@ -162,27 +169,29 @@ class AutoSwagger {
                     let { tags, parameters, pattern } = this.extractInfos(route.pattern);
                     route.methods.forEach((method) => {
                         let responses = {};
-                        if (method === 'HEAD')
+                        if (method === "HEAD")
                             return;
-                        if (route.methods['PUT'] !== null && route.methods['PATCH'] !== null && method === 'PATCH')
+                        if (route.methods["PUT"] !== null &&
+                            route.methods["PATCH"] !== null &&
+                            method === "PATCH")
                             return;
-                        let description = '';
-                        let summary = '';
+                        let description = "";
+                        let summary = "";
                         if (security.length > 0) {
-                            responses['401'] = {
+                            responses["401"] = {
                                 description: HTTPStatusCode.getMessage(401),
                             };
-                            responses['403'] = {
+                            responses["403"] = {
                                 description: HTTPStatusCode.getMessage(403),
                             };
                         }
                         let requestBody = {
                             content: {
-                                'application/json': {},
+                                "application/json": {},
                             },
                         };
                         let actionParams = {};
-                        if (action !== '' && typeof customAnnotations[action] !== 'undefined') {
+                        if (action !== "" && typeof customAnnotations[action] !== "undefined") {
                             description = customAnnotations[action].description;
                             summary = customAnnotations[action].summary;
                             responses = Object.assign(Object.assign({}, responses), customAnnotations[action].responses);
@@ -194,56 +203,57 @@ class AutoSwagger {
                             responses[responseCodes[method]] = {
                                 description: HTTPStatusCode.getMessage(responseCodes[method]),
                                 content: {
-                                    'application/json': {},
+                                    "application/json": {},
                                 },
                             };
                         }
                         else {
-                            if (typeof responses[responseCodes[method]] !== 'undefined' &&
-                                typeof responses[responseCodes[method]]['summary'] !== 'undefined') {
-                                if (summary === '') {
-                                    summary = responses[responseCodes[method]]['summary'];
+                            if (typeof responses[responseCodes[method]] !== "undefined" &&
+                                typeof responses[responseCodes[method]]["summary"] !== "undefined") {
+                                if (summary === "") {
+                                    summary = responses[responseCodes[method]]["summary"];
                                 }
-                                delete responses[responseCodes[method]]['summary'];
+                                delete responses[responseCodes[method]]["summary"];
                             }
-                            if (typeof responses[responseCodes[method]] !== 'undefined' &&
-                                typeof responses[responseCodes[method]]['description'] !== 'undefined') {
-                                description = responses[responseCodes[method]]['description'];
+                            if (typeof responses[responseCodes[method]] !== "undefined" &&
+                                typeof responses[responseCodes[method]]["description"] !==
+                                    "undefined") {
+                                description = responses[responseCodes[method]]["description"];
                             }
                         }
-                        if (action !== '' && summary === '') {
+                        if (action !== "" && summary === "") {
                             switch (action) {
-                                case 'index':
-                                    summary = 'Get a list of ' + tags[0].toLowerCase();
+                                case "index":
+                                    summary = "Get a list of " + tags[0].toLowerCase();
                                     break;
-                                case 'show':
-                                    summary = 'Get a single instance of ' + tags[0].toLowerCase();
+                                case "show":
+                                    summary = "Get a single instance of " + tags[0].toLowerCase();
                                     break;
-                                case 'update':
-                                    summary = 'Update ' + tags[0].toLowerCase();
+                                case "update":
+                                    summary = "Update " + tags[0].toLowerCase();
                                     break;
-                                case 'destroy':
-                                    summary = 'Delete ' + tags[0].toLowerCase();
+                                case "destroy":
+                                    summary = "Delete " + tags[0].toLowerCase();
                                     break;
                             }
                         }
                         let m = {
-                            summary: sourceFile === '' && action == ''
-                                ? summary + ' (route.ts)'
+                            summary: sourceFile === "" && action == ""
+                                ? summary + " (route.ts)"
                                 : summary +
-                                    ' (' +
-                                    sourceFile.replace('App/Controllers/Http/', '') +
-                                    '::' +
+                                    " (" +
+                                    sourceFile.replace("App/Controllers/Http/", "") +
+                                    "::" +
                                     action +
-                                    ')',
+                                    ")",
                             description: description,
                             parameters: parameters,
                             tags: tags,
                             responses: responses,
                             security: security,
                         };
-                        if (method !== 'GET' && method !== 'DELETE') {
-                            m['requestBody'] = requestBody;
+                        if (method !== "GET" && method !== "DELETE") {
+                            m["requestBody"] = requestBody;
                         }
                         pattern = pattern.slice(1);
                         paths = Object.assign(Object.assign({}, paths), { [pattern]: Object.assign(Object.assign({}, paths[pattern]), { [method.toLowerCase()]: m }) });
@@ -272,23 +282,23 @@ class AutoSwagger {
     getCustomAnnotations(file, action) {
         return __awaiter(this, void 0, void 0, function* () {
             let annotations = {};
-            if (typeof file === 'undefined')
+            if (typeof file === "undefined")
                 return;
-            if (typeof this.parsedFiles[file] !== 'undefined')
+            if (typeof this.parsedFiles[file] !== "undefined")
                 return;
             this.parsedFiles.push(file);
-            file = file.replace('App/', 'app/') + '.ts';
+            file = file.replace("App/", "app/") + ".ts";
             const readFile = util.promisify(fs.readFile);
-            const data = yield readFile(file, 'utf8');
+            const data = yield readFile(file, "utf8");
             const comments = extract(data);
             if (comments.length > 0) {
                 comments.forEach((comment) => {
-                    if (comment.type !== 'BlockComment')
+                    if (comment.type !== "BlockComment")
                         return;
-                    if (!comment.value.includes('@' + action))
+                    if (!comment.value.includes("@" + action))
                         return;
-                    let lines = comment.value.split('\n');
-                    lines = lines.filter((l) => l != '');
+                    let lines = comment.value.split("\n");
+                    lines = lines.filter((l) => l != "");
                     annotations[action] = this.parseAnnotations(lines);
                 });
             }
@@ -296,40 +306,40 @@ class AutoSwagger {
         });
     }
     parseAnnotations(lines) {
-        let summary = '';
-        let description = '';
+        let summary = "";
+        let description = "";
         let responses = {};
         let requestBody = {};
         let parameters = {};
         let headers = {};
         lines.forEach((line) => {
-            if (line.startsWith('@summary')) {
-                summary = line.replace('@summary ', '');
+            if (line.startsWith("@summary")) {
+                summary = line.replace("@summary ", "");
             }
-            if (line.startsWith('@description')) {
-                description = line.replace('@description ', '');
+            if (line.startsWith("@description")) {
+                description = line.replace("@description ", "");
             }
-            if (line.startsWith('@responseBody')) {
+            if (line.startsWith("@responseBody")) {
                 responses = Object.assign(Object.assign({}, responses), this.parseResponse(line));
             }
-            if (line.startsWith('@responseHeader')) {
+            if (line.startsWith("@responseHeader")) {
                 const header = this.parseResponseHeader(line);
                 if (header === null) {
-                    console.error('Error with line: ' + line);
+                    console.error("Error with line: " + line);
                     return;
                 }
-                headers[header['status']] = Object.assign(Object.assign({}, headers[header['status']]), header['header']);
+                headers[header["status"]] = Object.assign(Object.assign({}, headers[header["status"]]), header["header"]);
             }
-            if (line.startsWith('@requestBody')) {
+            if (line.startsWith("@requestBody")) {
                 requestBody = this.parseRequestBody(line);
             }
-            if (line.startsWith('@param')) {
+            if (line.startsWith("@param")) {
                 parameters = Object.assign(Object.assign({}, parameters), this.parseParam(line));
             }
         });
         for (const [key, value] of Object.entries(responses)) {
             if (typeof headers[key] !== undefined) {
-                responses[key]['headers'] = headers[key];
+                responses[key]["headers"] = headers[key];
             }
         }
         return {
@@ -341,17 +351,17 @@ class AutoSwagger {
         };
     }
     parseParam(line) {
-        let where = 'path';
+        let where = "path";
         let required = true;
-        let type = 'string';
+        let type = "string";
         let example = null;
         let enums = [];
-        if (line.startsWith('@paramUse')) {
-            let use = this.getBetweenBrackets(line, 'paramUse');
-            const used = use.split(',');
+        if (line.startsWith("@paramUse")) {
+            let use = this.getBetweenBrackets(line, "paramUse");
+            const used = use.split(",");
             let h = {};
             used.forEach((u) => {
-                if (typeof this.options.common.parameters[u] === 'undefined') {
+                if (typeof this.options.common.parameters[u] === "undefined") {
                     return;
                 }
                 const common = this.options.common.parameters[u];
@@ -359,49 +369,49 @@ class AutoSwagger {
             });
             return h;
         }
-        if (line.startsWith('@paramPath')) {
+        if (line.startsWith("@paramPath")) {
             required = true;
         }
-        if (line.startsWith('@paramQuery')) {
+        if (line.startsWith("@paramQuery")) {
             required = false;
         }
-        let m = line.match('@param([a-zA-Z]*)');
+        let m = line.match("@param([a-zA-Z]*)");
         if (m !== null) {
             where = m[1].toLowerCase();
-            line = line.replace(m[0] + ' ', '');
+            line = line.replace(m[0] + " ", "");
         }
-        let [param, des, meta] = line.split(' - ');
-        if (typeof param === 'undefined') {
+        let [param, des, meta] = line.split(" - ");
+        if (typeof param === "undefined") {
             return;
         }
-        if (typeof des === 'undefined') {
-            des = '';
+        if (typeof des === "undefined") {
+            des = "";
         }
-        if (typeof meta !== 'undefined') {
-            if (meta.includes('@required')) {
+        if (typeof meta !== "undefined") {
+            if (meta.includes("@required")) {
                 required = true;
             }
-            let en = this.getBetweenBrackets(meta, 'enum');
-            example = this.getBetweenBrackets(meta, 'example');
-            const mtype = this.getBetweenBrackets(meta, 'type');
-            if (mtype !== '') {
+            let en = this.getBetweenBrackets(meta, "enum");
+            example = this.getBetweenBrackets(meta, "example");
+            const mtype = this.getBetweenBrackets(meta, "type");
+            if (mtype !== "") {
                 type = mtype;
             }
-            if (en !== '') {
-                enums = en.split(',');
+            if (en !== "") {
+                enums = en.split(",");
                 example = enums[0];
             }
         }
-        type = param === 'id' || param.endsWith('_id') ? 'integer' : type;
-        if (example === '' || example === null) {
+        type = param === "id" || param.endsWith("_id") ? "integer" : type;
+        if (example === "" || example === null) {
             switch (type) {
-                case 'string':
-                    example = 'string';
+                case "string":
+                    example = "string";
                     break;
-                case 'integer':
+                case "integer":
                     example = 1;
                     break;
-                case 'float':
+                case "float":
                     example = 1.5;
                     break;
             }
@@ -417,29 +427,29 @@ class AutoSwagger {
             required: required,
         };
         if (enums.length > 1) {
-            p['schema']['enum'] = enums;
+            p["schema"]["enum"] = enums;
         }
         return { [param]: p };
     }
     parseResponseHeader(line) {
-        let description = '';
-        let example = '';
-        let type = 'string';
+        let description = "";
+        let example = "";
+        let type = "string";
         let enums = [];
-        line = line.replace('@responseHeader ', '');
-        let [status, name, desc, meta] = line.split(' - ');
-        if (typeof status === 'undefined' || typeof name === 'undefined') {
+        line = line.replace("@responseHeader ", "");
+        let [status, name, desc, meta] = line.split(" - ");
+        if (typeof status === "undefined" || typeof name === "undefined") {
             return null;
         }
-        if (typeof desc !== 'undefined') {
+        if (typeof desc !== "undefined") {
             description = desc;
         }
-        if (name.includes('@use')) {
-            let use = this.getBetweenBrackets(name, 'use');
-            const used = use.split(',');
+        if (name.includes("@use")) {
+            let use = this.getBetweenBrackets(name, "use");
+            const used = use.split(",");
             let h = {};
             used.forEach((u) => {
-                if (typeof this.options.common.headers[u] === 'undefined') {
+                if (typeof this.options.common.headers[u] === "undefined") {
                     return;
                 }
                 const common = this.options.common.headers[u];
@@ -450,22 +460,22 @@ class AutoSwagger {
                 header: h,
             };
         }
-        if (typeof meta !== 'undefined') {
-            example = this.getBetweenBrackets(meta, 'example');
-            const mtype = this.getBetweenBrackets(meta, 'type');
-            if (mtype !== '') {
+        if (typeof meta !== "undefined") {
+            example = this.getBetweenBrackets(meta, "example");
+            const mtype = this.getBetweenBrackets(meta, "type");
+            if (mtype !== "") {
                 type = mtype;
             }
         }
-        if (example === '' || example === null) {
+        if (example === "" || example === null) {
             switch (type) {
-                case 'string':
-                    example = 'string';
+                case "string":
+                    example = "string";
                     break;
-                case 'integer':
+                case "integer":
                     example = 1;
                     break;
-                case 'float':
+                case "float":
                     example = 1.5;
                     break;
             }
@@ -475,7 +485,7 @@ class AutoSwagger {
             description: description,
         };
         if (enums.length > 1) {
-            h['schema']['enum'] = enums;
+            h["schema"]["enum"] = enums;
         }
         return {
             status: status,
@@ -486,56 +496,56 @@ class AutoSwagger {
     }
     parseResponse(line) {
         let responses = {};
-        line = line.replace('@responseBody ', '');
-        let [status, res] = line.split(' - ');
-        let sum = '';
-        if (typeof status === 'undefined')
+        line = line.replace("@responseBody ", "");
+        let [status, res] = line.split(" - ");
+        let sum = "";
+        if (typeof status === "undefined")
             return;
         responses[status] = {};
-        if (typeof res === 'undefined') {
+        if (typeof res === "undefined") {
             res = HTTPStatusCode.getMessage(status);
         }
         else {
-            res = HTTPStatusCode.getMessage(status) + ': ' + res;
-            let ref = line.substring(line.indexOf('<') + 1, line.lastIndexOf('>'));
-            let json = line.substring(line.indexOf('{') + 1, line.lastIndexOf('}'));
-            if (json !== '') {
+            res = HTTPStatusCode.getMessage(status) + ": " + res;
+            let ref = line.substring(line.indexOf("<") + 1, line.lastIndexOf(">"));
+            let json = line.substring(line.indexOf("{") + 1, line.lastIndexOf("}"));
+            if (json !== "") {
                 try {
-                    const j = JSON.parse('{' + json + '}');
-                    responses[status]['content'] = {
-                        'application/json': {
+                    const j = JSON.parse("{" + json + "}");
+                    responses[status]["content"] = {
+                        "application/json": {
                             schema: {
-                                type: 'object',
+                                type: "object",
                             },
                             example: j,
                         },
                     };
                 }
                 catch (_a) {
-                    console.error('Invalid JSON for: ' + line);
+                    console.error("Invalid JSON for: " + line);
                 }
             }
             // references a schema
-            if (ref !== '') {
-                const inc = this.getBetweenBrackets(res, 'with');
-                const exc = this.getBetweenBrackets(res, 'exclude');
-                const only = this.getBetweenBrackets(res, 'only');
-                const append = this.getBetweenBrackets(res, 'append');
+            if (ref !== "") {
+                const inc = this.getBetweenBrackets(res, "with");
+                const exc = this.getBetweenBrackets(res, "exclude");
+                const only = this.getBetweenBrackets(res, "only");
+                const append = this.getBetweenBrackets(res, "append");
                 let app = {};
                 try {
-                    app = JSON.parse('{' + append + '}');
+                    app = JSON.parse("{" + append + "}");
                 }
                 catch (_b) { }
-                res = sum = 'Returns a **single** instance of type `' + ref + '`';
+                res = sum = "Returns a **single** instance of type `" + ref + "`";
                 // references a schema array
-                if (ref.includes('[]')) {
-                    ref = ref.replace('[]', '');
-                    res = sum = 'Returns a **list** of type `' + ref + '`';
-                    responses[status]['content'] = {
-                        'application/json': {
+                if (ref.includes("[]")) {
+                    ref = ref.replace("[]", "");
+                    res = sum = "Returns a **list** of type `" + ref + "`";
+                    responses[status]["content"] = {
+                        "application/json": {
                             schema: {
-                                type: 'array',
-                                items: { $ref: '#/components/schemas/' + ref },
+                                type: "array",
+                                items: { $ref: "#/components/schemas/" + ref },
                             },
                             example: [
                                 Object.assign(this.getSchemaExampleBasedOnAnnotation(ref, inc, exc, only), app),
@@ -544,54 +554,56 @@ class AutoSwagger {
                     };
                 }
                 else {
-                    responses[status]['content'] = {
-                        'application/json': {
-                            schema: { $ref: '#/components/schemas/' + ref },
+                    responses[status]["content"] = {
+                        "application/json": {
+                            schema: { $ref: "#/components/schemas/" + ref },
                             example: Object.assign(this.getSchemaExampleBasedOnAnnotation(ref, inc, exc, only), app),
                         },
                     };
                 }
-                if (only !== '') {
-                    res += ' **only containing** _' + only.replace(/,/g, ', ') + '_';
+                if (only !== "") {
+                    res += " **only containing** _" + only.replace(/,/g, ", ") + "_";
                 }
-                if (inc !== '') {
-                    res += ' **including** _' + inc.replace(/,/g, ', ') + '_';
+                if (inc !== "") {
+                    res += " **including** _" + inc.replace(/,/g, ", ") + "_";
                 }
                 else {
-                    res += ' **without** any _relations_';
+                    res += " **without** any _relations_";
                 }
-                if (exc !== '') {
-                    res += ' and **excludes** _' + exc.replace(/,/g, ', ') + '_';
+                if (exc !== "") {
+                    res += " and **excludes** _" + exc.replace(/,/g, ", ") + "_";
                 }
-                res += '. Take a look at the example for further details.';
+                res += ". Take a look at the example for further details.";
             }
         }
-        responses[status]['description'] = res;
+        responses[status]["description"] = res;
         // responses[status]['summary'] = sum
         return responses;
     }
     jsonToRef(json) {
         let out = {};
         for (let [k, v] of Object.entries(json)) {
-            if (typeof v === 'object') {
+            if (typeof v === "object") {
                 v = this.jsonToRef(v);
             }
-            if (typeof v === 'string') {
-                let ref = v.substring(v.indexOf('<') + 1, v.lastIndexOf('>'));
-                if (ref !== '') {
-                    const inc = this.getBetweenBrackets(v, 'with');
-                    const exc = this.getBetweenBrackets(v, 'exclude');
-                    const append = this.getBetweenBrackets(v, 'append');
-                    const only = this.getBetweenBrackets(v, 'only');
+            if (typeof v === "string") {
+                let ref = v.substring(v.indexOf("<") + 1, v.lastIndexOf(">"));
+                if (ref !== "") {
+                    const inc = this.getBetweenBrackets(v, "with");
+                    const exc = this.getBetweenBrackets(v, "exclude");
+                    const append = this.getBetweenBrackets(v, "append");
+                    const only = this.getBetweenBrackets(v, "only");
                     let app = {};
                     try {
-                        app = JSON.parse('{' + append + '}');
+                        app = JSON.parse("{" + append + "}");
                     }
                     catch (_a) { }
                     // references a schema array
-                    if (ref.includes('[]')) {
-                        ref = ref.replace('[]', '');
-                        v = [Object.assign(this.getSchemaExampleBasedOnAnnotation(ref, inc, exc, only), app)];
+                    if (ref.includes("[]")) {
+                        ref = ref.replace("[]", "");
+                        v = [
+                            Object.assign(this.getSchemaExampleBasedOnAnnotation(ref, inc, exc, only), app),
+                        ];
                     }
                     else {
                         v = Object.assign(this.getSchemaExampleBasedOnAnnotation(ref, inc, exc, only), app);
@@ -604,17 +616,17 @@ class AutoSwagger {
     }
     parseRequestBody(line) {
         let requestBody = {};
-        line = line.replace('@requestBody ', '');
-        let json = line.substring(line.indexOf('{') + 1, line.lastIndexOf('}'));
-        if (json !== '') {
+        line = line.replace("@requestBody ", "");
+        let json = line.substring(line.indexOf("{") + 1, line.lastIndexOf("}"));
+        if (json !== "") {
             try {
-                let j = JSON.parse('{' + json + '}');
+                let j = JSON.parse("{" + json + "}");
                 j = this.jsonToRef(j);
                 j = requestBody = {
                     content: {
-                        'application/json': {
+                        "application/json": {
                             schema: {
-                                type: 'object',
+                                type: "object",
                             },
                             example: j,
                         },
@@ -622,30 +634,30 @@ class AutoSwagger {
                 };
             }
             catch (_a) {
-                console.error('Invalid JSON for ' + line);
+                console.error("Invalid JSON for " + line);
             }
         }
-        let ref = line.substring(line.indexOf('<') + 1, line.lastIndexOf('>'));
+        let ref = line.substring(line.indexOf("<") + 1, line.lastIndexOf(">"));
         // references a schema
-        if (ref !== '' && json === '') {
-            const inc = this.getBetweenBrackets(line, 'with');
-            const exc = this.getBetweenBrackets(line, 'exclude');
-            const append = this.getBetweenBrackets(line, 'append');
-            const only = this.getBetweenBrackets(line, 'only');
+        if (ref !== "" && json === "") {
+            const inc = this.getBetweenBrackets(line, "with");
+            const exc = this.getBetweenBrackets(line, "exclude");
+            const append = this.getBetweenBrackets(line, "append");
+            const only = this.getBetweenBrackets(line, "only");
             let app = {};
             try {
-                app = JSON.parse('{' + append + '}');
+                app = JSON.parse("{" + append + "}");
             }
             catch (_b) { }
             // references a schema array
-            if (ref.includes('[]')) {
-                ref = ref.replace('[]', '');
+            if (ref.includes("[]")) {
+                ref = ref.replace("[]", "");
                 requestBody = {
                     content: {
-                        'application/json': {
+                        "application/json": {
                             schema: {
-                                type: 'array',
-                                items: { $ref: '#/components/schemas/' + ref },
+                                type: "array",
+                                items: { $ref: "#/components/schemas/" + ref },
                             },
                             example: [
                                 Object.assign(this.getSchemaExampleBasedOnAnnotation(ref, inc, exc, only), app),
@@ -657,9 +669,9 @@ class AutoSwagger {
             else {
                 requestBody = {
                     content: {
-                        'application/json': {
+                        "application/json": {
                             schema: {
-                                $ref: '#/components/schemas/' + ref,
+                                $ref: "#/components/schemas/" + ref,
                             },
                             example: Object.assign(this.getSchemaExampleBasedOnAnnotation(ref, inc, exc, only), app),
                         },
@@ -670,93 +682,91 @@ class AutoSwagger {
         return requestBody;
     }
     getBetweenBrackets(value, start) {
-        let match = value.match(new RegExp(start + '\\(([^()]*)\\)', 'g'));
+        let match = value.match(new RegExp(start + "\\(([^()]*)\\)", "g"));
         if (match !== null) {
-            let m = match[0].replace(start + '(', '').replace(')', '');
-            if (start !== 'example') {
-                m = m.replace(/ /g, '');
+            let m = match[0].replace(start + "(", "").replace(")", "");
+            if (start !== "example") {
+                m = m.replace(/ /g, "");
             }
             return m;
         }
-        return '';
+        return "";
     }
-    getSchemaExampleBasedOnAnnotation(schema, inc = '', exc = '', onl = '', first = '', parent = '', level = 0) {
+    getSchemaExampleBasedOnAnnotation(schema, inc = "", exc = "", onl = "", first = "", parent = "", level = 0) {
         let props = {};
         if (!this.schemas[schema]) {
             return props;
         }
         let properties = this.schemas[schema].properties;
-        let include = inc.toString().split(',');
-        let exclude = exc.toString().split(',');
-        let only = onl.toString().split(',');
-        only = only.length === 1 && only[0] === '' ? [] : only;
-        if (typeof properties === 'undefined')
+        let include = inc.toString().split(",");
+        let exclude = exc.toString().split(",");
+        let only = onl.toString().split(",");
+        only = only.length === 1 && only[0] === "" ? [] : only;
+        if (typeof properties === "undefined")
             return;
         // skip nested if not requested
-        if (parent !== '' &&
-            schema !== '' &&
-            parent.includes('.') &&
-            this.schemas[schema].description === 'Model' &&
+        if (parent !== "" &&
+            schema !== "" &&
+            parent.includes(".") &&
+            this.schemas[schema].description === "Model" &&
             !inc.includes(parent) &&
-            !inc.includes(parent + '.relations') &&
-            !inc.includes(first + '.relations')) {
+            !inc.includes(parent + ".relations") &&
+            !inc.includes(first + ".relations")) {
             return null;
         }
         for (const [key, value] of Object.entries(properties)) {
             let isArray = false;
             if (exclude.includes(key))
                 continue;
-            if (exclude.includes(parent + '.' + key))
+            if (exclude.includes(parent + "." + key))
                 continue;
-            if (key === 'password' && !include.includes('password') && !only.includes('password'))
+            if (key === "password" &&
+                !include.includes("password") &&
+                !only.includes("password"))
                 continue;
-            if (key === 'password_confirmation' &&
-                !include.includes('password_confirmation') &&
-                !only.includes('password_confirmation'))
+            if (key === "password_confirmation" &&
+                !include.includes("password_confirmation") &&
+                !only.includes("password_confirmation"))
                 continue;
-            if ((key === 'created_at' || key === 'updated_at' || key === 'deleted_at') &&
-                exc.includes('timestamps'))
+            if ((key === "created_at" ||
+                key === "updated_at" ||
+                key === "deleted_at") &&
+                exc.includes("timestamps"))
                 continue;
-            let rel = '';
-            let example = value['example'];
-            if (parent === '' && only.length > 0 && !only.includes(key))
+            let rel = "";
+            let example = value["example"];
+            if (parent === "" && only.length > 0 && !only.includes(key))
                 continue;
-            if (typeof value['$ref'] !== 'undefined') {
-                rel = value['$ref'].replace('#/components/schemas/', '');
+            if (typeof value["$ref"] !== "undefined") {
+                rel = value["$ref"].replace("#/components/schemas/", "");
             }
-            if (typeof value['items'] !== 'undefined' && typeof value['items']['$ref'] !== 'undefined') {
-                rel = value['items']['$ref'].replace('#/components/schemas/', '');
+            if (typeof value["items"] !== "undefined" &&
+                typeof value["items"]["$ref"] !== "undefined") {
+                rel = value["items"]["$ref"].replace("#/components/schemas/", "");
             }
-            if (typeof value['items'] !== 'undefined') {
+            if (typeof value["items"] !== "undefined") {
                 isArray = true;
-                example = value['items']['example'];
+                example = value["items"]["example"];
             }
-            if (rel !== '') {
+            if (rel !== "") {
                 // skip related models of main schema
-                if (parent === '' &&
-                    rel !== '' &&
-                    this.schemas[rel].description === 'Model' &&
-                    !include.includes('relations') &&
+                if (parent === "" &&
+                    rel !== "" &&
+                    this.schemas[rel].description === "Model" &&
+                    !include.includes("relations") &&
                     !include.includes(key)) {
                     continue;
                 }
-                // if relation and relation_id is set, delete relation_id key
-                if (props[key + '_id'] !== 'undefined') {
-                    delete props[key + '_id'];
+                if (typeof value["items"] !== "undefined" &&
+                    typeof value["items"]["$ref"] !== "undefined") {
+                    rel = value["items"]["$ref"].replace("#/components/schemas/", "");
                 }
-                // if relation of relation_id exists, skip
-                if (typeof props[key.replace('_id', '')] !== 'undefined')
-                    continue;
-                if (typeof value['items'] !== 'undefined' &&
-                    typeof value['items']['$ref'] !== 'undefined') {
-                    rel = value['items']['$ref'].replace('#/components/schemas/', '');
-                }
-                if (rel == '') {
+                if (rel == "") {
                     return;
                 }
-                let propdata = '';
+                let propdata = "";
                 if (level <= 10) {
-                    propdata = this.getSchemaExampleBasedOnAnnotation(rel, inc, exc, onl, parent, parent === '' ? key : parent + '.' + key, level++);
+                    propdata = this.getSchemaExampleBasedOnAnnotation(rel, inc, exc, onl, parent, parent === "" ? key : parent + "." + key, level++);
                 }
                 if (propdata === null) {
                     continue;
@@ -774,26 +784,26 @@ class AutoSwagger {
     */
     extractInfos(p) {
         let parameters = {};
-        let pattern = '';
+        let pattern = "";
         let tags = [];
-        const split = p.split('/');
+        const split = p.split("/");
         if (split.length > this.options.tagIndex) {
             tags = [split[this.options.tagIndex].toUpperCase()];
         }
         split.forEach((part) => {
-            if (part.startsWith(':')) {
-                const param = part.replace(':', '');
-                part = '{' + param + '}';
+            if (part.startsWith(":")) {
+                const param = part.replace(":", "");
+                part = "{" + param + "}";
                 parameters = Object.assign(Object.assign({}, parameters), { [param]: {
-                        in: 'path',
+                        in: "path",
                         name: param,
                         schema: {
-                            type: param === 'id' || param.endsWith('_id') ? 'integer' : 'string',
+                            type: param === "id" || param.endsWith("_id") ? "integer" : "string",
                         },
                         required: true,
                     } });
             }
-            pattern += '/' + part;
+            pattern += "/" + part;
         });
         return { tags, parameters, pattern };
     }
@@ -801,7 +811,7 @@ class AutoSwagger {
         return __awaiter(this, void 0, void 0, function* () {
             let schemas = {
                 Any: {
-                    description: 'Any JSON object not defined as schema',
+                    description: "Any JSON object not defined as schema",
                 },
             };
             schemas = Object.assign(Object.assign(Object.assign({}, schemas), (yield this.getInterfaces())), (yield this.getModels()));
@@ -811,18 +821,18 @@ class AutoSwagger {
     getModels() {
         return __awaiter(this, void 0, void 0, function* () {
             const models = {};
-            const files = yield this.getFiles(path.join(this.options.path, '/Models'), []);
+            const files = yield this.getFiles(path.join(this.options.path, "/Models"), []);
             const readFile = util.promisify(fs.readFile);
             for (let file of files) {
-                const data = yield readFile(file, 'utf8');
-                file = file.replace('.ts', '');
-                const split = file.split('/');
-                const name = split[split.length - 1].replace('.ts', '');
-                file = file.replace('app/', '/app/');
+                const data = yield readFile(file, "utf8");
+                file = file.replace(".ts", "");
+                const split = file.split("/");
+                const name = split[split.length - 1].replace(".ts", "");
+                file = file.replace("app/", "/app/");
                 let schema = {
-                    type: 'object',
+                    type: "object",
                     properties: this.parseModelProperties(data),
-                    description: 'Model',
+                    description: "Model",
                 };
                 models[name] = schema;
             }
@@ -832,14 +842,14 @@ class AutoSwagger {
     getInterfaces() {
         return __awaiter(this, void 0, void 0, function* () {
             let interfaces = {};
-            const files = yield this.getFiles(path.join(this.options.path, '/Interfaces'), []);
+            const files = yield this.getFiles(path.join(this.options.path, "/Interfaces"), []);
             const readFile = util.promisify(fs.readFile);
             for (let file of files) {
-                const data = yield readFile(file, 'utf8');
-                file = file.replace('.ts', '');
-                const split = file.split('/');
-                const name = split[split.length - 1].replace('.ts', '');
-                file = file.replace('app/', '/app/');
+                const data = yield readFile(file, "utf8");
+                file = file.replace(".ts", "");
+                const split = file.split("/");
+                const name = split[split.length - 1].replace(".ts", "");
+                file = file.replace("app/", "/app/");
                 interfaces = Object.assign(Object.assign({}, interfaces), this.parseInterfaces(data));
             }
             return interfaces;
@@ -847,78 +857,85 @@ class AutoSwagger {
     }
     parseInterfaces(data) {
         let interfaces = {};
-        let name = '';
+        let name = "";
         let props = {};
         // remove empty lines
-        data = data.replace(/\t/g, '').replace(/^(?=\n)$|^\s*|\s*$|\n\n+/gm, '');
-        const lines = data.split('\n');
+        data = data.replace(/\t/g, "").replace(/^(?=\n)$|^\s*|\s*$|\n\n+/gm, "");
+        const lines = data.split("\n");
         lines.forEach((line, index) => {
             line = line.trim();
-            if (line.startsWith('export') && !line.startsWith('export default'))
+            if (line.startsWith("export") && !line.startsWith("export default"))
                 return;
-            if (line.startsWith('//') || line.startsWith('/*') || line.startsWith('*'))
+            if (line.startsWith("//") ||
+                line.startsWith("/*") ||
+                line.startsWith("*"))
                 return;
-            if (line.startsWith('interface ') || line.startsWith('export default interface ')) {
+            if (line.startsWith("interface ") ||
+                line.startsWith("export default interface ")) {
                 props = {};
                 name = line;
-                name = name.replace('export default ', '');
-                name = name.replace('interface ', '');
-                name = name.replace('{', '');
+                name = name.replace("export default ", "");
+                name = name.replace("interface ", "");
+                name = name.replace("{", "");
                 name = name.trim();
                 return;
             }
-            if (line === '}') {
-                if (name === '')
+            if (line === "}") {
+                if (name === "")
                     return;
-                interfaces[name] = { type: 'object', properties: props, description: 'Interface' };
+                interfaces[name] = {
+                    type: "object",
+                    properties: props,
+                    description: "Interface",
+                };
                 return;
             }
-            let meta = '';
+            let meta = "";
             if (index > 0) {
                 meta = lines[index - 1];
             }
-            const s = line.split(':');
+            const s = line.split(":");
             let field = s[0];
             let type = s[1];
             let notRequired = false;
-            if (field.endsWith('?')) {
-                field = field.replace('?', '');
+            if (field.endsWith("?")) {
+                field = field.replace("?", "");
                 notRequired = true;
             }
-            let en = this.getBetweenBrackets(meta, 'enum');
-            let example = this.getBetweenBrackets(meta, 'example');
+            let en = this.getBetweenBrackets(meta, "enum");
+            let example = this.getBetweenBrackets(meta, "example");
             let enums = [];
-            if (example === '') {
+            if (example === "") {
                 example = this.examples(field);
             }
-            if (en !== '') {
-                enums = en.split(',');
+            if (en !== "") {
+                enums = en.split(",");
                 example = enums[0];
             }
             field = field.trim();
             type = type.trim();
             field = (0, change_case_1.snakeCase)(field);
             let isArray = false;
-            if (type.includes('[]')) {
-                type = type.replace('[]', '');
+            if (type.includes("[]")) {
+                type = type.replace("[]", "");
                 isArray = true;
             }
-            let indicator = 'type';
+            let indicator = "type";
             if (!this.standardTypes.includes(type)) {
-                indicator = '$ref';
-                type = '#/components/schemas/' + type;
+                indicator = "$ref";
+                type = "#/components/schemas/" + type;
             }
             let prop = {};
             prop[indicator] = type;
-            prop['example'] = example;
+            prop["example"] = example;
             if (isArray) {
-                props[field] = { type: 'array', items: prop };
+                props[field] = { type: "array", items: prop };
             }
             else {
                 props[field] = prop;
             }
             if (enums.length > 0) {
-                props[field]['enum'] = enums;
+                props[field]["enum"] = enums;
             }
         });
         return interfaces;
@@ -926,71 +943,74 @@ class AutoSwagger {
     parseModelProperties(data) {
         let props = {};
         // remove empty lines
-        data = data.replace(/\t/g, '').replace(/^(?=\n)$|^\s*|\s*$|\n\n+/gm, '');
-        const lines = data.split('\n');
+        data = data.replace(/\t/g, "").replace(/^(?=\n)$|^\s*|\s*$|\n\n+/gm, "");
+        const lines = data.split("\n");
         let softDelete = false;
         lines.forEach((line, index) => {
             line = line.trim();
             // skip comments
-            if (line.includes('@swagger-softdelete') || line.includes('SoftDeletes')) {
+            if (line.includes("@swagger-softdelete") ||
+                line.includes("SoftDeletes")) {
                 softDelete = true;
             }
-            if (line.startsWith('//') || line.startsWith('/*') || line.startsWith('*'))
+            if (line.startsWith("//") ||
+                line.startsWith("/*") ||
+                line.startsWith("*"))
                 return;
-            if (index > 0 && lines[index - 1].includes('serializeAs: null'))
+            if (index > 0 && lines[index - 1].includes("serializeAs: null"))
                 return;
-            if (index > 0 && lines[index - 1].includes('@no-swagger'))
+            if (index > 0 && lines[index - 1].includes("@no-swagger"))
                 return;
-            if (!line.startsWith('public ') && !line.startsWith('public get'))
+            if (!line.startsWith("public ") && !line.startsWith("public get"))
                 return;
-            if (line.includes('(') && !line.startsWith('public get'))
+            if (line.includes("(") && !line.startsWith("public get"))
                 return;
-            let s = line.split('public ');
-            let s2 = s[1].split(':');
-            if (line.startsWith('public get')) {
-                s = line.split('public get');
-                let s2 = s[1].split(':');
+            let s = line.split("public ");
+            let s2 = s[1].split(":");
+            if (line.startsWith("public get")) {
+                s = line.split("public get");
+                let s2 = s[1].split(":");
             }
             let field = s2[0];
             let type = s2[1];
             let enums = [];
-            let format = '';
+            let format = "";
             let example = this.examples(field);
-            if (index > 0 && lines[index - 1].includes('@enum')) {
+            if (index > 0 && lines[index - 1].includes("@enum")) {
                 const l = lines[index - 1];
-                let en = this.getBetweenBrackets(l, 'enum');
-                if (en !== '') {
-                    enums = en.split(',');
+                let en = this.getBetweenBrackets(l, "enum");
+                if (en !== "") {
+                    enums = en.split(",");
                     example = enums[0];
                 }
             }
-            if (index > 0 && lines[index - 1].includes('@example')) {
+            if (index > 0 && lines[index - 1].includes("@example")) {
                 const l = lines[index - 1];
                 let match = l.match(/example\(([^()]*)\)/g);
                 if (match !== null) {
-                    const m = match[0].replace('example(', '').replace(')', '');
+                    const m = match[0].replace("example(", "").replace(")", "");
                     example = m;
                 }
             }
-            if (typeof type === 'undefined') {
-                type = 'string';
-                format = '';
+            if (typeof type === "undefined") {
+                type = "string";
+                format = "";
             }
             field = field.trim();
             type = type.trim();
-            field = field.replace('()', '');
-            field = field.replace('get ', '');
-            type = type.replace('{', '');
+            field = field.replace("()", "");
+            field = field.replace("get ", "");
+            type = type.replace("{", "");
             field = (0, change_case_1.snakeCase)(field);
-            let indicator = 'type';
+            let indicator = "type";
             if (example === null) {
-                example = 'string';
+                example = "string";
             }
             // if relation to another model
-            if (type.includes('typeof')) {
-                s = type.split('typeof ');
-                type = '#/components/schemas/' + s[1].slice(0, -1);
-                indicator = '$ref';
+            if (type.includes("typeof")) {
+                s = type.split("typeof ");
+                type = "#/components/schemas/" + s[1].slice(0, -1);
+                indicator = "$ref";
             }
             else {
                 if (this.standardTypes.includes(type.toLowerCase())) {
@@ -998,111 +1018,111 @@ class AutoSwagger {
                 }
                 else {
                     // assume its a custom interface
-                    indicator = '$ref';
-                    type = '#/components/schemas/' + type;
+                    indicator = "$ref";
+                    type = "#/components/schemas/" + type;
                 }
             }
             type = type.trim();
             let isArray = false;
-            if (line.includes('HasMany') ||
-                line.includes('ManyToMany') ||
-                line.includes('HasManyThrough') ||
-                type.includes('[]')) {
+            if (line.includes("HasMany") ||
+                line.includes("ManyToMany") ||
+                line.includes("HasManyThrough") ||
+                type.includes("[]")) {
                 isArray = true;
             }
-            if (field === 'id' || field.includes('_id')) {
-                type = 'integer';
+            if (field === "id" || field.includes("_id")) {
+                type = "integer";
             }
-            if (type === 'datetime') {
-                indicator = 'type';
-                type = 'string';
-                format = 'date-time';
-                example = '2021-03-23T16:13:08.489+01:00';
+            if (type === "datetime") {
+                indicator = "type";
+                type = "string";
+                format = "date-time";
+                example = "2021-03-23T16:13:08.489+01:00";
             }
-            if (field === 'email') {
-                indicator = 'type';
-                type = 'string';
-                format = 'email';
-                example = 'johndoe@example.com';
+            if (field === "email") {
+                indicator = "type";
+                type = "string";
+                format = "email";
+                example = "johndoe@example.com";
             }
-            if (field === 'password') {
-                indicator = 'type';
-                type = 'string';
-                format = 'password';
+            if (field === "password") {
+                indicator = "type";
+                type = "string";
+                format = "password";
             }
-            if (type === 'any') {
-                indicator = '$ref';
-                type = '#/components/schemas/Any';
+            if (type === "any") {
+                indicator = "$ref";
+                type = "#/components/schemas/Any";
             }
             let prop = {};
-            if (type === 'integer' || type === 'number') {
-                if (example === null || example === 'string') {
+            if (type === "integer" || type === "number") {
+                if (example === null || example === "string") {
                     example = Math.floor(Math.random() * 1000);
                 }
             }
-            if (type === 'boolean') {
+            if (type === "boolean") {
                 example = true;
             }
             prop[indicator] = type;
-            prop['example'] = example;
+            prop["example"] = example;
             // if array
             if (isArray) {
-                props[field] = { type: 'array', items: prop };
+                props[field] = { type: "array", items: prop };
             }
             else {
                 props[field] = prop;
-                if (format !== '') {
-                    props[field]['format'] = format;
+                if (format !== "") {
+                    props[field]["format"] = format;
                 }
             }
             if (enums.length > 0) {
-                props[field]['enum'] = enums;
+                props[field]["enum"] = enums;
             }
         });
         if (softDelete) {
-            props['deleted_at'] = {
-                type: 'string',
-                format: 'date-time',
-                example: '2021-03-23T16:13:08.489+01:00',
+            props["deleted_at"] = {
+                type: "string",
+                format: "date-time",
+                example: "2021-03-23T16:13:08.489+01:00",
             };
         }
         return props;
     }
     examples(field) {
         const ex = {
-            title: 'Lorem Ipsum',
-            description: 'Lorem ipsum dolor sit amet',
-            name: 'John Doe',
-            full_name: 'John Doe',
-            first_name: 'John',
-            last_name: 'Doe',
-            email: 'johndoe@example.com',
-            address: '1028 Farland Street',
-            street: '1028 Farland Street',
-            country: 'United States of America',
-            country_code: 'US',
+            title: "Lorem Ipsum",
+            description: "Lorem ipsum dolor sit amet",
+            name: "John Doe",
+            full_name: "John Doe",
+            first_name: "John",
+            last_name: "Doe",
+            email: "johndoe@example.com",
+            address: "1028 Farland Street",
+            street: "1028 Farland Street",
+            country: "United States of America",
+            country_code: "US",
             zip: 60617,
-            city: 'Chicago',
-            password: 'S3cur3P4s5word!',
-            password_confirmation: 'S3cur3P4s5word!',
+            city: "Chicago",
+            password: "S3cur3P4s5word!",
+            password_confirmation: "S3cur3P4s5word!",
             lat: 41.705,
             long: -87.475,
             price: 10.5,
-            avatar: 'https://example.com/avatar.png',
-            url: 'https://example.com',
+            avatar: "https://example.com/avatar.png",
+            url: "https://example.com",
         };
-        if (typeof ex[field] === 'undefined') {
+        if (typeof ex[field] === "undefined") {
             return null;
         }
         return ex[field];
     }
     getFiles(dir, files_) {
         return __awaiter(this, void 0, void 0, function* () {
-            const fs = require('fs');
+            const fs = require("fs");
             files_ = files_ || [];
             var files = yield fs.readdirSync(dir);
             for (let i in files) {
-                var name = dir + '/' + files[i];
+                var name = dir + "/" + files[i];
                 if (fs.statSync(name).isDirectory()) {
                     this.getFiles(name, files_);
                 }
