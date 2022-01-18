@@ -1008,10 +1008,14 @@ export class AutoSwagger {
     // remove empty lines
     data = data.replace(/\t/g, '').replace(/^(?=\n)$|^\s*|\s*$|\n\n+/gm, '')
     const lines = data.split('\n')
+    let softDelete = false
 
     lines.forEach((line, index) => {
       line = line.trim()
       // skip comments
+      if (line.includes('@swagger-softdelete') || line.includes('SoftDeletes')) {
+        softDelete = true
+      }
       if (line.startsWith('//') || line.startsWith('/*') || line.startsWith('*')) return
       if (index > 0 && lines[index - 1].includes('serializeAs: null')) return
       if (index > 0 && lines[index - 1].includes('@no-swagger')) return
@@ -1146,6 +1150,14 @@ export class AutoSwagger {
         props[field]['enum'] = enums
       }
     })
+
+    if (softDelete) {
+      props['deleted_at'] = {
+        type: 'string',
+        format: 'date-time',
+        example: '2021-03-23T16:13:08.489+01:00',
+      }
+    }
 
     return props
   }

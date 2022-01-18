@@ -267,7 +267,9 @@ Instead of using `param: any` you can now use custom interfaces `param: UserDeta
 
 Add additional documentation to your Models properties.
 
----
+### SoftDelete
+
+Either use `compose(BaseModel, SoftDeletes)` or add a line `@swagger-softdeletes` to your Model.
 
 ## Attention!
 
