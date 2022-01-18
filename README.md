@@ -129,7 +129,7 @@ Format: `<body>`
 @responseBody <status> - <Model[]>.with(relations).exclude(property1, property2, property3.subproperty) // returns model specification
 
 @responseBody <status> - <Model[]>.append("some":"valid json") // append additional properties to a Model
-
+@responseBody <status> - <Model>.only(property1, property2) // pick only specific properties
 @responseBody <status> - {"foo": "bar"} //returns custom json
 ```
 
