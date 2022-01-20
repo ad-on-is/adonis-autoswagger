@@ -47,7 +47,7 @@ class AutoSwagger {
 				<script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.1.3/swagger-ui-standalone-preset.js"></script>
 				<script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.1.3/swagger-ui-bundle.js"></script>
 				<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.1.3/swagger-ui.css" />
-				<title>Swagger</title>
+				<title>Documentation</title>
 		</head>
 		<body>
 				<div id="swagger-ui"></div>
@@ -68,6 +68,44 @@ class AutoSwagger {
 				</script>
 		</body>
 		</html>`);
+    }
+    rapidoc(url, style = "view") {
+        return (`
+    <!doctype html> <!-- Important: must specify -->
+    <html>
+      <head>
+        <meta charset="utf-8"> <!-- Important: rapi-doc uses utf8 characters -->
+        <script type="module" src="https://unpkg.com/rapidoc/dist/rapidoc-min.js"></script>
+        <title>Documentation</title>
+      </head>
+      <body>
+        <rapi-doc
+          spec-url = "` +
+            url +
+            `"
+      theme = "dark"
+      bg-color = "#24283b"
+      header-color = "#1a1b26"
+      nav-hover-bg-color = "#1a1b26"
+      nav-bg-color = "#24283b"
+      text-color = "#c0caf5"
+      nav-text-color = "#c0caf5"
+      primary-color = "#2ac3de"
+      heading-text = "Documentation"
+      sort-tags = "true"
+      render-style = "` +
+            style +
+            `"
+      default-schema-tab = "example"
+      show-components = "true"
+      allow-spec-url-load = "false"
+      allow-spec-file-load = "false"
+      sort-endpoints-by = "path"
+          
+        > </rapi-doc>
+      </body>
+    </html>
+    `);
     }
     writeFile(routes, options) {
         return __awaiter(this, void 0, void 0, function* () {

@@ -16,6 +16,7 @@ export declare class AutoSwagger {
     private schemas;
     private standardTypes;
     ui(url: string): string;
+    rapidoc(url: string, style?: string): string;
     writeFile(routes: any, options: any): Promise<void>;
     private readFile;
     docs(routes: any, options: options): Promise<any>;
