@@ -90,7 +90,7 @@ class AutoSwagger {
       nav-bg-color = "#24283b"
       text-color = "#c0caf5"
       nav-text-color = "#c0caf5"
-      primary-color = "#2ac3de"
+      primary-color = "#9aa5ce"
       heading-text = "Documentation"
       sort-tags = "true"
       render-style = "` +
@@ -101,7 +101,7 @@ class AutoSwagger {
       allow-spec-url-load = "false"
       allow-spec-file-load = "false"
       sort-endpoints-by = "path"
-          
+
         > </rapi-doc>
       </body>
     </html>
