@@ -128,7 +128,7 @@ export class AutoSwagger {
   }
 
   async docs(routes, options: options) {
-    if (process.env.NODE_ENV !== "development") {
+    if (process.env.NODE_ENV === "production") {
       return this.readFile(options.path);
     }
     return this.generate(routes, options);

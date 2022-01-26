@@ -127,7 +127,7 @@ class AutoSwagger {
     }
     docs(routes, options) {
         return __awaiter(this, void 0, void 0, function* () {
-            if (process.env.NODE_ENV !== "development") {
+            if (process.env.NODE_ENV === "production") {
                 return this.readFile(options.path);
             }
             return this.generate(routes, options);
