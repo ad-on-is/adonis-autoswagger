@@ -469,8 +469,6 @@ export class AutoSwagger {
       }
     }
 
-    type = param === "id" || param.endsWith("_id") ? "integer" : type;
-
     if (example === "" || example === null) {
       switch (type) {
         case "string":
@@ -945,8 +943,7 @@ export class AutoSwagger {
             in: "path",
             name: param,
             schema: {
-              type:
-                param === "id" || param.endsWith("_id") ? "integer" : "string",
+              type: "string",
             },
             required: true,
           },
@@ -1210,10 +1207,6 @@ export class AutoSwagger {
         type.includes("[]")
       ) {
         isArray = true;
-      }
-
-      if (field === "id" || field.includes("_id")) {
-        type = "integer";
       }
 
       if (type === "datetime") {

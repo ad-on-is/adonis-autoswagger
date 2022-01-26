@@ -440,7 +440,6 @@ class AutoSwagger {
                 example = enums[0];
             }
         }
-        type = param === "id" || param.endsWith("_id") ? "integer" : type;
         if (example === "" || example === null) {
             switch (type) {
                 case "string":
@@ -837,7 +836,7 @@ class AutoSwagger {
                         in: "path",
                         name: param,
                         schema: {
-                            type: param === "id" || param.endsWith("_id") ? "integer" : "string",
+                            type: "string",
                         },
                         required: true,
                     } });
@@ -1068,9 +1067,6 @@ class AutoSwagger {
                 line.includes("HasManyThrough") ||
                 type.includes("[]")) {
                 isArray = true;
-            }
-            if (field === "id" || field.includes("_id")) {
-                type = "integer";
             }
             if (type === "datetime") {
                 indicator = "type";
