@@ -420,13 +420,13 @@ export class AutoSwagger {
     if (line.startsWith("@paramUse")) {
       let use = this.getBetweenBrackets(line, "paramUse");
       const used = use.split(",");
-      let h = {};
+      let h = [];
       used.forEach((u) => {
         if (typeof this.options.common.parameters[u] === "undefined") {
           return;
         }
         const common = this.options.common.parameters[u];
-        h = { ...h, ...common };
+        h = [...h, ...common];
       });
 
       return h;
