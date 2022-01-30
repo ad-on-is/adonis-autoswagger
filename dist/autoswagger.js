@@ -25,6 +25,7 @@ const extract = require("extract-comments");
 const HTTPStatusCode = require("http-status-code");
 const _ = require("lodash/core");
 const change_case_1 = require("change-case");
+const fs_1 = require("fs");
 class AutoSwagger {
     constructor() {
         this.parsedFiles = [];
@@ -176,6 +177,10 @@ class AutoSwagger {
                 paths: {},
             };
             let paths = {};
+            let securities = {
+                auth: { BearerAuth: ["access"] },
+                "auth:api": { BearerAuth: ["access"] },
+            };
             try {
                 for (routes_1 = __asyncValues(routes); routes_1_1 = yield routes_1.next(), !routes_1_1.done;) {
                     const route = routes_1_1.value;
@@ -188,10 +193,11 @@ class AutoSwagger {
                         DELETE: "202",
                         PUT: "204",
                     };
-                    if (route.middleware.length > 0 &&
-                        route.middleware["auth:api"] !== null) {
-                        security = [{ BearerAuth: ["access"] }];
-                    }
+                    route.middleware.forEach((m) => {
+                        if (typeof securities[m] !== "undefined") {
+                            security.push(securities[m]);
+                        }
+                    });
                     let sourceFile = "";
                     let action = "";
                     let customAnnotations;
@@ -859,7 +865,11 @@ class AutoSwagger {
     getModels() {
         return __awaiter(this, void 0, void 0, function* () {
             const models = {};
-            const files = yield this.getFiles(path.join(this.options.path, "/Models"), []);
+            const p = path.join(this.options.path, "/Models");
+            if (!(0, fs_1.existsSync)(p)) {
+                return models;
+            }
+            const files = yield this.getFiles(p, []);
             const readFile = util.promisify(fs.readFile);
             for (let file of files) {
                 const data = yield readFile(file, "utf8");
@@ -880,7 +890,11 @@ class AutoSwagger {
     getInterfaces() {
         return __awaiter(this, void 0, void 0, function* () {
             let interfaces = {};
-            const files = yield this.getFiles(path.join(this.options.path, "/Interfaces"), []);
+            const p = path.join(this.options.path, "/Interfaces");
+            if (!(0, fs_1.existsSync)(p)) {
+                return interfaces;
+            }
+            const files = yield this.getFiles(p, []);
             const readFile = util.promisify(fs.readFile);
             for (let file of files) {
                 const data = yield readFile(file, "utf8");

@@ -6,6 +6,7 @@ const extract = require("extract-comments");
 const HTTPStatusCode = require("http-status-code");
 const _ = require("lodash/core");
 import { camelCase, snakeCase } from "change-case";
+import { existsSync } from "fs";
 import { env } from "process";
 
 interface options {
@@ -176,6 +177,12 @@ export class AutoSwagger {
       paths: {},
     };
     let paths = {};
+
+    let securities = {
+      auth: { BearerAuth: ["access"] },
+      "auth:api": { BearerAuth: ["access"] },
+    };
+
     for await (const route of routes) {
       if (options.ignore.includes(route.pattern)) continue;
 
@@ -186,12 +193,12 @@ export class AutoSwagger {
         DELETE: "202",
         PUT: "204",
       };
-      if (
-        route.middleware.length > 0 &&
-        route.middleware["auth:api"] !== null
-      ) {
-        security = [{ BearerAuth: ["access"] }];
-      }
+
+      route.middleware.forEach((m) => {
+        if (typeof securities[m] !== "undefined") {
+          security.push(securities[m]);
+        }
+      });
 
       let sourceFile = "";
       let action = "";
@@ -973,10 +980,11 @@ export class AutoSwagger {
 
   private async getModels() {
     const models = {};
-    const files = await this.getFiles(
-      path.join(this.options.path, "/Models"),
-      []
-    );
+    const p = path.join(this.options.path, "/Models");
+    if (!existsSync(p)) {
+      return models;
+    }
+    const files = await this.getFiles(p, []);
     const readFile = util.promisify(fs.readFile);
     for (let file of files) {
       const data = await readFile(file, "utf8");
@@ -996,10 +1004,11 @@ export class AutoSwagger {
 
   private async getInterfaces() {
     let interfaces = {};
-    const files = await this.getFiles(
-      path.join(this.options.path, "/Interfaces"),
-      []
-    );
+    const p = path.join(this.options.path, "/Interfaces");
+    if (!existsSync(p)) {
+      return interfaces;
+    }
+    const files = await this.getFiles(p, []);
     const readFile = util.promisify(fs.readFile);
     for (let file of files) {
       const data = await readFile(file, "utf8");
