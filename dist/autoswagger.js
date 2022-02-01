@@ -354,6 +354,16 @@ class AutoSwagger {
         let description = "";
         let responses = {};
         let requestBody = {};
+        requestBody = {
+            content: {
+                "application/json": {
+                    schema: {
+                        type: "object",
+                    },
+                    example: "",
+                },
+            },
+        };
         let parameters = {};
         let headers = {};
         lines.forEach((line) => {
@@ -665,7 +675,7 @@ class AutoSwagger {
             try {
                 let j = JSON.parse("{" + json + "}");
                 j = this.jsonToRef(j);
-                j = requestBody = {
+                requestBody = {
                     content: {
                         "application/json": {
                             schema: {
@@ -1050,6 +1060,11 @@ class AutoSwagger {
             }
             field = field.trim();
             type = type.trim();
+            //TODO: make oneOf
+            if (type.includes(" | ")) {
+                const types = type.split(" | ");
+                type = types.filter((t) => t !== "null")[0];
+            }
             field = field.replace("()", "");
             field = field.replace("get ", "");
             type = type.replace("{", "");
