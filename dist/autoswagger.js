@@ -175,12 +175,14 @@ class AutoSwagger {
                     schemas: this.schemas,
                 },
                 paths: {},
+                tags: [],
             };
             let paths = {};
             let securities = {
                 auth: { BearerAuth: ["access"] },
                 "auth:api": { BearerAuth: ["access"] },
             };
+            let globalTags = [];
             try {
                 for (routes_1 = __asyncValues(routes); routes_1_1 = yield routes_1.next(), !routes_1_1.done;) {
                     const route = routes_1_1.value;
@@ -211,6 +213,16 @@ class AutoSwagger {
                         }
                     }
                     let { tags, parameters, pattern } = this.extractInfos(route.pattern);
+                    tags.forEach((tag) => {
+                        if (globalTags.filter((e) => e.name === tag).length > 0)
+                            return;
+                        if (tag === "")
+                            return;
+                        globalTags.push({
+                            name: tag,
+                            description: "Everything related to " + tag,
+                        });
+                    });
                     route.methods.forEach((method) => {
                         let responses = {};
                         if (method === "HEAD")
@@ -302,6 +314,7 @@ class AutoSwagger {
                         pattern = pattern.slice(1);
                         paths = Object.assign(Object.assign({}, paths), { [pattern]: Object.assign(Object.assign({}, paths[pattern]), { [method.toLowerCase()]: m }) });
                     });
+                    docs.tags = globalTags;
                     docs.paths = paths;
                 }
             }

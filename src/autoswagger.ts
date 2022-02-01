@@ -175,6 +175,7 @@ export class AutoSwagger {
         schemas: this.schemas,
       },
       paths: {},
+      tags: [],
     };
     let paths = {};
 
@@ -183,6 +184,7 @@ export class AutoSwagger {
       "auth:api": { BearerAuth: ["access"] },
     };
 
+    let globalTags = [];
     for await (const route of routes) {
       if (options.ignore.includes(route.pattern)) continue;
 
@@ -218,6 +220,16 @@ export class AutoSwagger {
       }
 
       let { tags, parameters, pattern } = this.extractInfos(route.pattern);
+
+      tags.forEach((tag) => {
+        if (globalTags.filter((e) => e.name === tag).length > 0) return;
+        if (tag === "") return;
+        globalTags.push({
+          name: tag,
+          description: "Everything related to " + tag,
+        });
+      });
+
       route.methods.forEach((method) => {
         let responses = {};
         if (method === "HEAD") return;
@@ -328,6 +340,7 @@ export class AutoSwagger {
         };
       });
 
+      docs.tags = globalTags;
       docs.paths = paths;
     }
     return YAML.stringify(docs);
