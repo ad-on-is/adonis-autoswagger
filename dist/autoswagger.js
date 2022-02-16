@@ -973,6 +973,8 @@ class AutoSwagger {
             let field = s[0];
             let type = s[1];
             let notRequired = false;
+            if (!field || !type)
+                return;
             if (field.endsWith("?")) {
                 field = field.replace("?", "");
                 notRequired = true;
