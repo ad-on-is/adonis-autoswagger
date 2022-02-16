@@ -972,6 +972,9 @@ class AutoSwagger {
             const s = line.split(":");
             let field = s[0];
             let type = s[1];
+
+            if(!field || !type) continue
+            
             let notRequired = false;
             if (field.endsWith("?")) {
                 field = field.replace("?", "");
