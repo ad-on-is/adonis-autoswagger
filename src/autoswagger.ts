@@ -1225,7 +1225,10 @@ export class AutoSwagger {
       field = field.replace("()", "");
       field = field.replace("get ", "");
       type = type.replace("{", "");
-      field = snakeCase(field);
+
+      if (this.options.snakeCase) {
+        field = snakeCase(field);
+      }
 
       let indicator = "type";
 

@@ -1087,7 +1087,9 @@ class AutoSwagger {
             field = field.replace("()", "");
             field = field.replace("get ", "");
             type = type.replace("{", "");
-            field = (0, change_case_1.snakeCase)(field);
+            if (this.options.snakeCase) {
+                field = (0, change_case_1.snakeCase)(field);
+            }
             let indicator = "type";
             if (example === null) {
                 example = "string";
