@@ -138,7 +138,9 @@ class AutoSwagger {
         var routes_1, routes_1_1;
         var e_1, _a;
         return __awaiter(this, void 0, void 0, function* () {
-            this.options = options;
+            this.options = Object.assign({
+                snakeCase: true,
+            }, options);
             routes = routes.root;
             this.options.path = path.join(this.options.path + "/../app");
             this.schemas = yield this.getSchemas();
@@ -991,7 +993,9 @@ class AutoSwagger {
             }
             field = field.trim();
             type = type.trim();
-            field = (0, change_case_1.snakeCase)(field);
+            if (this.options.snakeCase) {
+                field = (0, change_case_1.snakeCase)(field);
+            }
             let isArray = false;
             if (type.includes("[]")) {
                 type = type.replace("[]", "");

@@ -15,6 +15,7 @@ interface options {
   version: string;
   path: string;
   tagIndex: number;
+  snakeCase: boolean;
   common: common;
 }
 
@@ -136,7 +137,12 @@ export class AutoSwagger {
   }
 
   async generate(routes, options: options) {
-    this.options = options;
+    this.options = {
+      ...{
+        snakeCase: true,
+      },
+      ...options,
+    };
     routes = routes.root;
     this.options.path = path.join(this.options.path + "/../app");
     this.schemas = await this.getSchemas();
@@ -1115,7 +1121,9 @@ export class AutoSwagger {
 
       field = field.trim();
       type = type.trim();
-      field = snakeCase(field);
+      if (this.options.snakeCase) {
+        field = snakeCase(field);
+      }
       let isArray = false;
       if (type.includes("[]")) {
         type = type.replace("[]", "");

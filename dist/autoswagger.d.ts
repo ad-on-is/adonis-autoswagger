@@ -4,6 +4,7 @@ interface options {
     version: string;
     path: string;
     tagIndex: number;
+    snakeCase: boolean;
     common: common;
 }
 interface common {
