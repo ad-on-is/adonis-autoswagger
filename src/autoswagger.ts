@@ -157,7 +157,7 @@ export class AutoSwagger {
       components: {
         responses: {
           Forbidden: {
-            description: "Acces token is missing or invalid",
+            description: "Access token is missing or invalid",
           },
           Accepted: {
             description: "The request was accepted",
