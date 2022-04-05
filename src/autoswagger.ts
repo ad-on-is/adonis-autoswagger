@@ -1178,10 +1178,10 @@ export class AutoSwagger {
       if (!line.startsWith("public ") && !line.startsWith("public get")) return;
       if (line.includes("(") && !line.startsWith("public get")) return;
       let s = line.split("public ");
-      let s2 = s[1].split(":");
+      let s2 = s[1].replace(/;/g, '').split(":");
       if (line.startsWith("public get")) {
         s = line.split("public get");
-        let s2 = s[1].split(":");
+        let s2 = s[1].replace(/;/g, '').split(":");
       }
 
       let field = s2[0];
