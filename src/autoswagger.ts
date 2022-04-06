@@ -624,7 +624,8 @@ export class AutoSwagger {
       let json = line.substring(line.indexOf("{") + 1, line.lastIndexOf("}"));
       if (json !== "") {
         try {
-          const j = JSON.parse("{" + json + "}");
+          let j = JSON.parse("{" + json + "}");
+          j = this.jsonToRef(j);
           responses[status]["content"] = {
             "application/json": {
               schema: {

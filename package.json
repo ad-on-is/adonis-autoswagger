@@ -14,11 +14,14 @@
   },
   "license": "MIT",
   "dependencies": {
+    "abstract-syntax-tree": "^2.20.5",
     "change-case": "^4.1.2",
+    "espree": "^9.3.1",
     "extract-comments": "^1.1.0",
     "http-status-code": "^2.1.0",
     "json-to-pretty-yaml": "^1.2.2",
-    "lodash": "^4.17.21"
+    "lodash": "^4.17.21",
+    "typescript-parser": "^2.6.1"
   },
   "devDependencies": {
     "@types/node": "^16.11.7"
