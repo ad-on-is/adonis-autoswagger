@@ -153,7 +153,7 @@ class AutoSwagger {
                 components: {
                     responses: {
                         Forbidden: {
-                            description: "Acces token is missing or invalid",
+                            description: "Access token is missing or invalid",
                         },
                         Accepted: {
                             description: "The request was accepted",
@@ -579,7 +579,8 @@ class AutoSwagger {
             let json = line.substring(line.indexOf("{") + 1, line.lastIndexOf("}"));
             if (json !== "") {
                 try {
-                    const j = JSON.parse("{" + json + "}");
+                    let j = JSON.parse("{" + json + "}");
+                    j = this.jsonToRef(j);
                     responses[status]["content"] = {
                         "application/json": {
                             schema: {
@@ -1047,10 +1048,10 @@ class AutoSwagger {
             if (line.includes("(") && !line.startsWith("public get"))
                 return;
             let s = line.split("public ");
-            let s2 = s[1].split(":");
+            let s2 = s[1].replace(/;/g, '').split(":");
             if (line.startsWith("public get")) {
                 s = line.split("public get");
-                let s2 = s[1].split(":");
+                let s2 = s[1].replace(/;/g, '').split(":");
             }
             let field = s2[0];
             let type = s2[1];
