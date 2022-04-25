@@ -23,29 +23,36 @@ Auto-Generate swagger docs for AdonisJS
 
 ## Usage
 
+Create a file `/config/swagger.ts`
+
+```js
+export default {
+  path: __dirname + "../",
+  title: "Foo",
+  version: "1.0.0",
+  tagIndex: 2,
+  ignore: ["/swagger", "/docs"],
+  common: {
+    parameters: {}, // OpenAPI conform parameters that are commonly used
+    headers: {}, // OpenAPI confomr headers that are commonly used
+  },
+};
+```
+
 In your `routes.ts`
 
 ```js
-import AutoSwagger from 'adonis-autoswagger'
+import AutoSwagger from "adonis-autoswagger";
+import swagger from "Config/swagger";
 // returns swagger in YAML
-Route.get('/swagger', async () => {
-  return AutoSwagger.docs(Route.toJSON(), {
-    path: __dirname,
-    title: 'Foo',
-    version: '1.0.0',
-    tagIndex: 2,
-    ignore: ['/swagger', '/docs'],
-    common: {
-      parameters: {}, // OpenAPI conform parameters that are commonly used
-      headers: {}, // OpenAPI confomr headers that are commonly used
-    },
-  })
-})
+Route.get("/swagger", async () => {
+  return AutoSwagger.docs(Route.toJSON(), swagger);
+});
 
 // Renders Swagger-UI and passes YAML-output of /swagger
-Route.get('/docs', async () => {
-  return AutoSwagger.ui('/swagger')
-})
+Route.get("/docs", async () => {
+  return AutoSwagger.ui("/swagger");
+});
 ```
 
 ### Done!
@@ -147,53 +154,55 @@ Format: `<body>`
 
 # **Practical example**
 
-`routes.js`
+`config/swagger.ts`
 
 ```js
-Route.get('/swagger', async () => {
-  return AutoSwagger.docs(Route.toJSON(), {
-    path: __dirname,
-    title: 'BlitzCoin',
-    version: '1.0.0',
-    tagIndex: 2,
-    ignore: ['/swagger', '/docs', '/v1', '/'],
-    common: {
-      parameters: {
-        sortable: [
-          {
-            in: 'query',
-            name: 'sortBy',
-            schema: { type: 'string', example: 'foo' },
-          },
-          {
-            in: 'query',
-            name: 'sortType',
-            schema: { type: 'string', example: 'ASC' },
-          },
-        ],
-      },
-      headers: {
-        paginated: {
-          'X-Total-Pages': {
-            description: 'Total amount of pages',
-            schema: { type: 'integer', example: 5 },
-          },
-          'X-Total': {
-            description: 'Total amount of results',
-            schema: { type: 'integer', example: 100 },
-          },
-          'X-Per-Page': {
-            description: 'Results per page',
-            schema: { type: 'integer', example: 20 },
-          },
+export default {
+  path: __dirname + "../",
+  title: "YourProject",
+  version: "1.0.0",
+  tagIndex: 2,
+  ignore: ["/swagger", "/docs", "/v1", "/"],
+  common: {
+    parameters: {
+      sortable: [
+        {
+          in: "query",
+          name: "sortBy",
+          schema: { type: "string", example: "foo" },
+        },
+        {
+          in: "query",
+          name: "sortType",
+          schema: { type: "string", example: "ASC" },
+        },
+      ],
+    },
+    headers: {
+      paginated: {
+        "X-Total-Pages": {
+          description: "Total amount of pages",
+          schema: { type: "integer", example: 5 },
+        },
+        "X-Total": {
+          description: "Total amount of results",
+          schema: { type: "integer", example: 100 },
+        },
+        "X-Per-Page": {
+          description: "Results per page",
+          schema: { type: "integer", example: 20 },
         },
       },
     },
-  })
-})
+  },
+};
 ```
 
+`app/Controllers/Http/SomeController.ts`
+
 ```js
+
+export default class SomeController {
 /**
 * @index
 * @description Returns array of producs and it's relations
@@ -230,6 +239,8 @@ Route.get('/swagger', async () => {
 * @requestBody {"code": "xxxxxx"}
 */
 	public async custom({ request, response }: HttpContextContract) {}
+
+}
 
 ```
 
