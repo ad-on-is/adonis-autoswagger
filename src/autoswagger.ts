@@ -702,7 +702,9 @@ export class AutoSwagger {
     let out = {};
     for (let [k, v] of Object.entries(json)) {
       if (typeof v === "object") {
-        v = this.jsonToRef(v);
+        if (!Array.isArray(v)) {
+          v = this.jsonToRef(v);
+        }
       }
       if (typeof v === "string") {
         let ref = v.substring(v.indexOf("<") + 1, v.lastIndexOf(">"));
@@ -725,7 +727,7 @@ export class AutoSwagger {
                 this.getSchemaExampleBasedOnAnnotation(ref, inc, exc, only),
                 app
               ),
-            ];
+            ].reduce((a) => a);
           } else {
             v = Object.assign(
               this.getSchemaExampleBasedOnAnnotation(ref, inc, exc, only),
@@ -1179,10 +1181,10 @@ export class AutoSwagger {
       if (!line.startsWith("public ") && !line.startsWith("public get")) return;
       if (line.includes("(") && !line.startsWith("public get")) return;
       let s = line.split("public ");
-      let s2 = s[1].replace(/;/g, '').split(":");
+      let s2 = s[1].replace(/;/g, "").split(":");
       if (line.startsWith("public get")) {
         s = line.split("public get");
-        let s2 = s[1].replace(/;/g, '').split(":");
+        let s2 = s[1].replace(/;/g, "").split(":");
       }
 
       let field = s2[0];
