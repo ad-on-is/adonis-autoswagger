@@ -212,7 +212,7 @@ export class AutoSwagger {
       let action = "";
       let customAnnotations;
       if (route.meta.resolvedHandler !== null) {
-        if (typeof route.meta.resolvedHandler.namespace !== "undefined") {
+        if (typeof route.meta.resolvedHandler.namespace !== "undefined" && route.meta.resolvedHandler.method !== 'handle') {
           sourceFile = route.meta.resolvedHandler.namespace;
 
           action = route.meta.resolvedHandler.method;
