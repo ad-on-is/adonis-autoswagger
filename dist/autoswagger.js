@@ -206,7 +206,8 @@ class AutoSwagger {
                     let action = "";
                     let customAnnotations;
                     if (route.meta.resolvedHandler !== null) {
-                        if (typeof route.meta.resolvedHandler.namespace !== "undefined") {
+                        if (typeof route.meta.resolvedHandler.namespace !== "undefined" &&
+                            route.meta.resolvedHandler.method !== "handle") {
                             sourceFile = route.meta.resolvedHandler.namespace;
                             action = route.meta.resolvedHandler.method;
                             if (sourceFile !== "" && action !== "") {
@@ -229,8 +230,8 @@ class AutoSwagger {
                         let responses = {};
                         if (method === "HEAD")
                             return;
-                        if (route.methods["PUT"] !== null &&
-                            route.methods["PATCH"] !== null &&
+                        if (route.methods.includes("PUT") &&
+                            route.methods.includes("PATCH") &&
                             method === "PATCH")
                             return;
                         let description = "";
