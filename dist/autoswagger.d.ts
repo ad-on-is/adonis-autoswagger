@@ -6,7 +6,7 @@ interface options {
     tagIndex: number;
     snakeCase: boolean;
     common: common;
-    preferredPutPatch: string;
+    preferredPutPatch?: string;
 }
 interface common {
     headers: any;

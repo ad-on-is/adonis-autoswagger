@@ -17,7 +17,7 @@ interface options {
   tagIndex: number;
   snakeCase: boolean;
   common: common;
-  preferredPutPatch: string;
+  preferredPutPatch?: string;
 }
 
 interface common {
@@ -248,7 +248,7 @@ export class AutoSwagger {
         if (
           route.methods.includes("PUT") &&
           route.methods.includes("PATCH") &&
-          method !== options.preferredPutPatch
+          method !== this.options.preferredPutPatch
         )
           return;
 

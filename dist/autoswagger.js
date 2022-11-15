@@ -233,7 +233,7 @@ class AutoSwagger {
                             return;
                         if (route.methods.includes("PUT") &&
                             route.methods.includes("PATCH") &&
-                            method !== options.preferredPutPatch)
+                            method !== this.options.preferredPutPatch)
                             return;
                         let description = "";
                         let summary = "";
