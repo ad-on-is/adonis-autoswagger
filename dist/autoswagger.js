@@ -140,6 +140,7 @@ class AutoSwagger {
         return __awaiter(this, void 0, void 0, function* () {
             this.options = Object.assign({
                 snakeCase: true,
+                preferredPutPatch: "PUT",
             }, options);
             routes = routes.root;
             this.options.path = path.join(this.options.path + "/../app");
@@ -232,7 +233,7 @@ class AutoSwagger {
                             return;
                         if (route.methods.includes("PUT") &&
                             route.methods.includes("PATCH") &&
-                            method === "PATCH")
+                            method !== options.preferredPutPatch)
                             return;
                         let description = "";
                         let summary = "";
@@ -367,6 +368,7 @@ class AutoSwagger {
     }
     parseAnnotations(lines) {
         let summary = "";
+        let upload = "";
         let description = "";
         let responses = {};
         let requestBody = {};

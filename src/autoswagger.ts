@@ -17,6 +17,7 @@ interface options {
   tagIndex: number;
   snakeCase: boolean;
   common: common;
+  preferredPutPatch: string;
 }
 
 interface common {
@@ -140,6 +141,7 @@ export class AutoSwagger {
     this.options = {
       ...{
         snakeCase: true,
+        preferredPutPatch: "PUT",
       },
       ...options,
     };
@@ -246,7 +248,7 @@ export class AutoSwagger {
         if (
           route.methods.includes("PUT") &&
           route.methods.includes("PATCH") &&
-          method === "PATCH"
+          method !== options.preferredPutPatch
         )
           return;
 
@@ -392,6 +394,7 @@ export class AutoSwagger {
 
   private parseAnnotations(lines: string[]) {
     let summary = "";
+    let upload = "";
     let description = "";
     let responses = {};
     let requestBody = {};
@@ -411,6 +414,7 @@ export class AutoSwagger {
       if (line.startsWith("@summary")) {
         summary = line.replace("@summary ", "");
       }
+
       if (line.startsWith("@description")) {
         description = line.replace("@description ", "");
       }
