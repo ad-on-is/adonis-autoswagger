@@ -759,17 +759,23 @@ export class AutoSwagger {
     if (json !== "") {
       try {
         let j = JSON.parse("{" + json + "}");
-        j = this.jsonToRef(j);
-        requestBody = {
-          content: {
-            "application/json": {
-              schema: {
-                type: "object",
-              },
-              example: j,
-            },
-          },
-        };
+	if( j.hasOwnProperty('content') ){
+		//Maybe user tries to define is own requestbody schema, for example to handle multipart/form-data 
+		requestBody = j;
+	}
+	else{
+        	j = this.jsonToRef(j);
+        	requestBody = {
+		  content: {
+		    "application/json": {
+		      schema: {
+			type: "object",
+		      },
+		      example: j,
+		    },
+		  },
+		};
+	}
       } catch {
         console.error("Invalid JSON for " + line);
       }
