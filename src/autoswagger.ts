@@ -1075,6 +1075,7 @@ export class AutoSwagger {
       if (line.startsWith("export") && !line.startsWith("export default"))
         return;
       if (
+	line.startsWith("import") ||
         line.startsWith("//") ||
         line.startsWith("/*") ||
         line.startsWith("*")
@@ -1108,9 +1109,14 @@ export class AutoSwagger {
         meta = lines[index - 1];
       }
 
-      const s = line.split(":");
-      let field = s[0];
-      let type = s[1];
+      let m:string = undefined;
+      let field:string = undefined;
+      let type:string = undefined;
+      m = line.match( /\"?(?<field>[^ \"]+)\"?:\s*(?<value>[^ \"\:]+)/i );
+      if(m !== null){
+          field = m["groups"]['field'];
+          type = m["groups"]['value'];
+      }
       let notRequired = false;
 
       if (!field || !type) return;
