@@ -36,7 +36,10 @@ class AutoSwagger {
             "integer",
             "datetime",
             "boolean",
-        ];
+            "any",
+        ]
+            .map((type) => [type, type + "[]"])
+            .flat();
     }
     ui(url) {
         return (`<!DOCTYPE html>
@@ -182,7 +185,7 @@ class AutoSwagger {
             };
             let paths = {};
             let securities = {
-                auth: { BearerAuth: ["access"] },
+                "auth": { BearerAuth: ["access"] },
                 "auth:api": { BearerAuth: ["access"] },
             };
             let globalTags = [];
@@ -897,7 +900,7 @@ class AutoSwagger {
         return __awaiter(this, void 0, void 0, function* () {
             const models = {};
             const p = path.join(this.options.path, "/Models");
-            if (!(0, fs_1.existsSync)(p)) {
+            if (!fs_1.existsSync(p)) {
                 return models;
             }
             const files = yield this.getFiles(p, []);
@@ -922,7 +925,7 @@ class AutoSwagger {
         return __awaiter(this, void 0, void 0, function* () {
             let interfaces = {};
             const p = path.join(this.options.path, "/Interfaces");
-            if (!(0, fs_1.existsSync)(p)) {
+            if (!fs_1.existsSync(p)) {
                 return interfaces;
             }
             const files = yield this.getFiles(p, []);
@@ -1000,7 +1003,7 @@ class AutoSwagger {
             field = field.trim();
             type = type.trim();
             if (this.options.snakeCase) {
-                field = (0, change_case_1.snakeCase)(field);
+                field = change_case_1.snakeCase(field);
             }
             let isArray = false;
             if (type.includes("[]")) {
@@ -1094,7 +1097,7 @@ class AutoSwagger {
             field = field.replace("get ", "");
             type = type.replace("{", "");
             if (this.options.snakeCase) {
-                field = (0, change_case_1.snakeCase)(field);
+                field = change_case_1.snakeCase(field);
             }
             let indicator = "type";
             if (example === null) {
@@ -1123,6 +1126,10 @@ class AutoSwagger {
                 line.includes("HasManyThrough") ||
                 type.includes("[]")) {
                 isArray = true;
+                if (type.slice(type.length - 2, type.length) === "[]" &&
+                    this.standardTypes.includes(type.toLowerCase())) {
+                    type = type.toLowerCase().split("[]")[0];
+                }
             }
             if (type === "datetime") {
                 indicator = "type";
