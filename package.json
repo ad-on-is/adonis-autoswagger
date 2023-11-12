@@ -5,7 +5,8 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc"
   },
   "author": "Adis Durakovic <adis.durakovic@gmail.com>",
   "repository": {
@@ -28,5 +29,13 @@
   },
   "files": [
     "/dist"
-  ]
+  ],
+  "prettier": {
+    "trailingComma": "es5",
+    "semi": true,
+    "useTabs": false,
+    "quoteProps": "consistent",
+    "bracketSpacing": true,
+    "arrowParens": "always"
+  }
 }

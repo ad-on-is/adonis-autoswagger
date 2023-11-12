@@ -36,7 +36,10 @@ export class AutoSwagger {
     "integer",
     "datetime",
     "boolean",
-  ];
+    "any",
+  ]
+    .map((type) => [type, type + "[]"])
+    .flat();
 
   ui(url: string) {
     return (
@@ -188,7 +191,7 @@ export class AutoSwagger {
     let paths = {};
 
     let securities = {
-      auth: { BearerAuth: ["access"] },
+      "auth": { BearerAuth: ["access"] },
       "auth:api": { BearerAuth: ["access"] },
     };
 
@@ -1276,6 +1279,12 @@ export class AutoSwagger {
         type.includes("[]")
       ) {
         isArray = true;
+        if (
+          type.slice(type.length - 2, type.length) === "[]" &&
+          this.standardTypes.includes(type.toLowerCase())
+        ) {
+          type = type.toLowerCase().split("[]")[0];
+        }
       }
 
       if (type === "datetime") {
