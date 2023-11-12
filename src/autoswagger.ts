@@ -308,6 +308,10 @@ export class AutoSwagger {
         }
 
         if (action !== "" && summary === "") {
+          // Solve toLowerCase undefined exception
+          // https://github.com/ad-on-is/adonis-autoswagger/issues/28
+          tags[0] = tags[0] ?? "";
+
           switch (action) {
             case "index":
               summary = "Get a list of " + tags[0].toLowerCase();
