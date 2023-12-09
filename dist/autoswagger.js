@@ -231,6 +231,7 @@ class AutoSwagger {
                         });
                     });
                     route.methods.forEach((method) => {
+                        var _a;
                         let responses = {};
                         if (method === "HEAD")
                             return;
@@ -285,6 +286,9 @@ class AutoSwagger {
                             }
                         }
                         if (action !== "" && summary === "") {
+                            // Solve toLowerCase undefined exception
+                            // https://github.com/ad-on-is/adonis-autoswagger/issues/28
+                            tags[0] = (_a = tags[0]) !== null && _a !== void 0 ? _a : "";
                             switch (action) {
                                 case "index":
                                     summary = "Get a list of " + tags[0].toLowerCase();
@@ -864,13 +868,15 @@ class AutoSwagger {
         let parameters = {};
         let pattern = "";
         let tags = [];
+        let required;
         const split = p.split("/");
         if (split.length > this.options.tagIndex) {
             tags = [split[this.options.tagIndex].toUpperCase()];
         }
         split.forEach((part) => {
             if (part.startsWith(":")) {
-                const param = part.replace(":", "");
+                required = !part.endsWith('?');
+                const param = part.replace(":", "").replace("?", "");
                 part = "{" + param + "}";
                 parameters = Object.assign(Object.assign({}, parameters), { [param]: {
                         in: "path",
@@ -878,11 +884,14 @@ class AutoSwagger {
                         schema: {
                             type: "string",
                         },
-                        required: true,
+                        required: required,
                     } });
             }
             pattern += "/" + part;
         });
+        if (pattern.endsWith("/")) {
+            pattern = pattern.slice(0, -1);
+        }
         return { tags, parameters, pattern };
     }
     getSchemas() {
@@ -1018,6 +1027,7 @@ class AutoSwagger {
             let prop = {};
             prop[indicator] = type;
             prop["example"] = example;
+            prop["nullable"] = notRequired;
             if (isArray) {
                 props[field] = { type: "array", items: prop };
             }

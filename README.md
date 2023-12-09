@@ -35,7 +35,7 @@ export default {
   preferredPutPatch: "PUT", // if PUT/PATCH are provided for the same rout, prefer PUT
   common: {
     parameters: {}, // OpenAPI conform parameters that are commonly used
-    headers: {}, // OpenAPI confomr headers that are commonly used
+    headers: {}, // OpenAPI conform headers that are commonly used
   },
 };
 ```
@@ -130,15 +130,15 @@ Format: `<body>`
 
 @responseBody <status> - <Model> // returns model specification
 
-@responseBody <status> - <Model[]> // returns model-array specification
+  @responseBody <status> - <Model[]> // returns model-array specification
 
-@responseBody <status> - <Model>.with(relations, property1, property2.relations, property3.subproperty.relations) // returns a model and a defined relation
+    @responseBody <status> - <Model>.with(relations, property1, property2.relations, property3.subproperty.relations) // returns a model and a defined relation
 
-@responseBody <status> - <Model[]>.with(relations).exclude(property1, property2, property3.subproperty) // returns model specification
+      @responseBody <status> - <Model[]>.with(relations).exclude(property1, property2, property3.subproperty) // returns model specification
 
-@responseBody <status> - <Model[]>.append("some":"valid json") // append additional properties to a Model
-@responseBody <status> - <Model>.only(property1, property2) // pick only specific properties
-@responseBody <status> - {"foo": "bar"} //returns custom json
+        @responseBody <status> - <Model[]>.append("some":"valid json") // append additional properties to a Model
+          @responseBody <status> - <Model>.only(property1, property2) // pick only specific properties
+            @responseBody <status> - {"foo": "bar"} //returns custom json
 ```
 
 ## `@requestBody` examples
@@ -204,42 +204,42 @@ export default {
 ```js
 
 export default class SomeController {
-/**
-* @index
-* @description Returns array of producs and it's relations
-* @responseBody 200 - <Product[]>.with(relations)
-* @paramUse(sortable, filterable)
-* @responseHeader 200 - @use(paginated)
-* @responseHeader 200 - X-pages - A description of the header - @example(test)
-*/
-	public async index({ request, response }: HttpContextContract) {}
+  /**
+   * @index
+   * @description Returns array of producs and it's relations
+   * @responseBody 200 - <Product[]>.with(relations)
+   * @paramUse(sortable, filterable)
+   * @responseHeader 200 - @use(paginated)
+   * @responseHeader 200 - X-pages - A description of the header - @example(test)
+   */
+  public async index({ request, response }: HttpContextContract) {}
 
-/**
-* @show
-* @paramPath id - Describe the param
-* @description Returns a product with it's relation on user and user relations
-* @responseBody 200 - <Product>.with(user, user.relations)
-* @responseBody 404
-*/
-	public async show({ request, response }: HttpContextContract) {}
+  /**
+   * @show
+   * @paramPath id - Describe the param
+   * @description Returns a product with it's relation on user and user relations
+   * @responseBody 200 - <Product>.with(user, user.relations)
+   * @responseBody 404
+   */
+  public async show({ request, response }: HttpContextContract) {}
 
-/**
-* @update
-* @responseBody 200
-* @responseBody 404 - Product could not be found
-* @requestBody <Product>
-*/
-	public async update({ request, response }: HttpContextContract) {}
+  /**
+   * @update
+   * @responseBody 200
+   * @responseBody 404 - Product could not be found
+   * @requestBody <Product>
+   */
+  public async update({ request, response }: HttpContextContract) {}
 
 
-/**
-* @custom
-* @summary Lorem ipsum dolor sit amet
-* @paramPath provider - The login provider to be used - @enum(google, facebook, apple)
-* @responseBody 200 - {"token": "xxxxxxx"}
-* @requestBody {"code": "xxxxxx"}
-*/
-	public async custom({ request, response }: HttpContextContract) {}
+  /**
+   * @custom
+   * @summary Lorem ipsum dolor sit amet
+   * @paramPath provider - The login provider to be used - @enum(google, facebook, apple)
+   * @responseBody 200 - {"token": "xxxxxxx"}
+   * @requestBody {"code": "xxxxxx"}
+   */
+  public async custom({ request, response }: HttpContextContract) {}
 
 }
 

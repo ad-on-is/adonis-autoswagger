@@ -38,12 +38,12 @@ export class AutoSwagger {
     "boolean",
     "any",
   ]
-    .map((type) => [type, type + "[]"])
-    .flat();
+      .map((type) => [type, type + "[]"])
+      .flat();
 
   ui(url: string) {
     return (
-      `<!DOCTYPE html>
+        `<!DOCTYPE html>
 		<html lang="en">
 		<head>
 				<meta charset="UTF-8">
@@ -60,8 +60,8 @@ export class AutoSwagger {
 						window.onload = function() {
 							SwaggerUIBundle({
 								url: "` +
-      url +
-      `",
+        url +
+        `",
 								dom_id: '#swagger-ui',
 								presets: [
 									SwaggerUIBundle.presets.apis,
@@ -78,7 +78,7 @@ export class AutoSwagger {
 
   rapidoc(url: string, style = "view") {
     return (
-      `
+        `
     <!doctype html> <!-- Important: must specify -->
     <html>
       <head>
@@ -89,8 +89,8 @@ export class AutoSwagger {
       <body>
         <rapi-doc
           spec-url = "` +
-      url +
-      `"
+        url +
+        `"
       theme = "dark"
       bg-color = "#24283b"
       header-color = "#1a1b26"
@@ -102,8 +102,8 @@ export class AutoSwagger {
       heading-text = "Documentation"
       sort-tags = "true"
       render-style = "` +
-      style +
-      `"
+        style +
+        `"
       default-schema-tab = "example"
       show-components = "true"
       allow-spec-url-load = "false"
@@ -218,16 +218,16 @@ export class AutoSwagger {
       let customAnnotations;
       if (route.meta.resolvedHandler !== null) {
         if (
-          typeof route.meta.resolvedHandler.namespace !== "undefined" &&
-          route.meta.resolvedHandler.method !== "handle"
+            typeof route.meta.resolvedHandler.namespace !== "undefined" &&
+            route.meta.resolvedHandler.method !== "handle"
         ) {
           sourceFile = route.meta.resolvedHandler.namespace;
 
           action = route.meta.resolvedHandler.method;
           if (sourceFile !== "" && action !== "") {
             customAnnotations = await this.getCustomAnnotations(
-              sourceFile,
-              action
+                sourceFile,
+                action
             );
           }
         }
@@ -249,9 +249,9 @@ export class AutoSwagger {
         if (method === "HEAD") return;
 
         if (
-          route.methods.includes("PUT") &&
-          route.methods.includes("PATCH") &&
-          method !== this.options.preferredPutPatch
+            route.methods.includes("PUT") &&
+            route.methods.includes("PATCH") &&
+            method !== this.options.preferredPutPatch
         )
           return;
 
@@ -293,8 +293,8 @@ export class AutoSwagger {
           };
         } else {
           if (
-            typeof responses[responseCodes[method]] !== "undefined" &&
-            typeof responses[responseCodes[method]]["summary"] !== "undefined"
+              typeof responses[responseCodes[method]] !== "undefined" &&
+              typeof responses[responseCodes[method]]["summary"] !== "undefined"
           ) {
             if (summary === "") {
               summary = responses[responseCodes[method]]["summary"];
@@ -302,8 +302,8 @@ export class AutoSwagger {
             delete responses[responseCodes[method]]["summary"];
           }
           if (
-            typeof responses[responseCodes[method]] !== "undefined" &&
-            typeof responses[responseCodes[method]]["description"] !==
+              typeof responses[responseCodes[method]] !== "undefined" &&
+              typeof responses[responseCodes[method]]["description"] !==
               "undefined"
           ) {
             description = responses[responseCodes[method]]["description"];
@@ -333,14 +333,14 @@ export class AutoSwagger {
 
         let m = {
           summary:
-            sourceFile === "" && action == ""
-              ? summary + " (route.ts)"
-              : summary +
-                " (" +
-                sourceFile.replace("App/Controllers/Http/", "") +
-                "::" +
-                action +
-                ")",
+              sourceFile === "" && action == ""
+                  ? summary + " (route.ts)"
+                  : summary +
+                  " (" +
+                  sourceFile.replace("App/Controllers/Http/", "") +
+                  "::" +
+                  action +
+                  ")",
           description: description,
           parameters: parameters,
           tags: tags,
@@ -678,8 +678,8 @@ export class AutoSwagger {
               },
               example: [
                 Object.assign(
-                  this.getSchemaExampleBasedOnAnnotation(ref, inc, exc, only),
-                  app
+                    this.getSchemaExampleBasedOnAnnotation(ref, inc, exc, only),
+                    app
                 ),
               ],
             },
@@ -689,8 +689,8 @@ export class AutoSwagger {
             "application/json": {
               schema: { $ref: "#/components/schemas/" + ref },
               example: Object.assign(
-                this.getSchemaExampleBasedOnAnnotation(ref, inc, exc, only),
-                app
+                  this.getSchemaExampleBasedOnAnnotation(ref, inc, exc, only),
+                  app
               ),
             },
           };
@@ -740,14 +740,14 @@ export class AutoSwagger {
             ref = ref.replace("[]", "");
             v = [
               Object.assign(
-                this.getSchemaExampleBasedOnAnnotation(ref, inc, exc, only),
-                app
+                  this.getSchemaExampleBasedOnAnnotation(ref, inc, exc, only),
+                  app
               ),
             ].reduce((a) => a);
           } else {
             v = Object.assign(
-              this.getSchemaExampleBasedOnAnnotation(ref, inc, exc, only),
-              app
+                this.getSchemaExampleBasedOnAnnotation(ref, inc, exc, only),
+                app
             );
           }
         }
@@ -807,8 +807,8 @@ export class AutoSwagger {
               },
               example: [
                 Object.assign(
-                  this.getSchemaExampleBasedOnAnnotation(ref, inc, exc, only),
-                  app
+                    this.getSchemaExampleBasedOnAnnotation(ref, inc, exc, only),
+                    app
                 ),
               ],
             },
@@ -822,8 +822,8 @@ export class AutoSwagger {
                 $ref: "#/components/schemas/" + ref,
               },
               example: Object.assign(
-                this.getSchemaExampleBasedOnAnnotation(ref, inc, exc, only),
-                app
+                  this.getSchemaExampleBasedOnAnnotation(ref, inc, exc, only),
+                  app
               ),
             },
           },
@@ -849,13 +849,13 @@ export class AutoSwagger {
   }
 
   private getSchemaExampleBasedOnAnnotation(
-    schema,
-    inc = "",
-    exc = "",
-    onl = "",
-    first = "",
-    parent = "",
-    level = 0
+      schema,
+      inc = "",
+      exc = "",
+      onl = "",
+      first = "",
+      parent = "",
+      level = 0
   ) {
     let props = {};
     if (!this.schemas[schema]) {
@@ -872,13 +872,13 @@ export class AutoSwagger {
 
     // skip nested if not requested
     if (
-      parent !== "" &&
-      schema !== "" &&
-      parent.includes(".") &&
-      this.schemas[schema].description === "Model" &&
-      !inc.includes(parent) &&
-      !inc.includes(parent + ".relations") &&
-      !inc.includes(first + ".relations")
+        parent !== "" &&
+        schema !== "" &&
+        parent.includes(".") &&
+        this.schemas[schema].description === "Model" &&
+        !inc.includes(parent) &&
+        !inc.includes(parent + ".relations") &&
+        !inc.includes(first + ".relations")
     ) {
       return null;
     }
@@ -889,22 +889,22 @@ export class AutoSwagger {
       if (exclude.includes(parent + "." + key)) continue;
 
       if (
-        key === "password" &&
-        !include.includes("password") &&
-        !only.includes("password")
+          key === "password" &&
+          !include.includes("password") &&
+          !only.includes("password")
       )
         continue;
       if (
-        key === "password_confirmation" &&
-        !include.includes("password_confirmation") &&
-        !only.includes("password_confirmation")
+          key === "password_confirmation" &&
+          !include.includes("password_confirmation") &&
+          !only.includes("password_confirmation")
       )
         continue;
       if (
-        (key === "created_at" ||
-          key === "updated_at" ||
-          key === "deleted_at") &&
-        exc.includes("timestamps")
+          (key === "created_at" ||
+              key === "updated_at" ||
+              key === "deleted_at") &&
+          exc.includes("timestamps")
       )
         continue;
 
@@ -918,8 +918,8 @@ export class AutoSwagger {
       }
 
       if (
-        typeof value["items"] !== "undefined" &&
-        typeof value["items"]["$ref"] !== "undefined"
+          typeof value["items"] !== "undefined" &&
+          typeof value["items"]["$ref"] !== "undefined"
       ) {
         rel = value["items"]["$ref"].replace("#/components/schemas/", "");
       }
@@ -932,19 +932,19 @@ export class AutoSwagger {
       if (rel !== "") {
         // skip related models of main schema
         if (
-          parent === "" &&
-          rel !== "" &&
-          typeof this.schemas[rel] !== "undefined" &&
-          this.schemas[rel].description === "Model" &&
-          !include.includes("relations") &&
-          !include.includes(key)
+            parent === "" &&
+            rel !== "" &&
+            typeof this.schemas[rel] !== "undefined" &&
+            this.schemas[rel].description === "Model" &&
+            !include.includes("relations") &&
+            !include.includes(key)
         ) {
           continue;
         }
 
         if (
-          typeof value["items"] !== "undefined" &&
-          typeof value["items"]["$ref"] !== "undefined"
+            typeof value["items"] !== "undefined" &&
+            typeof value["items"]["$ref"] !== "undefined"
         ) {
           rel = value["items"]["$ref"].replace("#/components/schemas/", "");
         }
@@ -955,13 +955,13 @@ export class AutoSwagger {
         let propdata: any = "";
         if (level <= 10) {
           propdata = this.getSchemaExampleBasedOnAnnotation(
-            rel,
-            inc,
-            exc,
-            onl,
-            parent,
-            parent === "" ? key : parent + "." + key,
-            level++
+              rel,
+              inc,
+              exc,
+              onl,
+              parent,
+              parent === "" ? key : parent + "." + key,
+              level++
           );
         }
 
@@ -985,13 +985,15 @@ export class AutoSwagger {
     let parameters = {};
     let pattern = "";
     let tags = [];
+    let required: boolean;
     const split = p.split("/");
     if (split.length > this.options.tagIndex) {
       tags = [split[this.options.tagIndex].toUpperCase()];
     }
     split.forEach((part) => {
       if (part.startsWith(":")) {
-        const param = part.replace(":", "");
+        required = !part.endsWith('?');
+        const param = part.replace(":", "").replace("?", "");
         part = "{" + param + "}";
         parameters = {
           ...parameters,
@@ -1001,13 +1003,15 @@ export class AutoSwagger {
             schema: {
               type: "string",
             },
-            required: true,
+            required: required,
           },
         };
       }
       pattern += "/" + part;
     });
-
+    if (pattern.endsWith("/")) {
+      pattern = pattern.slice(0, -1);
+    }
     return { tags, parameters, pattern };
   }
 
@@ -1082,14 +1086,14 @@ export class AutoSwagger {
       if (line.startsWith("export") && !line.startsWith("export default"))
         return;
       if (
-        line.startsWith("//") ||
-        line.startsWith("/*") ||
-        line.startsWith("*")
+          line.startsWith("//") ||
+          line.startsWith("/*") ||
+          line.startsWith("*")
       )
         return;
       if (
-        line.startsWith("interface ") ||
-        line.startsWith("export default interface ")
+          line.startsWith("interface ") ||
+          line.startsWith("export default interface ")
       ) {
         props = {};
         name = line;
@@ -1156,6 +1160,7 @@ export class AutoSwagger {
       let prop = {};
       prop[indicator] = type;
       prop["example"] = example;
+      prop["nullable"] = notRequired;
 
       if (isArray) {
         props[field] = { type: "array", items: prop };
@@ -1181,15 +1186,15 @@ export class AutoSwagger {
       line = line.trim();
       // skip comments
       if (
-        line.includes("@swagger-softdelete") ||
-        line.includes("SoftDeletes")
+          line.includes("@swagger-softdelete") ||
+          line.includes("SoftDeletes")
       ) {
         softDelete = true;
       }
       if (
-        line.startsWith("//") ||
-        line.startsWith("/*") ||
-        line.startsWith("*")
+          line.startsWith("//") ||
+          line.startsWith("/*") ||
+          line.startsWith("*")
       )
         return;
       if (index > 0 && lines[index - 1].includes("serializeAs: null")) return;
@@ -1273,15 +1278,15 @@ export class AutoSwagger {
       let isArray = false;
 
       if (
-        line.includes("HasMany") ||
-        line.includes("ManyToMany") ||
-        line.includes("HasManyThrough") ||
-        type.includes("[]")
+          line.includes("HasMany") ||
+          line.includes("ManyToMany") ||
+          line.includes("HasManyThrough") ||
+          type.includes("[]")
       ) {
         isArray = true;
         if (
-          type.slice(type.length - 2, type.length) === "[]" &&
-          this.standardTypes.includes(type.toLowerCase())
+            type.slice(type.length - 2, type.length) === "[]" &&
+            this.standardTypes.includes(type.toLowerCase())
         ) {
           type = type.toLowerCase().split("[]")[0];
         }
