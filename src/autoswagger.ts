@@ -1,13 +1,12 @@
-const YAML = require("json-to-pretty-yaml");
-const fs = require("fs");
-const path = require("path");
-const util = require("util");
-const extract = require("extract-comments");
-const HTTPStatusCode = require("http-status-code");
-const _ = require("lodash/core");
-import { camelCase, snakeCase } from "change-case";
+import YAML from "json-to-pretty-yaml";
+import fs from "fs";
+import path from "path";
+import util from "util";
+import extract from "extract-comments";
+import HTTPStatusCode from "http-status-code";
+import _ from "lodash";
+import { snakeCase } from "change-case";
 import { existsSync } from "fs";
-import { env } from "process";
 
 interface options {
   title: string;

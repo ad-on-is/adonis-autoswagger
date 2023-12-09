@@ -1,11 +1,11 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
-    "target": "es2015",
+    "module": "CommonJS",
+    "target": "ES2019",
     "declaration": true,
-    "outDir": "./dist"
+    "outDir": "./dist",
+    "esModuleInterop": true
   },
-  "include": [
-    "src/**/*"
-  ]
+  "skipLibCheck": true,
+  "include": ["src/**/*"]
 }

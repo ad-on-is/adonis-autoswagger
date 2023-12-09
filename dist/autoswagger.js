@@ -1,31 +1,18 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __asyncValues = (this && this.__asyncValues) || function (o) {
-    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
-    var m = o[Symbol.asyncIterator], i;
-    return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
-    function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
-    function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AutoSwagger = void 0;
-const YAML = require("json-to-pretty-yaml");
-const fs = require("fs");
-const path = require("path");
-const util = require("util");
-const extract = require("extract-comments");
-const HTTPStatusCode = require("http-status-code");
-const _ = require("lodash/core");
+const json_to_pretty_yaml_1 = __importDefault(require("json-to-pretty-yaml"));
+const fs_1 = __importDefault(require("fs"));
+const path_1 = __importDefault(require("path"));
+const util_1 = __importDefault(require("util"));
+const extract_comments_1 = __importDefault(require("extract-comments"));
+const http_status_code_1 = __importDefault(require("http-status-code"));
+const lodash_1 = __importDefault(require("lodash"));
 const change_case_1 = require("change-case");
-const fs_1 = require("fs");
+const fs_2 = require("fs");
 class AutoSwagger {
     constructor() {
         this.parsedFiles = [];
@@ -111,114 +98,172 @@ class AutoSwagger {
     </html>
     `);
     }
-    writeFile(routes, options) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const contents = yield this.generate(routes, options);
-            const filePath = path.join(options.path + "/../swagger.yml");
-            fs.writeFileSync(filePath, contents);
-        });
+    async writeFile(routes, options) {
+        const contents = await this.generate(routes, options);
+        const filePath = path_1.default.join(options.path + "/../swagger.yml");
+        fs_1.default.writeFileSync(filePath, contents);
     }
-    readFile(rootPath) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const filePath = path.join(rootPath + "/../swagger.yml");
-            const data = fs.readFileSync(filePath, "utf-8");
-            if (!data) {
-                console.error("Error reading file");
-                return;
-            }
-            return data;
-        });
+    async readFile(rootPath) {
+        const filePath = path_1.default.join(rootPath + "/../swagger.yml");
+        const data = fs_1.default.readFileSync(filePath, "utf-8");
+        if (!data) {
+            console.error("Error reading file");
+            return;
+        }
+        return data;
     }
-    docs(routes, options) {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (process.env.NODE_ENV === "production") {
-                return this.readFile(options.path);
-            }
-            return this.generate(routes, options);
-        });
+    async docs(routes, options) {
+        if (process.env.NODE_ENV === "production") {
+            return this.readFile(options.path);
+        }
+        return this.generate(routes, options);
     }
-    generate(routes, options) {
-        var routes_1, routes_1_1;
-        var e_1, _a;
-        return __awaiter(this, void 0, void 0, function* () {
-            this.options = Object.assign({
+    async generate(routes, options) {
+        this.options = {
+            ...{
                 snakeCase: true,
                 preferredPutPatch: "PUT",
-            }, options);
-            routes = routes.root;
-            this.options.path = path.join(this.options.path + "/../app");
-            this.schemas = yield this.getSchemas();
-            const docs = {
-                openapi: "3.0.0",
-                info: {
-                    title: options.title,
-                    version: options.version,
-                },
-                components: {
-                    responses: {
-                        Forbidden: {
-                            description: "Access token is missing or invalid",
-                        },
-                        Accepted: {
-                            description: "The request was accepted",
-                        },
-                        Created: {
-                            description: "The resource has been created",
-                        },
-                        NotFound: {
-                            description: "The resource has been created",
-                        },
-                        NotAcceptable: {
-                            description: "The resource has been created",
-                        },
+            },
+            ...options,
+        };
+        routes = routes.root;
+        this.options.path = path_1.default.join(this.options.path + "/../app");
+        this.schemas = await this.getSchemas();
+        const docs = {
+            openapi: "3.0.0",
+            info: {
+                title: options.title,
+                version: options.version,
+            },
+            components: {
+                responses: {
+                    Forbidden: {
+                        description: "Access token is missing or invalid",
                     },
-                    securitySchemes: {
-                        BearerAuth: {
-                            type: "http",
-                            scheme: "bearer",
-                        },
+                    Accepted: {
+                        description: "The request was accepted",
                     },
-                    schemas: this.schemas,
+                    Created: {
+                        description: "The resource has been created",
+                    },
+                    NotFound: {
+                        description: "The resource has been created",
+                    },
+                    NotAcceptable: {
+                        description: "The resource has been created",
+                    },
                 },
-                paths: {},
-                tags: [],
+                securitySchemes: {
+                    BearerAuth: {
+                        type: "http",
+                        scheme: "bearer",
+                    },
+                },
+                schemas: this.schemas,
+            },
+            paths: {},
+            tags: [],
+        };
+        let paths = {};
+        let securities = {
+            "auth": { BearerAuth: ["access"] },
+            "auth:api": { BearerAuth: ["access"] },
+        };
+        let globalTags = [];
+        for await (const route of routes) {
+            if (options.ignore.includes(route.pattern))
+                continue;
+            let security = [];
+            const responseCodes = {
+                GET: "200",
+                POST: "201",
+                DELETE: "202",
+                PUT: "204",
             };
-            let paths = {};
-            let securities = {
-                "auth": { BearerAuth: ["access"] },
-                "auth:api": { BearerAuth: ["access"] },
-            };
-            let globalTags = [];
-            try {
-                for (routes_1 = __asyncValues(routes); routes_1_1 = yield routes_1.next(), !routes_1_1.done;) {
-                    const route = routes_1_1.value;
-                    if (options.ignore.includes(route.pattern))
-                        continue;
-                    let security = [];
-                    const responseCodes = {
-                        GET: "200",
-                        POST: "201",
-                        DELETE: "202",
-                        PUT: "204",
-                    };
-                    route.middleware.forEach((m) => {
-                        if (typeof securities[m] !== "undefined") {
-                            security.push(securities[m]);
-                        }
-                    });
-                    let sourceFile = "";
-                    let action = "";
-                    let customAnnotations;
-                    if (route.meta.resolvedHandler !== null) {
-                        if (typeof route.meta.resolvedHandler.namespace !== "undefined" &&
-                            route.meta.resolvedHandler.method !== "handle") {
-                            sourceFile = route.meta.resolvedHandler.namespace;
-                            action = route.meta.resolvedHandler.method;
-                            if (sourceFile !== "" && action !== "") {
-                                customAnnotations = yield this.getCustomAnnotations(sourceFile, action);
-                            }
-                        }
+            route.middleware.forEach((m) => {
+                if (typeof securities[m] !== "undefined") {
+                    security.push(securities[m]);
+                }
+            });
+            let sourceFile = "";
+            let action = "";
+            let customAnnotations;
+            if (route.meta.resolvedHandler !== null) {
+                if (typeof route.meta.resolvedHandler.namespace !== "undefined" &&
+                    route.meta.resolvedHandler.method !== "handle") {
+                    sourceFile = route.meta.resolvedHandler.namespace;
+                    action = route.meta.resolvedHandler.method;
+                    if (sourceFile !== "" && action !== "") {
+                        customAnnotations = await this.getCustomAnnotations(sourceFile, action);
                     }
+                }
+            }
+            let { tags, parameters, pattern } = this.extractInfos(route.pattern);
+            tags.forEach((tag) => {
+                if (globalTags.filter((e) => e.name === tag).length > 0)
+                    return;
+                if (tag === "")
+                    return;
+                globalTags.push({
+                    name: tag,
+                    description: "Everything related to " + tag,
+                });
+            });
+            route.methods.forEach((method) => {
+                var _a;
+                let responses = {};
+                if (method === "HEAD")
+                    return;
+                if (route.methods.includes("PUT") &&
+                    route.methods.includes("PATCH") &&
+                    method !== this.options.preferredPutPatch)
+                    return;
+                let description = "";
+                let summary = "";
+                if (security.length > 0) {
+                    responses["401"] = {
+                        description: http_status_code_1.default.getMessage(401),
+                    };
+                    responses["403"] = {
+                        description: http_status_code_1.default.getMessage(403),
+                    };
+                }
+                let requestBody = {
+                    content: {
+                        "application/json": {},
+                    },
+                };
+                let actionParams = {};
+                if (action !== "" && typeof customAnnotations[action] !== "undefined") {
+                    description = customAnnotations[action].description;
+                    summary = customAnnotations[action].summary;
+                    responses = { ...responses, ...customAnnotations[action].responses };
+                    requestBody = customAnnotations[action].requestBody;
+                    actionParams = customAnnotations[action].parameters;
+                }
+                parameters = this.mergeParams(parameters, actionParams);
+                if (lodash_1.default.isEmpty(responses)) {
+                    responses[responseCodes[method]] = {
+                        description: http_status_code_1.default.getMessage(responseCodes[method]),
+                        content: {
+                            "application/json": {},
+                        },
+                    };
+                }
+                else {
+                    if (typeof responses[responseCodes[method]] !== "undefined" &&
+                        typeof responses[responseCodes[method]]["summary"] !== "undefined") {
+                        if (summary === "") {
+                            summary = responses[responseCodes[method]]["summary"];
+                        }
+                        delete responses[responseCodes[method]]["summary"];
+                    }
+                    if (typeof responses[responseCodes[method]] !== "undefined" &&
+                        typeof responses[responseCodes[method]]["description"] !==
+                            "undefined") {
+                        description = responses[responseCodes[method]]["description"];
+                    }
+
                     let { tags, parameters, pattern } = this.extractInfos(route.pattern);
                     tags.forEach((tag) => {
                         if (globalTags.filter((e) => e.name === tag).length > 0)
@@ -327,17 +372,55 @@ class AutoSwagger {
                     });
                     docs.tags = globalTags;
                     docs.paths = paths;
+
                 }
-            }
-            catch (e_1_1) { e_1 = { error: e_1_1 }; }
-            finally {
-                try {
-                    if (routes_1_1 && !routes_1_1.done && (_a = routes_1.return)) yield _a.call(routes_1);
+                if (action !== "" && summary === "") {
+                    // Solve toLowerCase undefined exception
+                    // https://github.com/ad-on-is/adonis-autoswagger/issues/28
+                    tags[0] = (_a = tags[0]) !== null && _a !== void 0 ? _a : "";
+                    switch (action) {
+                        case "index":
+                            summary = "Get a list of " + tags[0].toLowerCase();
+                            break;
+                        case "show":
+                            summary = "Get a single instance of " + tags[0].toLowerCase();
+                            break;
+                        case "update":
+                            summary = "Update " + tags[0].toLowerCase();
+                            break;
+                        case "destroy":
+                            summary = "Delete " + tags[0].toLowerCase();
+                            break;
+                    }
                 }
-                finally { if (e_1) throw e_1.error; }
-            }
-            return YAML.stringify(docs);
-        });
+                let m = {
+                    summary: sourceFile === "" && action == ""
+                        ? summary + " (route.ts)"
+                        : summary +
+                            " (" +
+                            sourceFile.replace("App/Controllers/Http/", "") +
+                            "::" +
+                            action +
+                            ")",
+                    description: description,
+                    parameters: parameters,
+                    tags: tags,
+                    responses: responses,
+                    security: security,
+                };
+                if (method !== "GET" && method !== "DELETE") {
+                    m["requestBody"] = requestBody;
+                }
+                pattern = pattern.slice(1);
+                paths = {
+                    ...paths,
+                    [pattern]: { ...paths[pattern], [method.toLowerCase()]: m },
+                };
+            });
+            docs.tags = globalTags;
+            docs.paths = paths;
+        }
+        return json_to_pretty_yaml_1.default.stringify(docs);
     }
     mergeParams(initial, custom) {
         let merge = Object.assign(initial, custom);
@@ -347,31 +430,29 @@ class AutoSwagger {
         }
         return params;
     }
-    getCustomAnnotations(file, action) {
-        return __awaiter(this, void 0, void 0, function* () {
-            let annotations = {};
-            if (typeof file === "undefined")
-                return;
-            if (typeof this.parsedFiles[file] !== "undefined")
-                return;
-            this.parsedFiles.push(file);
-            file = file.replace("App/", "app/") + ".ts";
-            const readFile = util.promisify(fs.readFile);
-            const data = yield readFile(file, "utf8");
-            const comments = extract(data);
-            if (comments.length > 0) {
-                comments.forEach((comment) => {
-                    if (comment.type !== "BlockComment")
-                        return;
-                    if (!comment.value.includes("@" + action))
-                        return;
-                    let lines = comment.value.split("\n");
-                    lines = lines.filter((l) => l != "");
-                    annotations[action] = this.parseAnnotations(lines);
-                });
-            }
-            return annotations;
-        });
+    async getCustomAnnotations(file, action) {
+        let annotations = {};
+        if (typeof file === "undefined")
+            return;
+        if (typeof this.parsedFiles[file] !== "undefined")
+            return;
+        this.parsedFiles.push(file);
+        file = file.replace("App/", "app/") + ".ts";
+        const readFile = util_1.default.promisify(fs_1.default.readFile);
+        const data = await readFile(file, "utf8");
+        const comments = (0, extract_comments_1.default)(data);
+        if (comments.length > 0) {
+            comments.forEach((comment) => {
+                if (comment.type !== "BlockComment")
+                    return;
+                if (!comment.value.includes("@" + action))
+                    return;
+                let lines = comment.value.split("\n");
+                lines = lines.filter((l) => l != "");
+                annotations[action] = this.parseAnnotations(lines);
+            });
+        }
+        return annotations;
     }
     parseAnnotations(lines) {
         let summary = "";
@@ -399,7 +480,7 @@ class AutoSwagger {
                 description = line.replace("@description ", "");
             }
             if (line.startsWith("@responseBody")) {
-                responses = Object.assign(Object.assign({}, responses), this.parseResponse(line));
+                responses = { ...responses, ...this.parseResponse(line) };
             }
             if (line.startsWith("@responseHeader")) {
                 const header = this.parseResponseHeader(line);
@@ -407,13 +488,16 @@ class AutoSwagger {
                     console.error("Error with line: " + line);
                     return;
                 }
-                headers[header["status"]] = Object.assign(Object.assign({}, headers[header["status"]]), header["header"]);
+                headers[header["status"]] = {
+                    ...headers[header["status"]],
+                    ...header["header"],
+                };
             }
             if (line.startsWith("@requestBody")) {
                 requestBody = this.parseRequestBody(line);
             }
             if (line.startsWith("@param")) {
-                parameters = Object.assign(Object.assign({}, parameters), this.parseParam(line));
+                parameters = { ...parameters, ...this.parseParam(line) };
             }
         });
         for (const [key, value] of Object.entries(responses)) {
@@ -531,7 +615,7 @@ class AutoSwagger {
                     return;
                 }
                 const common = this.options.common.headers[u];
-                h = Object.assign(Object.assign({}, h), common);
+                h = { ...h, ...common };
             });
             return {
                 status: status,
@@ -581,10 +665,10 @@ class AutoSwagger {
             return;
         responses[status] = {};
         if (typeof res === "undefined") {
-            res = HTTPStatusCode.getMessage(status);
+            res = http_status_code_1.default.getMessage(status);
         }
         else {
-            res = HTTPStatusCode.getMessage(status) + ": " + res;
+            res = http_status_code_1.default.getMessage(status) + ": " + res;
             let ref = line.substring(line.indexOf("<") + 1, line.lastIndexOf(">"));
             let json = line.substring(line.indexOf("{") + 1, line.lastIndexOf("}"));
             if (json !== "") {
@@ -600,7 +684,7 @@ class AutoSwagger {
                         },
                     };
                 }
-                catch (_a) {
+                catch {
                     console.error("Invalid JSON for: " + line);
                 }
             }
@@ -614,7 +698,7 @@ class AutoSwagger {
                 try {
                     app = JSON.parse("{" + append + "}");
                 }
-                catch (_b) { }
+                catch { }
                 res = sum = "Returns a **single** instance of type `" + ref + "`";
                 // references a schema array
                 if (ref.includes("[]")) {
@@ -678,7 +762,7 @@ class AutoSwagger {
                     try {
                         app = JSON.parse("{" + append + "}");
                     }
-                    catch (_a) { }
+                    catch { }
                     // references a schema array
                     if (ref.includes("[]")) {
                         ref = ref.replace("[]", "");
@@ -714,7 +798,7 @@ class AutoSwagger {
                     },
                 };
             }
-            catch (_a) {
+            catch {
                 console.error("Invalid JSON for " + line);
             }
         }
@@ -729,7 +813,7 @@ class AutoSwagger {
             try {
                 app = JSON.parse("{" + append + "}");
             }
-            catch (_b) { }
+            catch { }
             // references a schema array
             if (ref.includes("[]")) {
                 ref = ref.replace("[]", "");
@@ -878,14 +962,18 @@ class AutoSwagger {
                 required = !part.endsWith('?');
                 const param = part.replace(":", "").replace("?", "");
                 part = "{" + param + "}";
-                parameters = Object.assign(Object.assign({}, parameters), { [param]: {
+                parameters = {
+                    ...parameters,
+                    [param]: {
                         in: "path",
                         name: param,
                         schema: {
                             type: "string",
                         },
+
                         required: required,
                     } });
+
             }
             pattern += "/" + part;
         });
@@ -894,61 +982,59 @@ class AutoSwagger {
         }
         return { tags, parameters, pattern };
     }
-    getSchemas() {
-        return __awaiter(this, void 0, void 0, function* () {
-            let schemas = {
-                Any: {
-                    description: "Any JSON object not defined as schema",
-                },
-            };
-            schemas = Object.assign(Object.assign(Object.assign({}, schemas), (yield this.getInterfaces())), (yield this.getModels()));
-            return schemas;
-        });
+    async getSchemas() {
+        let schemas = {
+            Any: {
+                description: "Any JSON object not defined as schema",
+            },
+        };
+        schemas = {
+            ...schemas,
+            ...(await this.getInterfaces()),
+            ...(await this.getModels()),
+        };
+        return schemas;
     }
-    getModels() {
-        return __awaiter(this, void 0, void 0, function* () {
-            const models = {};
-            const p = path.join(this.options.path, "/Models");
-            if (!fs_1.existsSync(p)) {
-                return models;
-            }
-            const files = yield this.getFiles(p, []);
-            const readFile = util.promisify(fs.readFile);
-            for (let file of files) {
-                const data = yield readFile(file, "utf8");
-                file = file.replace(".ts", "");
-                const split = file.split("/");
-                const name = split[split.length - 1].replace(".ts", "");
-                file = file.replace("app/", "/app/");
-                let schema = {
-                    type: "object",
-                    properties: this.parseModelProperties(data),
-                    description: "Model",
-                };
-                models[name] = schema;
-            }
+    async getModels() {
+        const models = {};
+        const p = path_1.default.join(this.options.path, "/Models");
+        if (!(0, fs_2.existsSync)(p)) {
             return models;
-        });
+        }
+        const files = await this.getFiles(p, []);
+        const readFile = util_1.default.promisify(fs_1.default.readFile);
+        for (let file of files) {
+            const data = await readFile(file, "utf8");
+            file = file.replace(".ts", "");
+            const split = file.split("/");
+            const name = split[split.length - 1].replace(".ts", "");
+            file = file.replace("app/", "/app/");
+            let schema = {
+                type: "object",
+                properties: this.parseModelProperties(data),
+                description: "Model",
+            };
+            models[name] = schema;
+        }
+        return models;
     }
-    getInterfaces() {
-        return __awaiter(this, void 0, void 0, function* () {
-            let interfaces = {};
-            const p = path.join(this.options.path, "/Interfaces");
-            if (!fs_1.existsSync(p)) {
-                return interfaces;
-            }
-            const files = yield this.getFiles(p, []);
-            const readFile = util.promisify(fs.readFile);
-            for (let file of files) {
-                const data = yield readFile(file, "utf8");
-                file = file.replace(".ts", "");
-                const split = file.split("/");
-                const name = split[split.length - 1].replace(".ts", "");
-                file = file.replace("app/", "/app/");
-                interfaces = Object.assign(Object.assign({}, interfaces), this.parseInterfaces(data));
-            }
+    async getInterfaces() {
+        let interfaces = {};
+        const p = path_1.default.join(this.options.path, "/Interfaces");
+        if (!(0, fs_2.existsSync)(p)) {
             return interfaces;
-        });
+        }
+        const files = await this.getFiles(p, []);
+        const readFile = util_1.default.promisify(fs_1.default.readFile);
+        for (let file of files) {
+            const data = await readFile(file, "utf8");
+            file = file.replace(".ts", "");
+            const split = file.split("/");
+            const name = split[split.length - 1].replace(".ts", "");
+            file = file.replace("app/", "/app/");
+            interfaces = { ...interfaces, ...this.parseInterfaces(data) };
+        }
+        return interfaces;
     }
     parseInterfaces(data) {
         let interfaces = {};
@@ -1012,7 +1098,7 @@ class AutoSwagger {
             field = field.trim();
             type = type.trim();
             if (this.options.snakeCase) {
-                field = change_case_1.snakeCase(field);
+                field = (0, change_case_1.snakeCase)(field);
             }
             let isArray = false;
             if (type.includes("[]")) {
@@ -1107,7 +1193,7 @@ class AutoSwagger {
             field = field.replace("get ", "");
             type = type.replace("{", "");
             if (this.options.snakeCase) {
-                field = change_case_1.snakeCase(field);
+                field = (0, change_case_1.snakeCase)(field);
             }
             let indicator = "type";
             if (example === null) {
@@ -1224,22 +1310,20 @@ class AutoSwagger {
         }
         return ex[field];
     }
-    getFiles(dir, files_) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const fs = require("fs");
-            files_ = files_ || [];
-            var files = yield fs.readdirSync(dir);
-            for (let i in files) {
-                var name = dir + "/" + files[i];
-                if (fs.statSync(name).isDirectory()) {
-                    this.getFiles(name, files_);
-                }
-                else {
-                    files_.push(name);
-                }
+    async getFiles(dir, files_) {
+        const fs = require("fs");
+        files_ = files_ || [];
+        var files = await fs.readdirSync(dir);
+        for (let i in files) {
+            var name = dir + "/" + files[i];
+            if (fs.statSync(name).isDirectory()) {
+                this.getFiles(name, files_);
             }
-            return files_;
-        });
+            else {
+                files_.push(name);
+            }
+        }
+        return files_;
     }
 }
 exports.AutoSwagger = AutoSwagger;
