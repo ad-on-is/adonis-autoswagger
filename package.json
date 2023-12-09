@@ -22,6 +22,7 @@
     "http-status-code": "^2.1.0",
     "json-to-pretty-yaml": "^1.2.2",
     "lodash": "^4.17.21",
+    "typescript": "^5.3.3",
     "typescript-parser": "^2.6.1"
   },
   "devDependencies": {
