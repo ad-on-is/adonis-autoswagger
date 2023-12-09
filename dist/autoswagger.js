@@ -263,6 +263,116 @@ class AutoSwagger {
                             "undefined") {
                         description = responses[responseCodes[method]]["description"];
                     }
+
+                    let { tags, parameters, pattern } = this.extractInfos(route.pattern);
+                    tags.forEach((tag) => {
+                        if (globalTags.filter((e) => e.name === tag).length > 0)
+                            return;
+                        if (tag === "")
+                            return;
+                        globalTags.push({
+                            name: tag,
+                            description: "Everything related to " + tag,
+                        });
+                    });
+                    route.methods.forEach((method) => {
+                        var _a;
+                        let responses = {};
+                        if (method === "HEAD")
+                            return;
+                        if (route.methods.includes("PUT") &&
+                            route.methods.includes("PATCH") &&
+                            method !== this.options.preferredPutPatch)
+                            return;
+                        let description = "";
+                        let summary = "";
+                        if (security.length > 0) {
+                            responses["401"] = {
+                                description: HTTPStatusCode.getMessage(401),
+                            };
+                            responses["403"] = {
+                                description: HTTPStatusCode.getMessage(403),
+                            };
+                        }
+                        let requestBody = {
+                            content: {
+                                "application/json": {},
+                            },
+                        };
+                        let actionParams = {};
+                        if (action !== "" && typeof customAnnotations[action] !== "undefined") {
+                            description = customAnnotations[action].description;
+                            summary = customAnnotations[action].summary;
+                            responses = Object.assign(Object.assign({}, responses), customAnnotations[action].responses);
+                            requestBody = customAnnotations[action].requestBody;
+                            actionParams = customAnnotations[action].parameters;
+                        }
+                        parameters = this.mergeParams(parameters, actionParams);
+                        if (_.isEmpty(responses)) {
+                            responses[responseCodes[method]] = {
+                                description: HTTPStatusCode.getMessage(responseCodes[method]),
+                                content: {
+                                    "application/json": {},
+                                },
+                            };
+                        }
+                        else {
+                            if (typeof responses[responseCodes[method]] !== "undefined" &&
+                                typeof responses[responseCodes[method]]["summary"] !== "undefined") {
+                                if (summary === "") {
+                                    summary = responses[responseCodes[method]]["summary"];
+                                }
+                                delete responses[responseCodes[method]]["summary"];
+                            }
+                            if (typeof responses[responseCodes[method]] !== "undefined" &&
+                                typeof responses[responseCodes[method]]["description"] !==
+                                    "undefined") {
+                                description = responses[responseCodes[method]]["description"];
+                            }
+                        }
+                        if (action !== "" && summary === "") {
+                            // Solve toLowerCase undefined exception
+                            // https://github.com/ad-on-is/adonis-autoswagger/issues/28
+                            tags[0] = (_a = tags[0]) !== null && _a !== void 0 ? _a : "";
+                            switch (action) {
+                                case "index":
+                                    summary = "Get a list of " + tags[0].toLowerCase();
+                                    break;
+                                case "show":
+                                    summary = "Get a single instance of " + tags[0].toLowerCase();
+                                    break;
+                                case "update":
+                                    summary = "Update " + tags[0].toLowerCase();
+                                    break;
+                                case "destroy":
+                                    summary = "Delete " + tags[0].toLowerCase();
+                                    break;
+                            }
+                        }
+                        let m = {
+                            summary: sourceFile === "" && action == ""
+                                ? summary + " (route.ts)"
+                                : summary +
+                                    " (" +
+                                    sourceFile.replace("App/Controllers/Http/", "") +
+                                    "::" +
+                                    action +
+                                    ")",
+                            description: description,
+                            parameters: parameters,
+                            tags: tags,
+                            responses: responses,
+                            security: security,
+                        };
+                        if (method !== "GET" && method !== "DELETE") {
+                            m["requestBody"] = requestBody;
+                        }
+                        pattern = pattern.slice(1);
+                        paths = Object.assign(Object.assign({}, paths), { [pattern]: Object.assign(Object.assign({}, paths[pattern]), { [method.toLowerCase()]: m }) });
+                    });
+                    docs.tags = globalTags;
+                    docs.paths = paths;
+
                 }
                 if (action !== "" && summary === "") {
                     // Solve toLowerCase undefined exception
@@ -842,13 +952,15 @@ class AutoSwagger {
         let parameters = {};
         let pattern = "";
         let tags = [];
+        let required;
         const split = p.split("/");
         if (split.length > this.options.tagIndex) {
             tags = [split[this.options.tagIndex].toUpperCase()];
         }
         split.forEach((part) => {
             if (part.startsWith(":")) {
-                const param = part.replace(":", "");
+                required = !part.endsWith('?');
+                const param = part.replace(":", "").replace("?", "");
                 part = "{" + param + "}";
                 parameters = {
                     ...parameters,
@@ -858,12 +970,16 @@ class AutoSwagger {
                         schema: {
                             type: "string",
                         },
-                        required: true,
-                    },
-                };
+
+                        required: required,
+                    } });
+
             }
             pattern += "/" + part;
         });
+        if (pattern.endsWith("/")) {
+            pattern = pattern.slice(0, -1);
+        }
         return { tags, parameters, pattern };
     }
     async getSchemas() {
@@ -997,6 +1113,7 @@ class AutoSwagger {
             let prop = {};
             prop[indicator] = type;
             prop["example"] = example;
+            prop["nullable"] = notRequired;
             if (isArray) {
                 props[field] = { type: "array", items: prop };
             }
