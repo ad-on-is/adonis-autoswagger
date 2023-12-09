@@ -334,5 +334,3 @@ node ace docs:generate
 node ace build --production
 cp swagger.yml build/
 ```
-
-test action
