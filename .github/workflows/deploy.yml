@@ -1,8 +1,7 @@
 name: Deploy
 run-name: Deploying to npmjs 🥹🤞
 on:
-  pull_request_target:
-    types: [opened, synchronize]
+  push:
     branches: 
       - main
 jobs:
