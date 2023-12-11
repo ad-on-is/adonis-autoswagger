@@ -256,6 +256,7 @@ export class AutoSwagger {
 
         let description = "";
         let summary = "";
+        let operationId;
 
         if (security.length > 0) {
           responses["401"] = {
@@ -277,6 +278,7 @@ export class AutoSwagger {
         if (action !== "" && typeof customAnnotations[action] !== "undefined") {
           description = customAnnotations[action].description;
           summary = customAnnotations[action].summary;
+          operationId = customAnnotations[action].operationId;
           responses = { ...responses, ...customAnnotations[action].responses };
           requestBody = customAnnotations[action].requestBody;
           actionParams = customAnnotations[action].parameters;
@@ -341,6 +343,7 @@ export class AutoSwagger {
                   action +
                   ")",
           description: description,
+          operationId: operationId,
           parameters: parameters,
           tags: tags,
           responses: responses,
@@ -402,6 +405,7 @@ export class AutoSwagger {
     let summary = "";
     let upload = "";
     let description = "";
+    let operationId;
     let responses = {};
     let requestBody = {};
     requestBody = {
@@ -424,6 +428,11 @@ export class AutoSwagger {
       if (line.startsWith("@description")) {
         description = line.replace("@description ", "");
       }
+      
+      if (line.startsWith("@operationId")) {
+        operationId = line.replace("@operationId ", "");
+      }
+
       if (line.startsWith("@responseBody")) {
         responses = { ...responses, ...this.parseResponse(line) };
       }
@@ -458,6 +467,7 @@ export class AutoSwagger {
       requestBody: requestBody,
       parameters: parameters,
       summary: summary,
+      operationId: operationId,
     };
   }
 
