@@ -96,6 +96,9 @@ A summary of what the action does
 **@description** (only one)
 A detailed description of what the action does.
 
+**@operationId** (only one)
+An optional unique string used to identify an operation. If provided, these IDs must be unique among all operations described in your API..
+
 **@responseBody** (multiple)
 
 Format: `<status> - <return> - <description>`
@@ -206,6 +209,7 @@ export default {
 export default class SomeController {
   /**
    * @index
+   * @operationId getProducts
    * @description Returns array of producs and it's relations
    * @responseBody 200 - <Product[]>.with(relations)
    * @paramUse(sortable, filterable)
