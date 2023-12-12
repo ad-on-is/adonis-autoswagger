@@ -17,7 +17,8 @@ jobs:
      
       - run: pnpm install
       - run: pnpm build
-      - run: pnpm version patch --no-git-tag-version
+      - run: git config user.email "deploy@github" && git config user.name "GitHub Action"
+      - run: pnpm version patch
       - run: pnpm publish --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
