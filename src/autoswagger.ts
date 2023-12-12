@@ -55,6 +55,26 @@ interface AdonisRoutes {
   root: AdonisRoute[];
 }
 
+/**
+ * Helpers
+ */
+
+function formatOperationId(inputString: string): string {
+  // Remove non-alphanumeric characters and split the string into words
+  const cleanedWords = inputString.replace(/[^a-zA-Z0-9]/g, " ").split(" ");
+
+  // Pascal casing words
+  const pascalCasedWords = cleanedWords.map((word) =>
+    startCase(camelCase(word))
+  );
+
+  // Generate operationId by joining every parts
+  const operationId = pascalCasedWords.join();
+
+  // CamelCase the operationId
+  return camelCase(operationId);
+}
+
 export class AutoSwagger {
   private parsedFiles: string[] = [];
   private options: options;
@@ -361,6 +381,11 @@ export class AutoSwagger {
               summary = "Delete " + tags[0].toLowerCase();
               break;
           }
+        }
+
+        // If not defined by an annotation, use the combination of "controllerNameMethodName"
+        if (action !== "" && isUndefined(operationId) && route.handler) {
+          operationId = formatOperationId(route.handler);
         }
 
         let m = {
