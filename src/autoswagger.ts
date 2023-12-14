@@ -75,6 +75,18 @@ function formatOperationId(inputString: string): string {
   return camelCase(operationId);
 }
 
+/**
+ * Check if a string is a valid JSON
+ */
+function isJSONString(str: string): boolean {
+  try {
+    JSON.parse(str);
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
 export class AutoSwagger {
   private parsedFiles: string[] = [];
   private options: options;
@@ -463,19 +475,10 @@ export class AutoSwagger {
     let description = "";
     let operationId;
     let responses = {};
-    let requestBody = {};
-    requestBody = {
-      content: {
-        "application/json": {
-          schema: {
-            type: "object",
-          },
-          example: "",
-        },
-      },
-    };
+    let requestBody;
     let parameters = {};
     let headers = {};
+
     lines.forEach((line) => {
       if (line.startsWith("@summary")) {
         summary = line.replace("@summary ", "");
@@ -506,6 +509,12 @@ export class AutoSwagger {
       if (line.startsWith("@requestBody")) {
         requestBody = this.parseRequestBody(line);
       }
+      if (line.startsWith("@requestFormDataBody")) {
+        const parsedBody = this.parseRequestFormDataBody(line);
+        if (parsedBody) {
+          requestBody = parsedBody;
+        }
+      }
       if (line.startsWith("@param")) {
         parameters = { ...parameters, ...this.parseParam(line) };
       }
@@ -518,16 +527,16 @@ export class AutoSwagger {
     }
 
     return {
-      description: description,
-      responses: responses,
-      requestBody: requestBody,
-      parameters: parameters,
-      summary: summary,
-      operationId: operationId,
+      description,
+      responses,
+      requestBody,
+      parameters,
+      summary,
+      operationId,
     };
   }
 
-  private parseParam(line) {
+  private parseParam(line: string) {
     let where = "path";
     let required = true;
     let type = "string";
@@ -822,80 +831,108 @@ export class AutoSwagger {
     return out;
   }
 
-  private parseRequestBody(line) {
-    let requestBody = {};
+  private parseRequestBody(rawLine: string) {
+    const line = rawLine.replace("@requestBody ", "");
 
-    line = line.replace("@requestBody ", "");
+    const isJson = isJSONString(line);
 
-    let json = line.substring(line.indexOf("{") + 1, line.lastIndexOf("}"));
-    if (json !== "") {
-      try {
-        let j = JSON.parse("{" + json + "}");
-        j = this.jsonToRef(j);
-        requestBody = {
-          content: {
-            "application/json": {
-              schema: {
-                type: "object",
-              },
-              example: j,
+    if (isJson) {
+      // No need to try/catch this JSON.parse as we already did that in the isJSONString function
+      const json = JSON.parse(line);
+
+      return {
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
             },
+            example: this.jsonToRef(json),
           },
-        };
-      } catch {
-        console.error("Invalid JSON for " + line);
-      }
+        },
+      };
     }
 
-    let ref = line.substring(line.indexOf("<") + 1, line.lastIndexOf(">"));
-    // references a schema
-    if (ref !== "" && json === "") {
-      const inc = this.getBetweenBrackets(line, "with");
-      const exc = this.getBetweenBrackets(line, "exclude");
-      const append = this.getBetweenBrackets(line, "append");
-      const only = this.getBetweenBrackets(line, "only");
+    let rawRef = line.substring(line.indexOf("<") + 1, line.lastIndexOf(">"));
 
-      let app = {};
-      try {
-        app = JSON.parse("{" + append + "}");
-      } catch {}
+    if (rawRef === "") {
+      // No format valid, returning empty responseBody
+      return;
+    }
 
-      // references a schema array
-      if (ref.includes("[]")) {
-        ref = ref.replace("[]", "");
-        requestBody = {
-          content: {
-            "application/json": {
-              schema: {
-                type: "array",
-                items: { $ref: "#/components/schemas/" + ref },
-              },
-              example: [
-                Object.assign(
-                  this.getSchemaExampleBasedOnAnnotation(ref, inc, exc, only),
-                  app
-                ),
-              ],
+    const inc = this.getBetweenBrackets(line, "with");
+    const exc = this.getBetweenBrackets(line, "exclude");
+    const append = this.getBetweenBrackets(line, "append");
+    const only = this.getBetweenBrackets(line, "only");
+
+    let app = {};
+    try {
+      app = JSON.parse("{" + append + "}");
+    } catch {}
+
+    // references a schema array
+    if (rawRef.includes("[]")) {
+      const cleandRef = rawRef.replace("[]", "");
+
+      return {
+        content: {
+          "application/json": {
+            schema: {
+              type: "array",
+              items: { $ref: "#/components/schemas/" + cleandRef },
             },
-          },
-        };
-      } else {
-        requestBody = {
-          content: {
-            "application/json": {
-              schema: {
-                $ref: "#/components/schemas/" + ref,
-              },
-              example: Object.assign(
-                this.getSchemaExampleBasedOnAnnotation(ref, inc, exc, only),
+            example: [
+              Object.assign(
+                this.getSchemaExampleBasedOnAnnotation(
+                  cleandRef,
+                  inc,
+                  exc,
+                  only
+                ),
                 app
               ),
-            },
+            ],
           },
-        };
-      }
+        },
+      };
     }
-    return requestBody;
+
+    return {
+      content: {
+        "application/json": {
+          schema: {
+            $ref: "#/components/schemas/" + rawRef,
+          },
+          example: Object.assign(
+            this.getSchemaExampleBasedOnAnnotation(rawRef, inc, exc, only),
+            app
+          ),
+        },
+      },
+    };
+  }
+
+  private parseRequestFormDataBody(rawLine: string) {
+    const line = rawLine.replace("@requestFormDataBody ", "");
+
+    const isJson = isJSONString(line);
+
+    if (!isJson) {
+      return;
+    }
+
+    // No need to try/catch this JSON.parse as we already did that in the isJSONString function
+    const json = JSON.parse(line);
+
+    return {
+      content: {
+        "multipart/form-data": {
+          schema: {
+            type: "object",
+            properties: json,
+          },
+        },
+      },
+    };
   }
 
   private getBetweenBrackets(value: string, start: string) {
