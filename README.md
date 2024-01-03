@@ -53,7 +53,7 @@ Route.get("/swagger", async () => {
 
 // Renders Swagger-UI and passes YAML-output of /swagger
 Route.get("/docs", async () => {
-  return AutoSwagger.ui("/swagger");
+  return AutoSwagger.ui("/swagger", swagger);
 });
 ```
 
