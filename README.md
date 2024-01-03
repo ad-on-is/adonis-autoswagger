@@ -37,6 +37,7 @@ export default {
     parameters: {}, // OpenAPI conform parameters that are commonly used
     headers: {}, // OpenAPI conform headers that are commonly used
   },
+  persistAuthorization: true // persist authorization between reloads onthe swagger page
 };
 ```
 
