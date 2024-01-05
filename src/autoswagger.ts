@@ -4,10 +4,12 @@ import path from "path";
 import util from "util";
 import extract from "extract-comments";
 import HTTPStatusCode from "http-status-code";
-import _ from "lodash";
-import { snakeCase } from "change-case";
+import { camelCase, isEmpty, isUndefined, snakeCase, startCase } from "lodash";
 import { existsSync } from "fs";
 
+/**
+ * Autoswagger interfaces
+ */
 interface options {
   title: string;
   ignore: string[];
@@ -25,6 +27,67 @@ interface common {
   parameters: any;
 }
 
+/**
+ * Adonis routes
+ */
+interface AdonisRouteMeta {
+  resolvedHandler: {
+    type: string;
+    namespace?: string;
+    method?: string;
+  };
+  resolvedMiddleware: Array<{
+    type: string;
+    args?: any[];
+  }>;
+}
+
+interface AdonisRoute {
+  methods: string[];
+  pattern: string;
+  meta: AdonisRouteMeta;
+  middleware: string[];
+  name?: string;
+  params: string[];
+  handler?: string;
+}
+
+interface AdonisRoutes {
+  root: AdonisRoute[];
+}
+
+/**
+ * Helpers
+ */
+
+function formatOperationId(inputString: string): string {
+  // Remove non-alphanumeric characters and split the string into words
+  const cleanedWords = inputString.replace(/[^a-zA-Z0-9]/g, " ").split(" ");
+
+  // Pascal casing words
+  const pascalCasedWords = cleanedWords.map((word) =>
+    startCase(camelCase(word))
+  );
+
+  // Generate operationId by joining every parts
+  const operationId = pascalCasedWords.join();
+
+  // CamelCase the operationId
+  return camelCase(operationId);
+}
+
+/**
+ * Check if a string is a valid JSON
+ */
+function isJSONString(str: string): boolean {
+  try {
+    JSON.parse(str);
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
 export class AutoSwagger {
   private parsedFiles: string[] = [];
   private options: options;
@@ -38,13 +101,13 @@ export class AutoSwagger {
     "boolean",
     "any",
   ]
-      .map((type) => [type, type + "[]"])
-      .flat();
+    .map((type) => [type, type + "[]"])
+    .flat();
 
   ui(url: string, options?: options) {
     const persistAuthString = options?.persistAuthorization ? 'persistAuthorization: true,' : '';
     return (
-        `<!DOCTYPE html>
+      `<!DOCTYPE html>
 		<html lang="en">
 		<head>
 				<meta charset="UTF-8">
@@ -78,7 +141,7 @@ export class AutoSwagger {
 
   rapidoc(url: string, style = "view") {
     return (
-        `
+      `
     <!doctype html> <!-- Important: must specify -->
     <html>
       <head>
@@ -89,8 +152,8 @@ export class AutoSwagger {
       <body>
         <rapi-doc
           spec-url = "` +
-        url +
-        `"
+      url +
+      `"
       theme = "dark"
       bg-color = "#24283b"
       header-color = "#1a1b26"
@@ -102,8 +165,8 @@ export class AutoSwagger {
       heading-text = "Documentation"
       sort-tags = "true"
       render-style = "` +
-        style +
-        `"
+      style +
+      `"
       default-schema-tab = "example"
       show-components = "true"
       allow-spec-url-load = "false"
@@ -133,14 +196,14 @@ export class AutoSwagger {
     return data;
   }
 
-  async docs(routes, options: options) {
+  async docs(routes: AdonisRoutes, options: options) {
     if (process.env.NODE_ENV === "production") {
       return this.readFile(options.path);
     }
     return this.generate(routes, options);
   }
 
-  async generate(routes, options: options) {
+  async generate(adonisRoutes: AdonisRoutes, options: options) {
     this.options = {
       ...{
         snakeCase: true,
@@ -148,7 +211,7 @@ export class AutoSwagger {
       },
       ...options,
     };
-    routes = routes.root;
+    const routes = adonisRoutes.root;
     this.options.path = path.join(this.options.path + "/../app");
     this.schemas = await this.getSchemas();
 
@@ -218,16 +281,16 @@ export class AutoSwagger {
       let customAnnotations;
       if (route.meta.resolvedHandler !== null) {
         if (
-            typeof route.meta.resolvedHandler.namespace !== "undefined" &&
-            route.meta.resolvedHandler.method !== "handle"
+          typeof route.meta.resolvedHandler.namespace !== "undefined" &&
+          route.meta.resolvedHandler.method !== "handle"
         ) {
           sourceFile = route.meta.resolvedHandler.namespace;
 
           action = route.meta.resolvedHandler.method;
           if (sourceFile !== "" && action !== "") {
             customAnnotations = await this.getCustomAnnotations(
-                sourceFile,
-                action
+              sourceFile,
+              action
             );
           }
         }
@@ -249,14 +312,15 @@ export class AutoSwagger {
         if (method === "HEAD") return;
 
         if (
-            route.methods.includes("PUT") &&
-            route.methods.includes("PATCH") &&
-            method !== this.options.preferredPutPatch
+          route.methods.includes("PUT") &&
+          route.methods.includes("PATCH") &&
+          method !== this.options.preferredPutPatch
         )
           return;
 
         let description = "";
         let summary = "";
+        let operationId: string;
 
         if (security.length > 0) {
           responses["401"] = {
@@ -278,13 +342,14 @@ export class AutoSwagger {
         if (action !== "" && typeof customAnnotations[action] !== "undefined") {
           description = customAnnotations[action].description;
           summary = customAnnotations[action].summary;
+          operationId = customAnnotations[action].operationId;
           responses = { ...responses, ...customAnnotations[action].responses };
           requestBody = customAnnotations[action].requestBody;
           actionParams = customAnnotations[action].parameters;
         }
         parameters = this.mergeParams(parameters, actionParams);
 
-        if (_.isEmpty(responses)) {
+        if (isEmpty(responses)) {
           responses[responseCodes[method]] = {
             description: HTTPStatusCode.getMessage(responseCodes[method]),
             content: {
@@ -293,8 +358,8 @@ export class AutoSwagger {
           };
         } else {
           if (
-              typeof responses[responseCodes[method]] !== "undefined" &&
-              typeof responses[responseCodes[method]]["summary"] !== "undefined"
+            typeof responses[responseCodes[method]] !== "undefined" &&
+            typeof responses[responseCodes[method]]["summary"] !== "undefined"
           ) {
             if (summary === "") {
               summary = responses[responseCodes[method]]["summary"];
@@ -302,8 +367,8 @@ export class AutoSwagger {
             delete responses[responseCodes[method]]["summary"];
           }
           if (
-              typeof responses[responseCodes[method]] !== "undefined" &&
-              typeof responses[responseCodes[method]]["description"] !==
+            typeof responses[responseCodes[method]] !== "undefined" &&
+            typeof responses[responseCodes[method]]["description"] !==
               "undefined"
           ) {
             description = responses[responseCodes[method]]["description"];
@@ -331,17 +396,23 @@ export class AutoSwagger {
           }
         }
 
+        // If not defined by an annotation, use the combination of "controllerNameMethodName"
+        if (action !== "" && isUndefined(operationId) && route.handler) {
+          operationId = formatOperationId(route.handler);
+        }
+
         let m = {
           summary:
-              sourceFile === "" && action == ""
-                  ? summary + " (route.ts)"
-                  : summary +
-                  " (" +
-                  sourceFile.replace("App/Controllers/Http/", "") +
-                  "::" +
-                  action +
-                  ")",
+            sourceFile === "" && action == ""
+              ? summary + " (route.ts)"
+              : summary +
+                " (" +
+                sourceFile.replace("App/Controllers/Http/", "") +
+                "::" +
+                action +
+                ")",
           description: description,
+          operationId: operationId,
           parameters: parameters,
           tags: tags,
           responses: responses,
@@ -403,20 +474,12 @@ export class AutoSwagger {
     let summary = "";
     let upload = "";
     let description = "";
+    let operationId;
     let responses = {};
-    let requestBody = {};
-    requestBody = {
-      content: {
-        "application/json": {
-          schema: {
-            type: "object",
-          },
-          example: "",
-        },
-      },
-    };
+    let requestBody;
     let parameters = {};
     let headers = {};
+
     lines.forEach((line) => {
       if (line.startsWith("@summary")) {
         summary = line.replace("@summary ", "");
@@ -425,6 +488,11 @@ export class AutoSwagger {
       if (line.startsWith("@description")) {
         description = line.replace("@description ", "");
       }
+
+      if (line.startsWith("@operationId")) {
+        operationId = line.replace("@operationId ", "");
+      }
+
       if (line.startsWith("@responseBody")) {
         responses = { ...responses, ...this.parseResponse(line) };
       }
@@ -442,6 +510,12 @@ export class AutoSwagger {
       if (line.startsWith("@requestBody")) {
         requestBody = this.parseRequestBody(line);
       }
+      if (line.startsWith("@requestFormDataBody")) {
+        const parsedBody = this.parseRequestFormDataBody(line);
+        if (parsedBody) {
+          requestBody = parsedBody;
+        }
+      }
       if (line.startsWith("@param")) {
         parameters = { ...parameters, ...this.parseParam(line) };
       }
@@ -454,15 +528,16 @@ export class AutoSwagger {
     }
 
     return {
-      description: description,
-      responses: responses,
-      requestBody: requestBody,
-      parameters: parameters,
-      summary: summary,
+      description,
+      responses,
+      requestBody,
+      parameters,
+      summary,
+      operationId,
     };
   }
 
-  private parseParam(line) {
+  private parseParam(line: string) {
     let where = "path";
     let required = true;
     let type = "string";
@@ -553,12 +628,12 @@ export class AutoSwagger {
     return { [param]: p };
   }
 
-  private parseResponseHeader(line) {
+  private parseResponseHeader(responseLine: string) {
     let description = "";
     let example: any = "";
     let type = "string";
     let enums = [];
-    line = line.replace("@responseHeader ", "");
+    const line = responseLine.replace("@responseHeader ", "");
     let [status, name, desc, meta] = line.split(" - ");
 
     if (typeof status === "undefined" || typeof name === "undefined") {
@@ -625,9 +700,9 @@ export class AutoSwagger {
     };
   }
 
-  private parseResponse(line) {
+  private parseResponse(responseLine: string) {
     let responses = {};
-    line = line.replace("@responseBody ", "");
+    const line = responseLine.replace("@responseBody ", "");
     let [status, res] = line.split(" - ");
     let sum = "";
     if (typeof status === "undefined") return;
@@ -678,8 +753,8 @@ export class AutoSwagger {
               },
               example: [
                 Object.assign(
-                    this.getSchemaExampleBasedOnAnnotation(ref, inc, exc, only),
-                    app
+                  this.getSchemaExampleBasedOnAnnotation(ref, inc, exc, only),
+                  app
                 ),
               ],
             },
@@ -689,8 +764,8 @@ export class AutoSwagger {
             "application/json": {
               schema: { $ref: "#/components/schemas/" + ref },
               example: Object.assign(
-                  this.getSchemaExampleBasedOnAnnotation(ref, inc, exc, only),
-                  app
+                this.getSchemaExampleBasedOnAnnotation(ref, inc, exc, only),
+                app
               ),
             },
           };
@@ -740,14 +815,14 @@ export class AutoSwagger {
             ref = ref.replace("[]", "");
             v = [
               Object.assign(
-                  this.getSchemaExampleBasedOnAnnotation(ref, inc, exc, only),
-                  app
+                this.getSchemaExampleBasedOnAnnotation(ref, inc, exc, only),
+                app
               ),
             ].reduce((a) => a);
           } else {
             v = Object.assign(
-                this.getSchemaExampleBasedOnAnnotation(ref, inc, exc, only),
-                app
+              this.getSchemaExampleBasedOnAnnotation(ref, inc, exc, only),
+              app
             );
           }
         }
@@ -757,83 +832,111 @@ export class AutoSwagger {
     return out;
   }
 
-  private parseRequestBody(line) {
-    let requestBody = {};
+  private parseRequestBody(rawLine: string) {
+    const line = rawLine.replace("@requestBody ", "");
 
-    line = line.replace("@requestBody ", "");
+    const isJson = isJSONString(line);
 
-    let json = line.substring(line.indexOf("{") + 1, line.lastIndexOf("}"));
-    if (json !== "") {
-      try {
-        let j = JSON.parse("{" + json + "}");
-        j = this.jsonToRef(j);
-        requestBody = {
-          content: {
-            "application/json": {
-              schema: {
-                type: "object",
-              },
-              example: j,
+    if (isJson) {
+      // No need to try/catch this JSON.parse as we already did that in the isJSONString function
+      const json = JSON.parse(line);
+
+      return {
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
             },
+            example: this.jsonToRef(json),
           },
-        };
-      } catch {
-        console.error("Invalid JSON for " + line);
-      }
+        },
+      };
     }
 
-    let ref = line.substring(line.indexOf("<") + 1, line.lastIndexOf(">"));
-    // references a schema
-    if (ref !== "" && json === "") {
-      const inc = this.getBetweenBrackets(line, "with");
-      const exc = this.getBetweenBrackets(line, "exclude");
-      const append = this.getBetweenBrackets(line, "append");
-      const only = this.getBetweenBrackets(line, "only");
+    let rawRef = line.substring(line.indexOf("<") + 1, line.lastIndexOf(">"));
 
-      let app = {};
-      try {
-        app = JSON.parse("{" + append + "}");
-      } catch {}
+    if (rawRef === "") {
+      // No format valid, returning empty responseBody
+      return;
+    }
 
-      // references a schema array
-      if (ref.includes("[]")) {
-        ref = ref.replace("[]", "");
-        requestBody = {
-          content: {
-            "application/json": {
-              schema: {
-                type: "array",
-                items: { $ref: "#/components/schemas/" + ref },
-              },
-              example: [
-                Object.assign(
-                    this.getSchemaExampleBasedOnAnnotation(ref, inc, exc, only),
-                    app
+    const inc = this.getBetweenBrackets(line, "with");
+    const exc = this.getBetweenBrackets(line, "exclude");
+    const append = this.getBetweenBrackets(line, "append");
+    const only = this.getBetweenBrackets(line, "only");
+
+    let app = {};
+    try {
+      app = JSON.parse("{" + append + "}");
+    } catch {}
+
+    // references a schema array
+    if (rawRef.includes("[]")) {
+      const cleandRef = rawRef.replace("[]", "");
+
+      return {
+        content: {
+          "application/json": {
+            schema: {
+              type: "array",
+              items: { $ref: "#/components/schemas/" + cleandRef },
+            },
+            example: [
+              Object.assign(
+                this.getSchemaExampleBasedOnAnnotation(
+                  cleandRef,
+                  inc,
+                  exc,
+                  only
                 ),
-              ],
-            },
-          },
-        };
-      } else {
-        requestBody = {
-          content: {
-            "application/json": {
-              schema: {
-                $ref: "#/components/schemas/" + ref,
-              },
-              example: Object.assign(
-                  this.getSchemaExampleBasedOnAnnotation(ref, inc, exc, only),
-                  app
+                app
               ),
-            },
+            ],
           },
-        };
-      }
+        },
+      };
     }
-    return requestBody;
+
+    return {
+      content: {
+        "application/json": {
+          schema: {
+            $ref: "#/components/schemas/" + rawRef,
+          },
+          example: Object.assign(
+            this.getSchemaExampleBasedOnAnnotation(rawRef, inc, exc, only),
+            app
+          ),
+        },
+      },
+    };
   }
 
-  private getBetweenBrackets(value, start) {
+  private parseRequestFormDataBody(rawLine: string) {
+    const line = rawLine.replace("@requestFormDataBody ", "");
+
+    const isJson = isJSONString(line);
+
+    if (!isJson) {
+      return;
+    }
+
+    // No need to try/catch this JSON.parse as we already did that in the isJSONString function
+    const json = JSON.parse(line);
+
+    return {
+      content: {
+        "multipart/form-data": {
+          schema: {
+            type: "object",
+            properties: json,
+          },
+        },
+      },
+    };
+  }
+
+  private getBetweenBrackets(value: string, start: string) {
     let match = value.match(new RegExp(start + "\\(([^()]*)\\)", "g"));
 
     if (match !== null) {
@@ -849,13 +952,13 @@ export class AutoSwagger {
   }
 
   private getSchemaExampleBasedOnAnnotation(
-      schema,
-      inc = "",
-      exc = "",
-      onl = "",
-      first = "",
-      parent = "",
-      level = 0
+    schema: string,
+    inc = "",
+    exc = "",
+    onl = "",
+    first = "",
+    parent = "",
+    level = 0
   ) {
     let props = {};
     if (!this.schemas[schema]) {
@@ -872,13 +975,13 @@ export class AutoSwagger {
 
     // skip nested if not requested
     if (
-        parent !== "" &&
-        schema !== "" &&
-        parent.includes(".") &&
-        this.schemas[schema].description === "Model" &&
-        !inc.includes(parent) &&
-        !inc.includes(parent + ".relations") &&
-        !inc.includes(first + ".relations")
+      parent !== "" &&
+      schema !== "" &&
+      parent.includes(".") &&
+      this.schemas[schema].description === "Model" &&
+      !inc.includes(parent) &&
+      !inc.includes(parent + ".relations") &&
+      !inc.includes(first + ".relations")
     ) {
       return null;
     }
@@ -889,22 +992,22 @@ export class AutoSwagger {
       if (exclude.includes(parent + "." + key)) continue;
 
       if (
-          key === "password" &&
-          !include.includes("password") &&
-          !only.includes("password")
+        key === "password" &&
+        !include.includes("password") &&
+        !only.includes("password")
       )
         continue;
       if (
-          key === "password_confirmation" &&
-          !include.includes("password_confirmation") &&
-          !only.includes("password_confirmation")
+        key === "password_confirmation" &&
+        !include.includes("password_confirmation") &&
+        !only.includes("password_confirmation")
       )
         continue;
       if (
-          (key === "created_at" ||
-              key === "updated_at" ||
-              key === "deleted_at") &&
-          exc.includes("timestamps")
+        (key === "created_at" ||
+          key === "updated_at" ||
+          key === "deleted_at") &&
+        exc.includes("timestamps")
       )
         continue;
 
@@ -918,8 +1021,8 @@ export class AutoSwagger {
       }
 
       if (
-          typeof value["items"] !== "undefined" &&
-          typeof value["items"]["$ref"] !== "undefined"
+        typeof value["items"] !== "undefined" &&
+        typeof value["items"]["$ref"] !== "undefined"
       ) {
         rel = value["items"]["$ref"].replace("#/components/schemas/", "");
       }
@@ -932,19 +1035,19 @@ export class AutoSwagger {
       if (rel !== "") {
         // skip related models of main schema
         if (
-            parent === "" &&
-            rel !== "" &&
-            typeof this.schemas[rel] !== "undefined" &&
-            this.schemas[rel].description === "Model" &&
-            !include.includes("relations") &&
-            !include.includes(key)
+          parent === "" &&
+          rel !== "" &&
+          typeof this.schemas[rel] !== "undefined" &&
+          this.schemas[rel].description === "Model" &&
+          !include.includes("relations") &&
+          !include.includes(key)
         ) {
           continue;
         }
 
         if (
-            typeof value["items"] !== "undefined" &&
-            typeof value["items"]["$ref"] !== "undefined"
+          typeof value["items"] !== "undefined" &&
+          typeof value["items"]["$ref"] !== "undefined"
         ) {
           rel = value["items"]["$ref"].replace("#/components/schemas/", "");
         }
@@ -955,13 +1058,13 @@ export class AutoSwagger {
         let propdata: any = "";
         if (level <= 10) {
           propdata = this.getSchemaExampleBasedOnAnnotation(
-              rel,
-              inc,
-              exc,
-              onl,
-              parent,
-              parent === "" ? key : parent + "." + key,
-              level++
+            rel,
+            inc,
+            exc,
+            onl,
+            parent,
+            parent === "" ? key : parent + "." + key,
+            level++
           );
         }
 
@@ -981,18 +1084,19 @@ export class AutoSwagger {
   /*
     extract path-variables, tags and the uri-pattern
   */
-  private extractInfos(p) {
+  private extractInfos(p: string) {
     let parameters = {};
     let pattern = "";
     let tags = [];
     let required: boolean;
+
     const split = p.split("/");
     if (split.length > this.options.tagIndex) {
       tags = [split[this.options.tagIndex].toUpperCase()];
     }
     split.forEach((part) => {
       if (part.startsWith(":")) {
-        required = !part.endsWith('?');
+        required = !part.endsWith("?");
         const param = part.replace(":", "").replace("?", "");
         part = "{" + param + "}";
         parameters = {
@@ -1086,14 +1190,14 @@ export class AutoSwagger {
       if (line.startsWith("export") && !line.startsWith("export default"))
         return;
       if (
-          line.startsWith("//") ||
-          line.startsWith("/*") ||
-          line.startsWith("*")
+        line.startsWith("//") ||
+        line.startsWith("/*") ||
+        line.startsWith("*")
       )
         return;
       if (
-          line.startsWith("interface ") ||
-          line.startsWith("export default interface ")
+        line.startsWith("interface ") ||
+        line.startsWith("export default interface ")
       ) {
         props = {};
         name = line;
@@ -1186,15 +1290,15 @@ export class AutoSwagger {
       line = line.trim();
       // skip comments
       if (
-          line.includes("@swagger-softdelete") ||
-          line.includes("SoftDeletes")
+        line.includes("@swagger-softdelete") ||
+        line.includes("SoftDeletes")
       ) {
         softDelete = true;
       }
       if (
-          line.startsWith("//") ||
-          line.startsWith("/*") ||
-          line.startsWith("*")
+        line.startsWith("//") ||
+        line.startsWith("/*") ||
+        line.startsWith("*")
       )
         return;
       if (index > 0 && lines[index - 1].includes("serializeAs: null")) return;
@@ -1278,15 +1382,15 @@ export class AutoSwagger {
       let isArray = false;
 
       if (
-          line.includes("HasMany") ||
-          line.includes("ManyToMany") ||
-          line.includes("HasManyThrough") ||
-          type.includes("[]")
+        line.includes("HasMany") ||
+        line.includes("ManyToMany") ||
+        line.includes("HasManyThrough") ||
+        type.includes("[]")
       ) {
         isArray = true;
         if (
-            type.slice(type.length - 2, type.length) === "[]" &&
-            this.standardTypes.includes(type.toLowerCase())
+          type.slice(type.length - 2, type.length) === "[]" &&
+          this.standardTypes.includes(type.toLowerCase())
         ) {
           type = type.toLowerCase().split("[]")[0];
         }

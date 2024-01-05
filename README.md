@@ -97,6 +97,9 @@ A summary of what the action does
 **@description** (only one)
 A detailed description of what the action does.
 
+**@operationId** (only one)
+An optional unique string used to identify an operation. If provided, these IDs must be unique among all operations described in your API..
+
 **@responseBody** (multiple)
 
 Format: `<status> - <return> - <description>`
@@ -118,6 +121,13 @@ Format: `<body>`
 
 `<body>` can be either a `<Schema>`, `<Schema[]>`or a custom JSON `{}`
 
+**@requestFormDataBody** (only one)
+A definition of the expected requestBody that will be sent with formData format.
+
+Format: `{}`
+
+This format should be a valid openapi 3.x json.
+
 ---
 
 # **Examples**
@@ -131,15 +141,17 @@ Format: `<body>`
 
 @responseBody <status> - <Model> // returns model specification
 
-  @responseBody <status> - <Model[]> // returns model-array specification
+@responseBody <status> - <Model[]> // returns model-array specification
 
-    @responseBody <status> - <Model>.with(relations, property1, property2.relations, property3.subproperty.relations) // returns a model and a defined relation
+@responseBody <status> - <Model>.with(relations, property1, property2.relations, property3.subproperty.relations) // returns a model and a defined relation
 
-      @responseBody <status> - <Model[]>.with(relations).exclude(property1, property2, property3.subproperty) // returns model specification
+@responseBody <status> - <Model[]>.with(relations).exclude(property1, property2, property3.subproperty) // returns model specification
 
-        @responseBody <status> - <Model[]>.append("some":"valid json") // append additional properties to a Model
-          @responseBody <status> - <Model>.only(property1, property2) // pick only specific properties
-            @responseBody <status> - {"foo": "bar"} //returns custom json
+@responseBody <status> - <Model[]>.append("some":"valid json") // append additional properties to a Model
+
+@responseBody <status> - <Model>.only(property1, property2) // pick only specific properties
+
+@responseBody <status> - {"foo": "bar"} //returns custom json
 ```
 
 ## `@requestBody` examples
@@ -150,6 +162,13 @@ Format: `<body>`
 @requestBody <Model>.with(relations) // Expects model and its relations
 @requestBody <Model[]>.append("some":"valid json") // append additional properties to a Model
 @requestBody {"foo": "bar"} // Expects a specific JSON
+```
+
+## `@requestFormDataBody` examples
+
+```js
+// basicaly same as @response, just without a status
+@requestFormDataBody {"name":{"type":"string"},"picture":{"type":"string","format":"binary"}} // Expects a valid OpenAPI 3.x JSON
 ```
 
 ---
@@ -207,6 +226,7 @@ export default {
 export default class SomeController {
   /**
    * @index
+   * @operationId getProducts
    * @description Returns array of producs and it's relations
    * @responseBody 200 - <Product[]>.with(relations)
    * @paramUse(sortable, filterable)
