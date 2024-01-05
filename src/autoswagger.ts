@@ -60,7 +60,7 @@ export class AutoSwagger {
 				<script>
 						window.onload = function() {
 							SwaggerUIBundle({
-								url: "` + url + `",
+								url: "${url}",
 								dom_id: '#swagger-ui',
 								presets: [
 									SwaggerUIBundle.presets.apis,
