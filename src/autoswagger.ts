@@ -67,7 +67,7 @@ export class AutoSwagger {
 									SwaggerUIStandalonePreset
 								],
 								layout: "BaseLayout",
-                ` + persistAuthString + `
+                ${persistAuthString}
 							})
 						}
 				</script>
