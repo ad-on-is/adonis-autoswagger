@@ -19,6 +19,7 @@ interface options {
   snakeCase: boolean;
   common: common;
   preferredPutPatch?: string;
+  persistAuthorization?: boolean;
 }
 
 interface common {
@@ -103,7 +104,8 @@ export class AutoSwagger {
     .map((type) => [type, type + "[]"])
     .flat();
 
-  ui(url: string) {
+  ui(url: string, options?: options) {
+    const persistAuthString = options?.persistAuthorization ? 'persistAuthorization: true,' : '';
     return (
       `<!DOCTYPE html>
 		<html lang="en">
@@ -121,15 +123,14 @@ export class AutoSwagger {
 				<script>
 						window.onload = function() {
 							SwaggerUIBundle({
-								url: "` +
-      url +
-      `",
+								url: "${url}",
 								dom_id: '#swagger-ui',
 								presets: [
 									SwaggerUIBundle.presets.apis,
 									SwaggerUIStandalonePreset
 								],
-								layout: "BaseLayout"
+								layout: "BaseLayout",
+                ${persistAuthString}
 							})
 						}
 				</script>

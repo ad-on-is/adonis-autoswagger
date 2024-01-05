@@ -37,6 +37,7 @@ export default {
     parameters: {}, // OpenAPI conform parameters that are commonly used
     headers: {}, // OpenAPI conform headers that are commonly used
   },
+  persistAuthorization: true // persist authorization between reloads on the swagger page
 };
 ```
 
@@ -52,7 +53,7 @@ Route.get("/swagger", async () => {
 
 // Renders Swagger-UI and passes YAML-output of /swagger
 Route.get("/docs", async () => {
-  return AutoSwagger.ui("/swagger");
+  return AutoSwagger.ui("/swagger", swagger);
 });
 ```
 
