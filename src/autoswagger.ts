@@ -1187,8 +1187,7 @@ export class AutoSwagger {
     const lines = data.split("\n");
     lines.forEach((line, index) => {
       line = line.trim();
-      if (line.startsWith("export") && !line.startsWith("export default"))
-        return;
+
       if (
         line.startsWith("//") ||
         line.startsWith("/*") ||
@@ -1197,11 +1196,13 @@ export class AutoSwagger {
         return;
       if (
         line.startsWith("interface ") ||
-        line.startsWith("export default interface ")
+        line.startsWith("export default interface ") ||
+        line.startsWith("export interface ")
       ) {
         props = {};
         name = line;
         name = name.replace("export default ", "");
+        name = name.replace("export ", "");
         name = name.replace("interface ", "");
         name = name.replace("{", "");
         name = name.trim();
