@@ -1257,14 +1257,30 @@ export class AutoSwagger {
         isArray = true;
       }
       let indicator = "type";
-      if (!this.standardTypes.includes(type)) {
-        indicator = "$ref";
-        type = "#/components/schemas/" + type;
-      }
       let prop = {};
-      prop[indicator] = type;
-      prop["example"] = example;
-      prop["nullable"] = notRequired;
+
+      if( type.toLowerCase() === "datetime") {
+        prop[indicator] = 'string';
+        prop["format"] = "date-time"
+        prop["example"] = "2021-03-23T16:13:08.489+01:00"
+        prop["nullable"] = notRequired;
+      }
+      else if( type.toLowerCase() === "date") {
+        prop[indicator] = 'string';
+        prop["format"] = "date"
+        prop["example"] = "2021-03-23"
+        prop["nullable"] = notRequired;
+      }
+      else {
+        if (!this.standardTypes.includes(type)) {
+          indicator = "$ref";
+          type = "#/components/schemas/" + type;
+        }
+
+        prop[indicator] = type;
+        prop["example"] = example;
+        prop["nullable"] = notRequired;
+      }
 
       if (isArray) {
         props[field] = { type: "array", items: prop };
@@ -1401,6 +1417,13 @@ export class AutoSwagger {
         type = "string";
         format = "date-time";
         example = "2021-03-23T16:13:08.489+01:00";
+      }
+
+      if (type === "date") {
+        indicator = "type";
+        type = "string";
+        format = "date";
+        example = "2021-03-23";
       }
 
       if (field === "email") {
