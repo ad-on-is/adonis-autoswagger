@@ -1406,10 +1406,9 @@ export class AutoSwagger {
       ) {
         isArray = true;
         if (
-          type.slice(type.length - 2, type.length) === "[]" &&
-          this.standardTypes.includes(type.toLowerCase())
+          type.slice(type.length - 2, type.length) === "[]"
         ) {
-          type = type.toLowerCase().split("[]")[0];
+          type = type.split("[]")[0];
         }
       }
 
