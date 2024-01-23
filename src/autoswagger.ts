@@ -1369,7 +1369,7 @@ export class AutoSwagger {
 
       field = field.replace("()", "");
       field = field.replace("get ", "");
-      type = type.replace("{", "");
+      type = type.replace("{", "").trim();
 
       if (this.options.snakeCase) {
         field = snakeCase(field);
