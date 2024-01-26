@@ -6,6 +6,7 @@ import extract from "extract-comments";
 import HTTPStatusCode from "http-status-code";
 import { camelCase, isEmpty, isUndefined, snakeCase, startCase } from "lodash";
 import { existsSync } from "fs";
+import { RouteJSON } from "@adonisjs/http-server/build/src/types/route";
 
 /**
  * Autoswagger interfaces
@@ -25,35 +26,6 @@ interface options {
 interface common {
   headers: any;
   parameters: any;
-}
-
-/**
- * Adonis routes
- */
-interface AdonisRouteMeta {
-  resolvedHandler: {
-    type: string;
-    namespace?: string;
-    method?: string;
-  };
-  resolvedMiddleware: Array<{
-    type: string;
-    args?: any[];
-  }>;
-}
-
-interface AdonisRoute {
-  methods: string[];
-  pattern: string;
-  meta: AdonisRouteMeta;
-  middleware: string[];
-  name?: string;
-  params: string[];
-  handler?: string;
-}
-
-interface AdonisRoutes {
-  root: AdonisRoute[];
 }
 
 /**
@@ -105,9 +77,10 @@ export class AutoSwagger {
     .flat();
 
   ui(url: string, options?: options) {
-    const persistAuthString = options?.persistAuthorization ? 'persistAuthorization: true,' : '';
-    return (
-      `<!DOCTYPE html>
+    const persistAuthString = options?.persistAuthorization
+      ? "persistAuthorization: true,"
+      : "";
+    return `<!DOCTYPE html>
 		<html lang="en">
 		<head>
 				<meta charset="UTF-8">
@@ -135,8 +108,7 @@ export class AutoSwagger {
 						}
 				</script>
 		</body>
-		</html>`
-    );
+		</html>`;
   }
 
   rapidoc(url: string, style = "view") {
@@ -196,14 +168,14 @@ export class AutoSwagger {
     return data;
   }
 
-  async docs(routes: AdonisRoutes, options: options) {
+  async docs(routes: Record<string, RouteJSON[]>, options: options) {
     if (process.env.NODE_ENV === "production") {
       return this.readFile(options.path);
     }
     return this.generate(routes, options);
   }
 
-  async generate(adonisRoutes: AdonisRoutes, options: options) {
+  async generate(adonisRoutes: Record<string, RouteJSON[]>, options: options) {
     this.options = {
       ...{
         snakeCase: true,
@@ -269,17 +241,18 @@ export class AutoSwagger {
         DELETE: "202",
         PUT: "204",
       };
-
-      route.middleware.forEach((m) => {
-        if (typeof securities[m] !== "undefined") {
-          security.push(securities[m]);
-        }
-      });
+      if (route.middleware.length > 0) {
+        route.middleware.forEach((m) => {
+          if (typeof securities[m] !== "undefined") {
+            security.push(securities[m]);
+          }
+        });
+      }
 
       let sourceFile = "";
       let action = "";
       let customAnnotations;
-      if (route.meta.resolvedHandler !== null) {
+      if (route.meta.resolvedHandler !== null && route.meta.resolvedHandler !== undefined) {
         if (
           typeof route.meta.resolvedHandler.namespace !== "undefined" &&
           route.meta.resolvedHandler.method !== "handle"
