@@ -1187,8 +1187,7 @@ export class AutoSwagger {
     const lines = data.split("\n");
     lines.forEach((line, index) => {
       line = line.trim();
-      if (line.startsWith("export") && !line.startsWith("export default"))
-        return;
+
       if (
         line.startsWith("//") ||
         line.startsWith("/*") ||
@@ -1197,11 +1196,13 @@ export class AutoSwagger {
         return;
       if (
         line.startsWith("interface ") ||
-        line.startsWith("export default interface ")
+        line.startsWith("export default interface ") ||
+        line.startsWith("export interface ")
       ) {
         props = {};
         name = line;
         name = name.replace("export default ", "");
+        name = name.replace("export ", "");
         name = name.replace("interface ", "");
         name = name.replace("{", "");
         name = name.trim();
@@ -1257,14 +1258,30 @@ export class AutoSwagger {
         isArray = true;
       }
       let indicator = "type";
-      if (!this.standardTypes.includes(type)) {
-        indicator = "$ref";
-        type = "#/components/schemas/" + type;
-      }
       let prop = {};
-      prop[indicator] = type;
-      prop["example"] = example;
-      prop["nullable"] = notRequired;
+
+      if( type.toLowerCase() === "datetime") {
+        prop[indicator] = 'string';
+        prop["format"] = "date-time"
+        prop["example"] = "2021-03-23T16:13:08.489+01:00"
+        prop["nullable"] = notRequired;
+      }
+      else if( type.toLowerCase() === "date") {
+        prop[indicator] = 'string';
+        prop["format"] = "date"
+        prop["example"] = "2021-03-23"
+        prop["nullable"] = notRequired;
+      }
+      else {
+        if (!this.standardTypes.includes(type)) {
+          indicator = "$ref";
+          type = "#/components/schemas/" + type;
+        }
+
+        prop[indicator] = type;
+        prop["example"] = example;
+        prop["nullable"] = notRequired;
+      }
 
       if (isArray) {
         props[field] = { type: "array", items: prop };
@@ -1352,7 +1369,7 @@ export class AutoSwagger {
 
       field = field.replace("()", "");
       field = field.replace("get ", "");
-      type = type.replace("{", "");
+      type = type.replace("{", "").trim();
 
       if (this.options.snakeCase) {
         field = snakeCase(field);
@@ -1389,10 +1406,9 @@ export class AutoSwagger {
       ) {
         isArray = true;
         if (
-          type.slice(type.length - 2, type.length) === "[]" &&
-          this.standardTypes.includes(type.toLowerCase())
+          type.slice(type.length - 2, type.length) === "[]"
         ) {
-          type = type.toLowerCase().split("[]")[0];
+          type = type.split("[]")[0];
         }
       }
 
@@ -1401,6 +1417,13 @@ export class AutoSwagger {
         type = "string";
         format = "date-time";
         example = "2021-03-23T16:13:08.489+01:00";
+      }
+
+      if (type === "date") {
+        indicator = "type";
+        type = "string";
+        format = "date";
+        example = "2021-03-23";
       }
 
       if (field === "email") {
