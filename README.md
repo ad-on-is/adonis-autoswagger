@@ -37,11 +37,29 @@ export default {
     parameters: {}, // OpenAPI conform parameters that are commonly used
     headers: {}, // OpenAPI conform headers that are commonly used
   },
-  persistAuthorization: true // persist authorization between reloads on the swagger page
+  persistAuthorization: true, // persist authorization between reloads on the swagger page
 };
 ```
 
 In your `routes.ts`
+
+## for AdonisJS v6
+
+```js
+import AutoSwagger from "adonis-autoswagger";
+import swagger from "#config/swagger";
+// returns swagger in YAML
+router.get("/swagger", async () => {
+  return AutoSwagger.docs(router.toJSON(), swagger);
+});
+
+// Renders Swagger-UI and passes YAML-output of /swagger
+router.get("/docs", async () => {
+  return AutoSwagger.ui("/swagger", swagger);
+});
+```
+
+## for AdonisJS v5
 
 ```js
 import AutoSwagger from "adonis-autoswagger";
@@ -89,7 +107,11 @@ Here's where you can set these and use them with `@paramUse()` and `@responseHea
 
 # Extend Controllers
 
-Add additional documentation to your Controller-files.
+## Add additional documentation to your Controller-files.
+
+> **ATTENTION\!** - When using schemas (models), use uppercase for AdonisJS v5 `<Schema>` and lowercase for AdonisJS v6 `<schema>`
+
+---
 
 **@summary** (only one)
 A summary of what the action does
@@ -104,7 +126,7 @@ An optional unique string used to identify an operation. If provided, these IDs 
 
 Format: `<status> - <return> - <description>`
 
-`<return>` can be either a `<Schema>`, `<Schema[]>`or a custom JSON `{}`
+`<return>` can be either a `<Schema>`, (`<schema>` v6), `<Schema[]>/`, (`<schema[]>` v6) or a custom JSON `{}`
 
 **@responseHeader** (multiple)
 
@@ -119,7 +141,7 @@ A definition of the expected requestBody
 
 Format: `<body>`
 
-`<body>` can be either a `<Schema>`, `<Schema[]>`or a custom JSON `{}`
+`<body>` can be either a `<Schema>`, (`<schema>` v6), `<Schema[]>/`, (`<schema[]>` v6) or a custom JSON `{}`
 
 **@requestFormDataBody** (only one)
 A definition of the expected requestBody that will be sent with formData format.
