@@ -42,14 +42,20 @@ interface AdonisRouteMeta {
   }>;
 }
 
+interface v6Middleware {}
+interface v6Handler {
+  reference: string;
+  name: string;
+}
+
 interface AdonisRoute {
   methods: string[];
   pattern: string;
   meta: AdonisRouteMeta;
-  middleware: string[];
+  middleware: string[] | v6Middleware;
   name?: string;
   params: string[];
-  handler?: string;
+  handler?: string | v6Handler;
 }
 
 interface AdonisRoutes {
@@ -105,9 +111,10 @@ export class AutoSwagger {
     .flat();
 
   ui(url: string, options?: options) {
-    const persistAuthString = options?.persistAuthorization ? 'persistAuthorization: true,' : '';
-    return (
-      `<!DOCTYPE html>
+    const persistAuthString = options?.persistAuthorization
+      ? "persistAuthorization: true,"
+      : "";
+    return `<!DOCTYPE html>
 		<html lang="en">
 		<head>
 				<meta charset="UTF-8">
@@ -135,8 +142,7 @@ export class AutoSwagger {
 						}
 				</script>
 		</body>
-		</html>`
-    );
+		</html>`;
   }
 
   rapidoc(url: string, style = "view") {
@@ -196,7 +202,7 @@ export class AutoSwagger {
     return data;
   }
 
-  async docs(routes: AdonisRoutes, options: options) {
+  async docs(routes: any, options: options) {
     if (process.env.NODE_ENV === "production") {
       return this.readFile(options.path);
     }
@@ -212,7 +218,7 @@ export class AutoSwagger {
       ...options,
     };
     const routes = adonisRoutes.root;
-    this.options.path = path.join(this.options.path + "/../app");
+    this.options.path = this.options.path + "app";
     this.schemas = await this.getSchemas();
 
     const docs = {
@@ -269,17 +275,21 @@ export class AutoSwagger {
         DELETE: "202",
         PUT: "204",
       };
-
-      route.middleware.forEach((m) => {
-        if (typeof securities[m] !== "undefined") {
-          security.push(securities[m]);
-        }
-      });
+      // todo: handle middlware accordingly for v5/v6
+      // route.middleware.forEach((m) => {
+      //   if (typeof securities[m] !== "undefined") {
+      //     security.push(securities[m]);
+      //   }
+      // });
 
       let sourceFile = "";
       let action = "";
       let customAnnotations;
-      if (route.meta.resolvedHandler !== null) {
+      let operationId = "";
+      if (
+        route.meta.resolvedHandler !== null &&
+        route.meta.resolvedHandler !== undefined
+      ) {
         if (
           typeof route.meta.resolvedHandler.namespace !== "undefined" &&
           route.meta.resolvedHandler.method !== "handle"
@@ -287,12 +297,36 @@ export class AutoSwagger {
           sourceFile = route.meta.resolvedHandler.namespace;
 
           action = route.meta.resolvedHandler.method;
+          // If not defined by an annotation, use the combination of "controllerNameMethodName"
+          if (action !== "" && isUndefined(operationId) && route.handler) {
+            operationId = formatOperationId(route.handler as string);
+          }
+
           if (sourceFile !== "" && action !== "") {
             customAnnotations = await this.getCustomAnnotations(
               sourceFile,
               action
             );
           }
+        }
+      }
+
+      const v6handler = <v6Handler>route.handler;
+      if (
+        v6handler.reference !== null &&
+        v6handler.reference !== undefined &&
+        v6handler.reference !== ""
+      ) {
+        const split = v6handler.reference.split(".");
+        sourceFile = split[0];
+        action = split[1];
+        operationId = formatOperationId(v6handler.reference);
+        sourceFile = options.path + "app/controllers/" + sourceFile;
+        if (sourceFile !== "" && action !== "") {
+          customAnnotations = await this.getCustomAnnotations(
+            sourceFile,
+            action
+          );
         }
       }
 
@@ -396,11 +430,6 @@ export class AutoSwagger {
           }
         }
 
-        // If not defined by an annotation, use the combination of "controllerNameMethodName"
-        if (action !== "" && isUndefined(operationId) && route.handler) {
-          operationId = formatOperationId(route.handler);
-        }
-
         let m = {
           summary:
             sourceFile === "" && action == ""
@@ -424,6 +453,9 @@ export class AutoSwagger {
         }
 
         pattern = pattern.slice(1);
+        if (pattern === "") {
+          pattern = "/";
+        }
 
         paths = {
           ...paths,
@@ -454,7 +486,6 @@ export class AutoSwagger {
     this.parsedFiles.push(file);
     file = file.replace("App/", "app/") + ".ts";
     const readFile = util.promisify(fs.readFile);
-
     const data = await readFile(file, "utf8");
     const comments = extract(data);
     if (comments.length > 0) {
@@ -1137,9 +1168,13 @@ export class AutoSwagger {
 
   private async getModels() {
     const models = {};
-    const p = path.join(this.options.path, "/Models");
-    if (!existsSync(p)) {
+    let p = path.join(this.options.path, "/Models");
+    const p6 = path.join(this.options.path, "/models");
+    if (!existsSync(p) && !existsSync(p6)) {
       return models;
+    }
+    if (existsSync(p6)) {
+      p = p6;
     }
     const files = await this.getFiles(p, []);
     const readFile = util.promisify(fs.readFile);
@@ -1161,9 +1196,13 @@ export class AutoSwagger {
 
   private async getInterfaces() {
     let interfaces = {};
-    const p = path.join(this.options.path, "/Interfaces");
-    if (!existsSync(p)) {
+    let p = path.join(this.options.path, "/Interfaces");
+    const p6 = path.join(this.options.path, "/interfaces");
+    if (!existsSync(p) && !existsSync(p6)) {
       return interfaces;
+    }
+    if (existsSync(p6)) {
+      p = p6;
     }
     const files = await this.getFiles(p, []);
     const readFile = util.promisify(fs.readFile);
@@ -1260,19 +1299,17 @@ export class AutoSwagger {
       let indicator = "type";
       let prop = {};
 
-      if( type.toLowerCase() === "datetime") {
-        prop[indicator] = 'string';
-        prop["format"] = "date-time"
-        prop["example"] = "2021-03-23T16:13:08.489+01:00"
+      if (type.toLowerCase() === "datetime") {
+        prop[indicator] = "string";
+        prop["format"] = "date-time";
+        prop["example"] = "2021-03-23T16:13:08.489+01:00";
         prop["nullable"] = notRequired;
-      }
-      else if( type.toLowerCase() === "date") {
-        prop[indicator] = 'string';
-        prop["format"] = "date"
-        prop["example"] = "2021-03-23"
+      } else if (type.toLowerCase() === "date") {
+        prop[indicator] = "string";
+        prop["format"] = "date";
+        prop["example"] = "2021-03-23";
         prop["nullable"] = notRequired;
-      }
-      else {
+      } else {
         if (!this.standardTypes.includes(type)) {
           indicator = "$ref";
           type = "#/components/schemas/" + type;
@@ -1320,14 +1357,29 @@ export class AutoSwagger {
         return;
       if (index > 0 && lines[index - 1].includes("serializeAs: null")) return;
       if (index > 0 && lines[index - 1].includes("@no-swagger")) return;
-      if (!line.startsWith("public ") && !line.startsWith("public get")) return;
+      if (
+        !line.startsWith("public ") &&
+        !line.startsWith("public get") &&
+        !line.startsWith("declare ")
+      )
+        return;
       if (line.includes("(") && !line.startsWith("public get")) return;
-      let s = line.split("public ");
-      let s2 = s[1].replace(/;/g, "").split(":");
-      if (line.startsWith("public get")) {
-        s = line.split("public get");
-        let s2 = s[1].replace(/;/g, "").split(":");
+
+      let s = [];
+
+      if (line.startsWith("declare ")) {
+        s = line.split("declare ");
       }
+      if (line.startsWith("public ")) {
+        if (line.startsWith("public get")) {
+          s = line.split("public get");
+          let s2 = s[1].replace(/;/g, "").split(":");
+        } else {
+          s = line.split("public ");
+        }
+      }
+
+      let s2 = s[1].replace(/;/g, "").split(":");
 
       let field = s2[0];
       let type = s2[1];
@@ -1405,9 +1457,7 @@ export class AutoSwagger {
         type.includes("[]")
       ) {
         isArray = true;
-        if (
-          type.slice(type.length - 2, type.length) === "[]"
-        ) {
+        if (type.slice(type.length - 2, type.length) === "[]") {
           type = type.split("[]")[0];
         }
       }
