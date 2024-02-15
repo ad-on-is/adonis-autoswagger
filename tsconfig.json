@@ -1,8 +1,9 @@
 {
   "compilerOptions": {
-    "module": "CommonJS",
-    "target": "ES2019",
-    "declaration": true,
+    "lib": ["ES2022"],
+    "target": "ES2022",
+    "module": "Node16",
+    "moduleResolution": "Node16",
     "outDir": "./dist",
     "esModuleInterop": true
   },

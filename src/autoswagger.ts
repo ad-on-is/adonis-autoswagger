@@ -43,6 +43,8 @@ interface AdonisRouteMeta {
 }
 
 interface v6Handler {
+  method?: string;
+  moduleNameOrPath?: string;
   reference: string | any[];
   name: string;
 }
@@ -314,7 +316,7 @@ export class AutoSwagger {
         }
       }
 
-      const v6handler = <v6Handler>route.handler;
+      let v6handler = <v6Handler>route.handler;
       if (
         v6handler.reference !== null &&
         v6handler.reference !== undefined &&
@@ -333,11 +335,11 @@ export class AutoSwagger {
             );
           }
         } else {
-          action = v6handler.reference[1];
-          sourceFile = v6handler.name;
-          const split = sourceFile.match(/[A-Z][a-z]+/g);
-          sourceFile = split.join("_").toLowerCase();
-          sourceFile = options.path + "app/controllers/" + sourceFile;
+          v6handler = await serializeV6Handler(v6handler);
+          action = v6handler.method;
+          sourceFile = v6handler.moduleNameOrPath;
+          sourceFile = sourceFile.replace("#", "");
+          sourceFile = options.path + "app/" + sourceFile;
           if (sourceFile !== "" && action !== "") {
             customAnnotations = await this.getCustomAnnotations(
               sourceFile,
@@ -1605,4 +1607,67 @@ function serializeV6Middleware(mw: any): string[] {
 
     return result;
   }, []);
+}
+
+async function serializeV6Handler(handler: any): Promise<any> {
+  /**
+   * Value is a controller reference
+   */
+  if ("reference" in handler) {
+    return {
+      type: "controller" as const,
+      ...(await parseBindingReference(handler.reference)),
+    };
+  }
+
+  /**
+   * Value is an inline closure
+   */
+  return {
+    type: "closure" as const,
+    name: handler.name || "closure",
+  };
+}
+
+async function parseBindingReference(
+  binding: string | [any | any, any]
+): Promise<{ moduleNameOrPath: string; method: string }> {
+  const parseImports = (await import("parse-imports")).default;
+  /**
+   * The binding reference is a magic string. It might not have method
+   * name attached to it. Therefore we split the string and attempt
+   * to find the method or use the default method name "handle".
+   */
+  if (typeof binding === "string") {
+    const tokens = binding.split(".");
+    if (tokens.length === 1) {
+      return { moduleNameOrPath: binding, method: "handle" };
+    }
+    return { method: tokens.pop()!, moduleNameOrPath: tokens.join(".") };
+  }
+
+  const [bindingReference, method] = binding;
+
+  /**
+   * Parsing the binding reference for dynamic imports and using its
+   * import value.
+   */
+  const imports = [...(await parseImports(bindingReference.toString()))];
+  const importedModule = imports.find(
+    ($import) => $import.isDynamicImport && $import.moduleSpecifier.value
+  );
+  if (importedModule) {
+    return {
+      moduleNameOrPath: importedModule.moduleSpecifier.value!,
+      method: method || "handle",
+    };
+  }
+
+  /**
+   * Otherwise using the name of the binding reference.
+   */
+  return {
+    moduleNameOrPath: bindingReference.name,
+    method: method || "handle",
+  };
 }
