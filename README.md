@@ -37,6 +37,7 @@ export default {
   title: "Foo",
   version: "1.0.0",
   tagIndex: 2,
+  snakeCase: true,
   ignore: ["/swagger", "/docs"],
   preferredPutPatch: "PUT", // if PUT/PATCH are provided for the same route, prefer PUT
   common: {
@@ -86,6 +87,22 @@ Route.get("/docs", async () => {
 Visit `<url>/docs` to see AutoSwagger in action.
 
 ---
+
+> [!CAUTION]
+> The following notation is not supported and is also discouraged
+
+```ts
+const TestController = () => import("#controllers/test_controller");
+router.get("/best", [TestController, "index"]);
+```
+
+This is because AutoSwagger does not know which file the controller/action originates from and hence cannot parse the comments.
+
+Use this instead, as it's also more performant since it's lazy loaded.
+
+```ts
+router.get("/best", "test_controller.index");
+```
 
 ## Configure
 

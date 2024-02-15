@@ -43,7 +43,7 @@ interface AdonisRouteMeta {
 }
 
 interface v6Handler {
-  reference: string;
+  reference: string | any[];
   name: string;
 }
 
@@ -320,16 +320,18 @@ export class AutoSwagger {
         v6handler.reference !== undefined &&
         v6handler.reference !== ""
       ) {
-        const split = v6handler.reference.split(".");
-        sourceFile = split[0];
-        action = split[1];
-        operationId = formatOperationId(v6handler.reference);
-        sourceFile = options.path + "app/controllers/" + sourceFile;
-        if (sourceFile !== "" && action !== "") {
-          customAnnotations = await this.getCustomAnnotations(
-            sourceFile,
-            action
-          );
+        if (!Array.isArray(v6handler.reference)) {
+          const split = v6handler.reference.split(".");
+          sourceFile = split[0];
+          action = split[1];
+          operationId = formatOperationId(v6handler.reference);
+          sourceFile = options.path + "app/controllers/" + sourceFile;
+          if (sourceFile !== "" && action !== "") {
+            customAnnotations = await this.getCustomAnnotations(
+              sourceFile,
+              action
+            );
+          }
         }
       }
 
