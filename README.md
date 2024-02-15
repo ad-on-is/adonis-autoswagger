@@ -25,14 +25,20 @@ Auto-Generate swagger docs for AdonisJS
 
 Create a file `/config/swagger.ts`
 
-```js
+```ts
+// for AdonisJS v6
+import path from "node:path";
+import url from "node:url";
+// ---
+
 export default {
-  path: __dirname + "../",
+  // path: __dirname + "../", for AdonisJS v5
+  path: path.dirname(url.fileURLToPath(import.meta.url)) + "/../", // for AdonisJS v6
   title: "Foo",
   version: "1.0.0",
   tagIndex: 2,
   ignore: ["/swagger", "/docs"],
-  preferredPutPatch: "PUT", // if PUT/PATCH are provided for the same rout, prefer PUT
+  preferredPutPatch: "PUT", // if PUT/PATCH are provided for the same route, prefer PUT
   common: {
     parameters: {}, // OpenAPI conform parameters that are commonly used
     headers: {}, // OpenAPI conform headers that are commonly used
@@ -156,6 +162,8 @@ This format should be a valid openapi 3.x json.
 
 ## `@responseBody` examples
 
+> **ATTENTION\!** - When using schemas (models), use uppercase for AdonisJS v5 `<Model>` and lowercase for AdonisJS v6 `<model>`
+
 ```js
 @responseBody <status> - Lorem ipsum Dolor sit amet
 
@@ -177,6 +185,8 @@ This format should be a valid openapi 3.x json.
 ```
 
 ## `@requestBody` examples
+
+> **ATTENTION\!** - When using schemas (models), use uppercase for AdonisJS v5 `<Model>` and lowercase for AdonisJS v6 `<model>`
 
 ```js
 // basicaly same as @response, just without a status

@@ -42,7 +42,6 @@ interface AdonisRouteMeta {
   }>;
 }
 
-interface v6Middleware {}
 interface v6Handler {
   reference: string;
   name: string;
@@ -52,7 +51,7 @@ interface AdonisRoute {
   methods: string[];
   pattern: string;
   meta: AdonisRouteMeta;
-  middleware: string[] | v6Middleware;
+  middleware: string[] | Object;
   name?: string;
   params: string[];
   handler?: string | v6Handler;
@@ -275,12 +274,16 @@ export class AutoSwagger {
         DELETE: "202",
         PUT: "204",
       };
-      // todo: handle middlware accordingly for v5/v6
-      // route.middleware.forEach((m) => {
-      //   if (typeof securities[m] !== "undefined") {
-      //     security.push(securities[m]);
-      //   }
-      // });
+
+      if (typeof route.middleware === "object") {
+        route.middleware = serializeV6Middleware(route.middleware) as string[];
+      }
+
+      (route.middleware as string[]).forEach((m) => {
+        if (typeof securities[m] !== "undefined") {
+          security.push(securities[m]);
+        }
+      });
 
       let sourceFile = "";
       let action = "";
@@ -1573,4 +1576,19 @@ export class AutoSwagger {
     }
     return files_;
   }
+}
+
+function serializeV6Middleware(mw: any): string[] {
+  return [...mw.all()].reduce<string[]>((result, one) => {
+    if (typeof one === "function") {
+      result.push(one.name || "closure");
+      return result;
+    }
+
+    if ("name" in one && one.name) {
+      result.push(one.name);
+    }
+
+    return result;
+  }, []);
 }
