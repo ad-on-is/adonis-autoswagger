@@ -332,6 +332,18 @@ export class AutoSwagger {
               action
             );
           }
+        } else {
+          action = v6handler.reference[1];
+          sourceFile = v6handler.name;
+          const split = sourceFile.match(/[A-Z][a-z]+/g);
+          sourceFile = split.join("_").toLowerCase();
+          sourceFile = options.path + "app/controllers/" + sourceFile;
+          if (sourceFile !== "" && action !== "") {
+            customAnnotations = await this.getCustomAnnotations(
+              sourceFile,
+              action
+            );
+          }
         }
       }
 

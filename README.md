@@ -89,20 +89,18 @@ Visit `<url>/docs` to see AutoSwagger in action.
 ---
 
 > [!CAUTION]
-> The following notation is not supported
+> The following notation MUST be used with caution
 
 ```ts
-const TestController = () => import("#controllers/test_controller");
-router.get("/best", [TestController, "index"]);
+const FooController = () => import("#controllers/foo_controller");
+router.get("/foo", [FooController, "index"]);
 ```
 
-This is because AutoSwagger does not know which file the controller/action originates from and hence cannot parse the comments.
-
-Use magic strings instead instead, as it behaves similarely and is lazy loaded.
-
-```ts
-router.get("/best", "test_controller.index");
-```
+Since AutoSwagger does not know which file the controller/action originates from, the controller name MUST match the filename.
+✅ FooController -> `controllers/foo_controller`
+❌ FooController -> `controllers/bar_controller`
+❌ FooController -> `controllers/foo`
+❌ FooController -> `controllers/bar`
 
 ## Configure
 
