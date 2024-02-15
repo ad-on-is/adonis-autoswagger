@@ -56,12 +56,12 @@ import AutoSwagger from "adonis-autoswagger";
 import swagger from "#config/swagger";
 // returns swagger in YAML
 router.get("/swagger", async () => {
-  return AutoSwagger.docs(router.toJSON(), swagger);
+  return AutoSwagger.default.docs(router.toJSON(), swagger);
 });
 
 // Renders Swagger-UI and passes YAML-output of /swagger
 router.get("/docs", async () => {
-  return AutoSwagger.ui("/swagger", swagger);
+  return AutoSwagger.default.ui("/swagger", swagger);
 });
 ```
 
