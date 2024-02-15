@@ -51,7 +51,7 @@ interface AdonisRoute {
   methods: string[];
   pattern: string;
   meta: AdonisRouteMeta;
-  middleware: string[] | Object;
+  middleware: string[] | any;
   name?: string;
   params: string[];
   handler?: string | v6Handler;
@@ -275,7 +275,7 @@ export class AutoSwagger {
         PUT: "204",
       };
 
-      if (typeof route.middleware === "object") {
+      if (!Array.isArray(route.middleware)) {
         route.middleware = serializeV6Middleware(route.middleware) as string[];
       }
 
