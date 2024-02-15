@@ -89,7 +89,7 @@ Visit `<url>/docs` to see AutoSwagger in action.
 ---
 
 > [!CAUTION]
-> The following notation is not supported and is also discouraged
+> The following notation is not supported
 
 ```ts
 const TestController = () => import("#controllers/test_controller");
@@ -98,7 +98,7 @@ router.get("/best", [TestController, "index"]);
 
 This is because AutoSwagger does not know which file the controller/action originates from and hence cannot parse the comments.
 
-Use this instead, as it's also more performant since it's lazy loaded.
+Use magic strings instead instead, as it's also more performant since it's lazy loaded.
 
 ```ts
 router.get("/best", "test_controller.index");
