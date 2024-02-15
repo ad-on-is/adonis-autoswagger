@@ -98,7 +98,7 @@ router.get("/best", [TestController, "index"]);
 
 This is because AutoSwagger does not know which file the controller/action originates from and hence cannot parse the comments.
 
-Use magic strings instead instead, as it's also more performant since it's lazy loaded.
+Use magic strings instead instead, as it behaves similarely and is lazy loaded.
 
 ```ts
 router.get("/best", "test_controller.index");
