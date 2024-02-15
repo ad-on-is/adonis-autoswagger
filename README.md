@@ -88,20 +88,6 @@ Visit `<url>/docs` to see AutoSwagger in action.
 
 ---
 
-> [!CAUTION]
-> The following notation MUST be used with caution
-
-```ts
-const FooController = () => import("#controllers/foo_controller");
-router.get("/foo", [FooController, "index"]);
-```
-
-Since AutoSwagger does not know which file the controller/action originates from, the controller name MUST match the filename.
-✅ FooController -> `controllers/foo_controller`
-❌ FooController -> `controllers/bar_controller`
-❌ FooController -> `controllers/foo`
-❌ FooController -> `controllers/bar`
-
 ## Configure
 
 ### `tagIndex`
