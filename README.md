@@ -115,7 +115,8 @@ Here's where you can set these and use them with `@paramUse()` and `@responseHea
 
 ## Add additional documentation to your Controller-files.
 
-> **ATTENTION\!** - When using schemas (models), use uppercase for AdonisJS v5 `<Schema>` and lowercase for AdonisJS v6 `<schema>`
+> [!IMPORTANT]
+> When using schemas (models), use uppercase for AdonisJS v5 `<Schema>` and lowercase for AdonisJS v6 `<schema>`
 
 ---
 
@@ -162,7 +163,8 @@ This format should be a valid openapi 3.x json.
 
 ## `@responseBody` examples
 
-> **ATTENTION\!** - When using schemas (models), use uppercase for AdonisJS v5 `<Model>` and lowercase for AdonisJS v6 `<model>`
+> [!IMPORTANT]
+> When using schemas (models), use uppercase for AdonisJS v5 `<Model>` and lowercase for AdonisJS v6 `<model>`
 
 ```js
 @responseBody <status> - Lorem ipsum Dolor sit amet
@@ -186,7 +188,8 @@ This format should be a valid openapi 3.x json.
 
 ## `@requestBody` examples
 
-> **ATTENTION\!** - When using schemas (models), use uppercase for AdonisJS v5 `<Model>` and lowercase for AdonisJS v6 `<model>`
+> [!IMPORTANT]
+> When using schemas (models), use uppercase for AdonisJS v5 `<Model>` and lowercase for AdonisJS v6 `<model>`
 
 ```js
 // basicaly same as @response, just without a status
