@@ -63,6 +63,7 @@ router.get("/swagger", async () => {
 // Renders Swagger-UI and passes YAML-output of /swagger
 router.get("/docs", async () => {
   return AutoSwagger.default.ui("/swagger", swagger);
+  // return AutoSwagger.default.rapidoc("/swagger", swagger); to use RapiDoc instead
 });
 ```
 
