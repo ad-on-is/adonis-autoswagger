@@ -187,14 +187,14 @@ export class AutoSwagger {
     );
   }
 
-  async writeFile(routes, options) {
+  async writeFile(routes: any, options: options) {
     const contents = await this.generate(routes, options);
-    const filePath = path.join(options.path + "/../swagger.yml");
+    const filePath = options.path + "swagger.yml";
     fs.writeFileSync(filePath, contents);
   }
 
   private async readFile(rootPath) {
-    const filePath = path.join(rootPath + "/../swagger.yml");
+    const filePath = rootPath + "swagger.yml";
     const data = fs.readFileSync(filePath, "utf-8");
     if (!data) {
       console.error("Error reading file");
