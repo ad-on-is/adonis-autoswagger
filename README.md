@@ -116,9 +116,6 @@ Here's where you can set these and use them with `@paramUse()` and `@responseHea
 
 ## Add additional documentation to your Controller-files.
 
-> [!IMPORTANT]
-> When using schemas (models), use uppercase for AdonisJS v5 `<Schema>` and lowercase for AdonisJS v6 `<schema>`
-
 ---
 
 **@summary** (only one)
@@ -134,7 +131,7 @@ An optional unique string used to identify an operation. If provided, these IDs 
 
 Format: `<status> - <return> - <description>`
 
-`<return>` can be either a `<Schema>`, (`<schema>` v6), `<Schema[]>/`, (`<schema[]>` v6) or a custom JSON `{}`
+`<return>` can be either a `<Schema>`, `<Schema[]>/` or a custom JSON `{}`
 
 **@responseHeader** (multiple)
 
@@ -149,7 +146,7 @@ A definition of the expected requestBody
 
 Format: `<body>`
 
-`<body>` can be either a `<Schema>`, (`<schema>` v6), `<Schema[]>/`, (`<schema[]>` v6) or a custom JSON `{}`
+`<body>` can be either a `<Schema>`, `<Schema[]>/`, or a custom JSON `{}`
 
 **@requestFormDataBody** (only one)
 A definition of the expected requestBody that will be sent with formData format.
@@ -163,9 +160,6 @@ This format should be a valid openapi 3.x json.
 # **Examples**
 
 ## `@responseBody` examples
-
-> [!IMPORTANT]
-> When using schemas (models), use uppercase for AdonisJS v5 `<Model>` and lowercase for AdonisJS v6 `<model>`
 
 ```js
 @responseBody <status> - Lorem ipsum Dolor sit amet
@@ -188,9 +182,6 @@ This format should be a valid openapi 3.x json.
 ```
 
 ## `@requestBody` examples
-
-> [!IMPORTANT]
-> When using schemas (models), use uppercase for AdonisJS v5 `<Model>` and lowercase for AdonisJS v6 `<model>`
 
 ```js
 // basicaly same as @response, just without a status
