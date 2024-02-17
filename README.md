@@ -382,7 +382,7 @@ To make it work in production environments, additional steps are required
 
   - This should create a new file in `commands/DocsGenerate.ts`
 
-- Use the provided `DocsGenerate.ts.examle`and put its contents into your newly created `DocsGenerate.ts`
+- Use the provided `DocsGenerate.ts.examle`/`DocsGeneratev6.ts.example` and put its contents into your newly created `DocsGenerate.ts`
 
 - Execute the following
 
