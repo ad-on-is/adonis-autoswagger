@@ -1201,11 +1201,15 @@ export class AutoSwagger {
       const data = await readFile(file, "utf8");
       file = file.replace(".ts", "");
       const split = file.split("/");
-      const name = split[split.length - 1].replace(".ts", "");
+      let name = split[split.length - 1].replace(".ts", "");
       file = file.replace("app/", "/app/");
+      const parsed = this.parseModelProperties(data);
+      if (parsed.name !== "") {
+        name = parsed.name;
+      }
       let schema = {
         type: "object",
-        properties: this.parseModelProperties(data),
+        properties: parsed.props,
         description: "Model",
       };
       models[name] = schema;
@@ -1358,10 +1362,13 @@ export class AutoSwagger {
     data = data.replace(/\t/g, "").replace(/^(?=\n)$|^\s*|\s*$|\n\n+/gm, "");
     const lines = data.split("\n");
     let softDelete = false;
-
+    let name = "";
     lines.forEach((line, index) => {
       line = line.trim();
       // skip comments
+      if (line.startsWith("export default class")) {
+        name = line.split(" ")[3];
+      }
       if (
         line.includes("@swagger-softdelete") ||
         line.includes("SoftDeletes")
@@ -1546,7 +1553,7 @@ export class AutoSwagger {
       };
     }
 
-    return props;
+    return { name: name, props: props };
   }
 
   private examples(field) {
