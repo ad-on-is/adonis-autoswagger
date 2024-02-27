@@ -15,7 +15,6 @@ interface options {
   ignore: string[];
   version: string;
   path: string;
-  showFullPath: boolean;
   tagIndex: number;
   snakeCase: boolean;
   common: common;
@@ -449,20 +448,15 @@ export class AutoSwagger {
               break;
           }
         }
-        let summeryFilePath = sourceFile.replace("App/Controllers/Http/", "")
-        if (!this.options.showFullPath) {
-          summaryFilePath = sourceFile.replace(this.options.path, '')
-        }
+        let summaryFilePath = sourceFile.replace(this.options.path, "");
+        summaryFilePath = summaryFilePath.replace("App/Controllers/Http/", "");
+        summaryFilePath = summaryFilePath.replace("/controllers/", "");
+
         let m = {
           summary:
             sourceFile === "" && action == ""
               ? summary + " (route.ts)"
-              : summary +
-                " (" +
-                summaryFilePath +
-                "::" +
-                action +
-                ")",
+              : summary + " (" + summaryFilePath + "::" + action + ")",
           description: description,
           operationId: operationId,
           parameters: parameters,
