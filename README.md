@@ -102,7 +102,7 @@ Tags endpoints automatically
 
 ### `ignore`
 
-Ignores specified paths. When used with a wildcard (_), AutoSwagger will ignore everything patching before/after the wildcard.
+Ignores specified paths. When used with a wildcard (\*), AutoSwagger will ignore everything patching before/after the wildcard.
 `/test/_`will ignore everything starting with`/test/`, whereas `\*/test`will ignore everything ending with`/test`.
 
 ### `common`
