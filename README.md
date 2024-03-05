@@ -102,7 +102,8 @@ Tags endpoints automatically
 
 ### `ignore`
 
-Ignores specified paths.
+Ignores specified paths. When used with a wildcard (_), AutoSwagger will ignore everything patching before/after the wildcard.
+`/test/_`will ignore everything starting with`/test/`, whereas `\*/test`will ignore everything ending with`/test`.
 
 ### `common`
 
@@ -212,7 +213,7 @@ export default {
   title: "YourProject",
   version: "1.0.0",
   tagIndex: 2,
-  ignore: ["/swagger", "/docs", "/v1", "/"],
+  ignore: ["/swagger", "/docs", "/v1", "/", "/something/*", "*/something"],
   common: {
     parameters: {
       sortable: [
