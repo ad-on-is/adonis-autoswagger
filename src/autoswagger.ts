@@ -267,7 +267,18 @@ export class AutoSwagger {
 
     let globalTags = [];
     for await (const route of routes) {
-      if (options.ignore.includes(route.pattern)) continue;
+      let ignore = false;
+      for (const i of options.ignore) {
+        if (
+          route.pattern.includes(i) ||
+          (i.endsWith("*") && route.pattern.startsWith(i.slice(0, -1))) ||
+          (i.startsWith("*") && route.pattern.endsWith(i.slice(1)))
+        ) {
+          ignore = true;
+          break;
+        }
+      }
+      if (ignore) continue;
 
       let security = [];
       const responseCodes = {
