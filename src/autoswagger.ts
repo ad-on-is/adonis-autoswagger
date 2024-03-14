@@ -6,6 +6,7 @@ import extract from "extract-comments";
 import HTTPStatusCode from "http-status-code";
 import { camelCase, isEmpty, isUndefined, snakeCase, startCase } from "lodash";
 import { existsSync } from "fs";
+import { scalarCustomCss } from './scalarCustomCss'
 
 /**
  * Autoswagger interfaces
@@ -198,6 +199,9 @@ export class AutoSwagger {
           <meta
             name="viewport"
             content="width=device-width, initial-scale=1" />
+          <style>
+          ${scalarCustomCss}
+          </style>
         </head>
         <body>
           <script
