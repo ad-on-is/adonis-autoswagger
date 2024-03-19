@@ -6,7 +6,7 @@ import extract from "extract-comments";
 import HTTPStatusCode from "http-status-code";
 import { camelCase, isEmpty, isUndefined, snakeCase, startCase } from "lodash";
 import { existsSync } from "fs";
-import { scalarCustomCss } from './scalarCustomCss'
+import { scalarCustomCss } from "./scalarCustomCss";
 
 /**
  * Autoswagger interfaces
@@ -189,8 +189,7 @@ export class AutoSwagger {
   }
 
   scalar(url: string) {
-    return (
-      `
+    return `
       <!doctype html>
       <html>
         <head>
@@ -211,18 +210,32 @@ export class AutoSwagger {
           <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
         </body>
       </html>
-    `
-    );
+    `;
+  }
+
+  jsonToYaml(json: any) {
+    return YAML.stringify(json);
+  }
+
+  async json(routes: any, options: options) {
+    if (process.env.NODE_ENV === "production") {
+      return this.readFile(options.path, "json");
+    }
+    return await this.generate(routes, options);
   }
 
   async writeFile(routes: any, options: options) {
-    const contents = await this.generate(routes, options);
+    const json = await this.generate(routes, options);
+    const contents = this.jsonToYaml(json);
     const filePath = options.path + "swagger.yml";
+    const filePathJson = options.path + "swagger.json";
+
     fs.writeFileSync(filePath, contents);
+    fs.writeFileSync(filePathJson, JSON.stringify(json, null, 2));
   }
 
-  private async readFile(rootPath) {
-    const filePath = rootPath + "swagger.yml";
+  private async readFile(rootPath, type = "yaml") {
+    const filePath = rootPath + "swagger." + type;
     const data = fs.readFileSync(filePath, "utf-8");
     if (!data) {
       console.error("Error reading file");
@@ -235,7 +248,7 @@ export class AutoSwagger {
     if (process.env.NODE_ENV === "production") {
       return this.readFile(options.path);
     }
-    return this.generate(routes, options);
+    return this.jsonToYaml(await this.generate(routes, options));
   }
 
   async generate(adonisRoutes: AdonisRoutes, options: options) {
@@ -522,7 +535,7 @@ export class AutoSwagger {
       docs.tags = globalTags;
       docs.paths = paths;
     }
-    return YAML.stringify(docs);
+    return docs;
   }
 
   private mergeParams(initial, custom) {

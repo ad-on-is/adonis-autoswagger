@@ -89,6 +89,15 @@ Route.get("/docs", async () => {
 
 Visit `<url>/docs` to see AutoSwagger in action.
 
+### Functions
+
+- `async docs(routes, conf)`: get the specification in YAML format
+- `async json(routes, conf)`: get the specification in JSON format
+- `ui(path, conf)`: get default swagger UI
+- `rapidoc(path, style)`: get rapidoc UI
+- `scalar(path)`: get scalar UI
+- `jsonToYaml(json)`: can be used to convert `json()` back to yaml
+
 ---
 
 ## Configure
