@@ -106,6 +106,7 @@ export class AutoSwagger {
     "number",
     "integer",
     "datetime",
+    "date",
     "boolean",
     "any",
   ]
@@ -474,7 +475,7 @@ export class AutoSwagger {
           if (
             typeof responses[responseCodes[method]] !== "undefined" &&
             typeof responses[responseCodes[method]]["description"] !==
-              "undefined"
+            "undefined"
           ) {
             description = responses[responseCodes[method]]["description"];
           }
@@ -838,7 +839,7 @@ export class AutoSwagger {
         let app = {};
         try {
           app = JSON.parse("{" + append + "}");
-        } catch {}
+        } catch { }
 
         res = sum = "Returns a **single** instance of type `" + ref + "`";
         // references a schema array
@@ -908,7 +909,7 @@ export class AutoSwagger {
           let app = {};
           try {
             app = JSON.parse("{" + append + "}");
-          } catch {}
+          } catch { }
 
           // references a schema array
           if (ref.includes("[]")) {
@@ -968,7 +969,7 @@ export class AutoSwagger {
     let app = {};
     try {
       app = JSON.parse("{" + append + "}");
-    } catch {}
+    } catch { }
 
     // references a schema array
     if (rawRef.includes("[]")) {
