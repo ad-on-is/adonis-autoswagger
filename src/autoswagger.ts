@@ -27,6 +27,7 @@ export class AutoSwagger {
   private modelParser: ModelParser;
   private interfaceParser: InterfaceParser;
   private routeParser: RouteParser;
+  private customPaths = {};
 
   ui(url: string, options?: options) {
     const persistAuthString = options?.persistAuthorization
@@ -172,18 +173,40 @@ export class AutoSwagger {
       ...{
         snakeCase: true,
         preferredPutPatch: "PUT",
+        debug: false,
       },
       ...options,
     };
 
     const routes = adonisRoutes.root;
     this.options.appPath = this.options.path + "app";
+
+    try {
+      const pj = fs.readFileSync(path.join(this.options.path, "package.json"));
+
+      const pjson = JSON.parse(pj.toString());
+      if (pjson.imports) {
+        Object.entries(pjson.imports).forEach(([key, value]) => {
+          const k = (key as string).replaceAll("/*", "");
+          this.customPaths[k] = (value as string)
+            .replaceAll("/*.js", "")
+            .replaceAll("./", "");
+        });
+      }
+    } catch (e) {
+      console.error(e);
+    }
     this.commentParser = new CommentParser(this.options);
     this.routeParser = new RouteParser(this.options);
     this.modelParser = new ModelParser(this.options.snakeCase);
     this.interfaceParser = new InterfaceParser(this.options.snakeCase);
     this.schemas = await this.getSchemas();
     this.commentParser.exampleGenerator = new ExampleGenerator(this.schemas);
+
+    if (this.options.debug) {
+      console.log("AdonisJS AutoSwagger");
+      console.log(this.options);
+    }
 
     const docs = {
       openapi: "3.0.0",
@@ -366,9 +389,9 @@ export class AutoSwagger {
           }
         }
         let summaryFilePath = sourceFile.replace(this.options.appPath, "");
-        summaryFilePath = summaryFilePath.replace("App/Controllers/Http/", "");
-        summaryFilePath = summaryFilePath.replace("/controllers/", "");
 
+        // summaryFilePath = summaryFilePath.replace("App/Controllers/Http/", "");
+        // summaryFilePath = summaryFilePath.replace("/controllers/", "/");
         let m = {
           summary:
             sourceFile === "" && action == ""
@@ -433,26 +456,56 @@ export class AutoSwagger {
       v6handler.reference !== ""
     ) {
       if (!Array.isArray(v6handler.reference)) {
-        const split = v6handler.reference.split(".");
-        sourceFile = split[0];
-        action = split[1];
+        // handles magic strings
+        // router.resource('/test', '#controllers/test_controller')
+        [sourceFile, action] = v6handler.reference.split(".");
+        const split = sourceFile.split("/");
+
+        if (split[0].includes("#")) {
+          sourceFile = sourceFile.replaceAll(
+            split[0],
+            this.customPaths[split[0]]
+          );
+        } else {
+          sourceFile = this.options.appPath + "/controllers/" + sourceFile;
+        }
         operationId = formatOperationId(v6handler.reference);
-        sourceFile = this.options.appPath + "/controllers/" + sourceFile;
       } else {
+        // handles lazy import
+        // const TestController = () => import('#controllers/test_controller')
         v6handler = await serializeV6Handler(v6handler);
         action = v6handler.method;
         sourceFile = v6handler.moduleNameOrPath;
-        sourceFile = sourceFile.replace("#", "");
-        sourceFile = this.options.appPath + "/" + sourceFile;
+        operationId = formatOperationId(sourceFile + "." + action);
+        const split = sourceFile.split("/");
+        if (split[0].includes("#")) {
+          sourceFile = sourceFile.replaceAll(
+            split[0],
+            this.customPaths[split[0]]
+          );
+        } else {
+          sourceFile = this.options.appPath + "/" + sourceFile;
+        }
       }
     }
 
     if (sourceFile !== "" && action !== "") {
       sourceFile = sourceFile.replace("App/", "app/") + ".ts";
+
       customAnnotations = await this.commentParser.getAnnotations(
         sourceFile,
         action
       );
+    }
+    if (
+      typeof customAnnotations !== "undefined" &&
+      typeof customAnnotations.operationId !== "undefined" &&
+      customAnnotations.operationId !== ""
+    ) {
+      operationId = customAnnotations.operationId;
+    }
+    if (this.options.debug) {
+      console.log(route.pattern, sourceFile, action);
     }
     return { sourceFile, action, customAnnotations, operationId };
   }
@@ -477,7 +530,11 @@ export class AutoSwagger {
     const models = {};
     let p = path.join(this.options.appPath, "/Models");
     const p6 = path.join(this.options.appPath, "/models");
+
     if (!existsSync(p) && !existsSync(p6)) {
+      if (this.options.debug) {
+        console.log("Model paths don't exist", p, p6);
+      }
       return models;
     }
     if (existsSync(p6)) {
@@ -485,6 +542,9 @@ export class AutoSwagger {
     }
     const files = await this.getFiles(p, []);
     const readFile = util.promisify(fs.readFile);
+    if (this.options.debug) {
+      console.log("Found model files", files);
+    }
     for (let file of files) {
       const data = await readFile(file, "utf8");
       file = file.replace(".ts", "");
@@ -510,12 +570,18 @@ export class AutoSwagger {
     let p = path.join(this.options.appPath, "/Interfaces");
     const p6 = path.join(this.options.appPath, "/interfaces");
     if (!existsSync(p) && !existsSync(p6)) {
+      if (this.options.debug) {
+        console.log("Interface paths don't exist", p, p6);
+      }
       return interfaces;
     }
     if (existsSync(p6)) {
       p = p6;
     }
     const files = await this.getFiles(p, []);
+    if (this.options.debug) {
+      console.log("Found interfaces files", files);
+    }
     const readFile = util.promisify(fs.readFile);
     for (let file of files) {
       const data = await readFile(file, "utf8");
