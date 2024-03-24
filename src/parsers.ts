@@ -1,27 +1,16 @@
-import { getSchemaExampleBasedOnAnnotation } from "./example";
 import HTTPStatusCode from "http-status-code";
-import { isJSONString, getBetweenBrackets, jsonToRef } from "./helpers";
+import { isJSONString, getBetweenBrackets } from "./helpers";
 import util from "util";
 import extract from "extract-comments";
 import fs from "fs";
 import { camelCase, isEmpty, isUndefined, snakeCase, startCase } from "lodash";
-import { examples } from "./example";
+import ExampleGenerator from "./example";
 import type { options, AdonisRoutes, v6Handler } from "./types";
+import { standardTypes } from "./types";
 
-export default class Parser {
-  private standardTypes = [
-    "string",
-    "number",
-    "integer",
-    "datetime",
-    "date",
-    "boolean",
-    "any",
-  ]
-    .map((type) => [type, type + "[]"])
-    .flat();
-
+export class CommentParser {
   private parsedFiles: string[] = [];
+  public exampleGenerator: ExampleGenerator;
 
   options: options;
 
@@ -29,7 +18,7 @@ export default class Parser {
     this.options = options;
   }
 
-  parseAnnotations(lines: string[]) {
+  private parseAnnotations(lines: string[]) {
     let summary = "";
     let upload = "";
     let description = "";
@@ -53,7 +42,7 @@ export default class Parser {
       }
 
       if (line.startsWith("@responseBody")) {
-        responses = { ...responses, ...this.parseResponse(line) };
+        responses = { ...responses, ...this.parseResponseBody(line) };
       }
       if (line.startsWith("@responseHeader")) {
         const header = this.parseResponseHeader(line);
@@ -96,7 +85,7 @@ export default class Parser {
     };
   }
 
-  parseParam(line: string) {
+  private parseParam(line: string) {
     let where = "path";
     let required = true;
     let type = "string";
@@ -187,7 +176,7 @@ export default class Parser {
     return { [param]: p };
   }
 
-  parseResponseHeader(responseLine: string) {
+  private parseResponseHeader(responseLine: string) {
     let description = "";
     let example: any = "";
     let type = "string";
@@ -259,7 +248,7 @@ export default class Parser {
     };
   }
 
-  parseResponse(responseLine: string) {
+  private parseResponseBody(responseLine: string) {
     let responses = {};
     const line = responseLine.replace("@responseBody ", "");
     let [status, res] = line.split(" - ");
@@ -275,7 +264,7 @@ export default class Parser {
       if (json !== "") {
         try {
           let j = JSON.parse("{" + json + "}");
-          j = jsonToRef(j);
+          j = this.exampleGenerator.jsonToRef(j);
           responses[status]["content"] = {
             "application/json": {
               schema: {
@@ -312,7 +301,12 @@ export default class Parser {
               },
               example: [
                 Object.assign(
-                  getSchemaExampleBasedOnAnnotation(ref, inc, exc, only),
+                  this.exampleGenerator.getSchemaExampleBasedOnAnnotation(
+                    ref,
+                    inc,
+                    exc,
+                    only
+                  ),
                   app
                 ),
               ],
@@ -323,7 +317,12 @@ export default class Parser {
             "application/json": {
               schema: { $ref: "#/components/schemas/" + ref },
               example: Object.assign(
-                getSchemaExampleBasedOnAnnotation(ref, inc, exc, only),
+                this.exampleGenerator.getSchemaExampleBasedOnAnnotation(
+                  ref,
+                  inc,
+                  exc,
+                  only
+                ),
                 app
               ),
             },
@@ -348,7 +347,7 @@ export default class Parser {
     return responses;
   }
 
-  parseRequestFormDataBody(rawLine: string) {
+  private parseRequestFormDataBody(rawLine: string) {
     const line = rawLine.replace("@requestFormDataBody ", "");
 
     const isJson = isJSONString(line);
@@ -372,7 +371,7 @@ export default class Parser {
     };
   }
 
-  parseRequestBody(rawLine: string) {
+  private parseRequestBody(rawLine: string) {
     const line = rawLine.replace("@requestBody ", "");
 
     const isJson = isJSONString(line);
@@ -387,7 +386,7 @@ export default class Parser {
             schema: {
               type: "object",
             },
-            example: jsonToRef(json),
+            example: this.exampleGenerator.jsonToRef(json),
           },
         },
       };
@@ -423,7 +422,12 @@ export default class Parser {
             },
             example: [
               Object.assign(
-                getSchemaExampleBasedOnAnnotation(cleandRef, inc, exc, only),
+                this.exampleGenerator.getSchemaExampleBasedOnAnnotation(
+                  cleandRef,
+                  inc,
+                  exc,
+                  only
+                ),
                 app
               ),
             ],
@@ -439,7 +443,12 @@ export default class Parser {
             $ref: "#/components/schemas/" + rawRef,
           },
           example: Object.assign(
-            getSchemaExampleBasedOnAnnotation(rawRef, inc, exc, only),
+            this.exampleGenerator.getSchemaExampleBasedOnAnnotation(
+              rawRef,
+              inc,
+              exc,
+              only
+            ),
             app
           ),
         },
@@ -447,120 +456,80 @@ export default class Parser {
     };
   }
 
-  parseInterfaces(data) {
-    let interfaces = {};
-    let name = "";
-    let props = {};
-    // remove empty lines
-    data = data.replace(/\t/g, "").replace(/^(?=\n)$|^\s*|\s*$|\n\n+/gm, "");
-    const lines = data.split("\n");
-    lines.forEach((line, index) => {
-      line = line.trim();
+  async getAnnotations(file: string, action: string) {
+    let annotations = {};
+    if (typeof file === "undefined") return;
+    if (typeof this.parsedFiles[file] !== "undefined") return;
+    this.parsedFiles.push(file);
 
-      if (
-        line.startsWith("//") ||
-        line.startsWith("/*") ||
-        line.startsWith("*")
-      )
-        return;
-      if (
-        line.startsWith("interface ") ||
-        line.startsWith("export default interface ") ||
-        line.startsWith("export interface ")
-      ) {
-        props = {};
-        name = line;
-        name = name.replace("export default ", "");
-        name = name.replace("export ", "");
-        name = name.replace("interface ", "");
-        name = name.replace("{", "");
-        name = name.trim();
-        return;
-      }
+    const readFile = util.promisify(fs.readFile);
+    const data = await readFile(file, "utf8");
+    const comments = extract(data);
+    if (comments.length > 0) {
+      comments.forEach((comment) => {
+        if (comment.type !== "BlockComment") return;
+        if (!comment.value.includes("@" + action)) return;
+        let lines = comment.value.split("\n");
+        lines = lines.filter((l) => l != "");
 
-      if (line === "}") {
-        if (name === "") return;
-        interfaces[name] = {
-          type: "object",
-          properties: props,
-          description: "Interface",
+        annotations[action] = this.parseAnnotations(lines);
+      });
+    }
+    return annotations;
+  }
+}
+
+export class RouteParser {
+  options: options;
+  constructor(options: options) {
+    this.options = options;
+  }
+
+  /*
+    extract path-variables, tags and the uri-pattern
+  */
+  extractInfos(p: string) {
+    let parameters = {};
+    let pattern = "";
+    let tags = [];
+    let required: boolean;
+
+    const split = p.split("/");
+    if (split.length > this.options.tagIndex) {
+      tags = [split[this.options.tagIndex].toUpperCase()];
+    }
+    split.forEach((part) => {
+      if (part.startsWith(":")) {
+        required = !part.endsWith("?");
+        const param = part.replace(":", "").replace("?", "");
+        part = "{" + param + "}";
+        parameters = {
+          ...parameters,
+          [param]: {
+            in: "path",
+            name: param,
+            schema: {
+              type: "string",
+            },
+            required: required,
+          },
         };
-        return;
       }
-
-      let meta = "";
-      if (index > 0) {
-        meta = lines[index - 1];
-      }
-
-      const s = line.split(":");
-      let field = s[0];
-      let type = s[1];
-      let notRequired = false;
-
-      if (!field || !type) return;
-
-      if (field.endsWith("?")) {
-        field = field.replace("?", "");
-        notRequired = true;
-      }
-
-      let en = getBetweenBrackets(meta, "enum");
-      let example = getBetweenBrackets(meta, "example");
-      let enums = [];
-      if (example === "") {
-        example = examples(field);
-      }
-      if (en !== "") {
-        enums = en.split(",");
-        example = enums[0];
-      }
-
-      field = field.trim();
-      type = type.trim();
-      if (this.options.snakeCase) {
-        field = snakeCase(field);
-      }
-      let isArray = false;
-      if (type.includes("[]")) {
-        type = type.replace("[]", "");
-        isArray = true;
-      }
-      let indicator = "type";
-      let prop = {};
-
-      if (type.toLowerCase() === "datetime") {
-        prop[indicator] = "string";
-        prop["format"] = "date-time";
-        prop["example"] = "2021-03-23T16:13:08.489+01:00";
-        prop["nullable"] = notRequired;
-      } else if (type.toLowerCase() === "date") {
-        prop[indicator] = "string";
-        prop["format"] = "date";
-        prop["example"] = "2021-03-23";
-        prop["nullable"] = notRequired;
-      } else {
-        if (!this.standardTypes.includes(type)) {
-          indicator = "$ref";
-          type = "#/components/schemas/" + type;
-        }
-
-        prop[indicator] = type;
-        prop["example"] = example;
-        prop["nullable"] = notRequired;
-      }
-
-      if (isArray) {
-        props[field] = { type: "array", items: prop };
-      } else {
-        props[field] = prop;
-      }
-      if (enums.length > 0) {
-        props[field]["enum"] = enums;
-      }
+      pattern += "/" + part;
     });
+    if (pattern.endsWith("/")) {
+      pattern = pattern.slice(0, -1);
+    }
+    return { tags, parameters, pattern };
+  }
+}
 
-    return interfaces;
+export class ModelParser {
+  exampleGenerator: ExampleGenerator;
+  snakeCase: boolean;
+  constructor(snakeCase: boolean) {
+    this.snakeCase = snakeCase;
+    this.exampleGenerator = new ExampleGenerator({});
   }
 
   parseModelProperties(data) {
@@ -618,7 +587,7 @@ export default class Parser {
       let type = s2[1];
       let enums = [];
       let format = "";
-      let example: any = examples(field);
+      let example: any = this.exampleGenerator.exampleByField(field);
       if (index > 0 && lines[index - 1].includes("@enum")) {
         const l = lines[index - 1];
         let en = getBetweenBrackets(l, "enum");
@@ -656,7 +625,7 @@ export default class Parser {
       field = field.replace("get ", "");
       type = type.replace("{", "").trim();
 
-      if (this.options.snakeCase) {
+      if (this.snakeCase) {
         field = snakeCase(field);
       }
 
@@ -672,7 +641,7 @@ export default class Parser {
         type = "#/components/schemas/" + s[1].slice(0, -1);
         indicator = "$ref";
       } else {
-        if (this.standardTypes.includes(type.toLowerCase())) {
+        if (standardTypes.includes(type.toLowerCase())) {
           type = type.toLowerCase();
         } else {
           // assume its a custom interface
@@ -762,64 +731,129 @@ export default class Parser {
 
     return { name: name, props: props };
   }
+}
 
-  async getCustomAnnotations(file: string, action: string) {
-    let annotations = {};
-    if (typeof file === "undefined") return;
-    if (typeof this.parsedFiles[file] !== "undefined") return;
-    this.parsedFiles.push(file);
-    file = file.replace("App/", "app/") + ".ts";
-    const readFile = util.promisify(fs.readFile);
-    const data = await readFile(file, "utf8");
-    const comments = extract(data);
-    if (comments.length > 0) {
-      comments.forEach((comment) => {
-        if (comment.type !== "BlockComment") return;
-        if (!comment.value.includes("@" + action)) return;
-        let lines = comment.value.split("\n");
-        lines = lines.filter((l) => l != "");
-
-        annotations[action] = this.parseAnnotations(lines);
-      });
-    }
-    return annotations;
+export class InterfaceParser {
+  exampleGenerator: ExampleGenerator;
+  snakeCase: boolean;
+  constructor(snakeCase: boolean) {
+    this.snakeCase = snakeCase;
+    this.exampleGenerator = new ExampleGenerator({});
   }
 
-  /*
-    extract path-variables, tags and the uri-pattern
-  */
-  extractInfos(p: string) {
-    let parameters = {};
-    let pattern = "";
-    let tags = [];
-    let required: boolean;
+  parseInterfaces(data) {
+    let interfaces = {};
+    let name = "";
+    let props = {};
+    // remove empty lines
+    data = data.replace(/\t/g, "").replace(/^(?=\n)$|^\s*|\s*$|\n\n+/gm, "");
+    const lines = data.split("\n");
+    lines.forEach((line, index) => {
+      line = line.trim();
 
-    const split = p.split("/");
-    if (split.length > this.options.tagIndex) {
-      tags = [split[this.options.tagIndex].toUpperCase()];
-    }
-    split.forEach((part) => {
-      if (part.startsWith(":")) {
-        required = !part.endsWith("?");
-        const param = part.replace(":", "").replace("?", "");
-        part = "{" + param + "}";
-        parameters = {
-          ...parameters,
-          [param]: {
-            in: "path",
-            name: param,
-            schema: {
-              type: "string",
-            },
-            required: required,
-          },
-        };
+      if (
+        line.startsWith("//") ||
+        line.startsWith("/*") ||
+        line.startsWith("*")
+      )
+        return;
+      if (
+        line.startsWith("interface ") ||
+        line.startsWith("export default interface ") ||
+        line.startsWith("export interface ")
+      ) {
+        props = {};
+        name = line;
+        name = name.replace("export default ", "");
+        name = name.replace("export ", "");
+        name = name.replace("interface ", "");
+        name = name.replace("{", "");
+        name = name.trim();
+        return;
       }
-      pattern += "/" + part;
+
+      if (line === "}") {
+        if (name === "") return;
+        interfaces[name] = {
+          type: "object",
+          properties: props,
+          description: "Interface",
+        };
+        return;
+      }
+
+      let meta = "";
+      if (index > 0) {
+        meta = lines[index - 1];
+      }
+
+      const s = line.split(":");
+      let field = s[0];
+      let type = s[1];
+      let notRequired = false;
+
+      if (!field || !type) return;
+
+      if (field.endsWith("?")) {
+        field = field.replace("?", "");
+        notRequired = true;
+      }
+
+      let en = getBetweenBrackets(meta, "enum");
+      let example = getBetweenBrackets(meta, "example");
+      let enums = [];
+      if (example === "") {
+        example = this.exampleGenerator.exampleByField(field);
+      }
+      if (en !== "") {
+        enums = en.split(",");
+        example = enums[0];
+      }
+
+      field = field.trim();
+      type = type.trim();
+      if (this.snakeCase) {
+        field = snakeCase(field);
+      }
+      let isArray = false;
+      if (type.includes("[]")) {
+        type = type.replace("[]", "");
+        isArray = true;
+      }
+      let indicator = "type";
+      let prop = {};
+
+      if (type.toLowerCase() === "datetime") {
+        prop[indicator] = "string";
+        prop["format"] = "date-time";
+        prop["example"] = "2021-03-23T16:13:08.489+01:00";
+        prop["nullable"] = notRequired;
+      } else if (type.toLowerCase() === "date") {
+        prop[indicator] = "string";
+        prop["format"] = "date";
+        prop["example"] = "2021-03-23";
+        prop["nullable"] = notRequired;
+      } else {
+        if (!standardTypes.includes(type)) {
+          indicator = "$ref";
+          type = "#/components/schemas/" + type;
+        }
+
+        prop[indicator] = type;
+        prop["example"] = example;
+        prop["nullable"] = notRequired;
+      }
+
+      if (isArray) {
+        props[field] = { type: "array", items: prop };
+      } else {
+        props[field] = prop;
+      }
+      if (enums.length > 0) {
+        props[field]["enum"] = enums;
+      }
     });
-    if (pattern.endsWith("/")) {
-      pattern = pattern.slice(0, -1);
-    }
-    return { tags, parameters, pattern };
+
+    return interfaces;
   }
 }

@@ -11,6 +11,7 @@ export interface options {
   common: common;
   preferredPutPatch?: string;
   persistAuthorization?: boolean;
+  appPath?: string;
 }
 
 export interface common {
@@ -53,3 +54,15 @@ export interface AdonisRoute {
 export interface AdonisRoutes {
   root: AdonisRoute[];
 }
+
+export const standardTypes = [
+  "string",
+  "number",
+  "integer",
+  "datetime",
+  "date",
+  "boolean",
+  "any",
+]
+  .map((type) => [type, type + "[]"])
+  .flat();
