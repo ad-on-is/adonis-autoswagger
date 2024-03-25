@@ -477,13 +477,12 @@ export class CommentParser {
       this.parsedFiles[file] = newdata;
     }
 
-    // fix for decorators
-
     const comments = extract(newdata);
     if (comments.length > 0) {
       comments.forEach((comment) => {
         if (comment.type !== "BlockComment") return;
         let lines = comment.value.split("\n").filter((l) => l != "");
+        // fix for decorators
         if (lines[0].trim() !== "@" + action) return;
         lines = lines.filter((l) => l != "");
 
