@@ -27,7 +27,6 @@ export class CommentParser {
     let requestBody;
     let parameters = {};
     let headers = {};
-
     lines.forEach((line) => {
       if (line.startsWith("@summary")) {
         summary = line.replace("@summary ", "");
@@ -464,7 +463,16 @@ export class CommentParser {
 
     const readFile = util.promisify(fs.readFile);
     const data = await readFile(file, "utf8");
-    const comments = extract(data);
+
+    // fix for decorators
+    let newdata = "";
+    for (const line of data.split("\n")) {
+      const l = line.trim();
+      if (!l.startsWith("@")) {
+        newdata += l + "\n";
+      }
+    }
+    const comments = extract(newdata);
     if (comments.length > 0) {
       comments.forEach((comment) => {
         if (comment.type !== "BlockComment") return;
