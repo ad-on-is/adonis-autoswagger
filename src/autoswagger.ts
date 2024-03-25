@@ -201,6 +201,9 @@ export class AutoSwagger {
     this.modelParser = new ModelParser(this.options.snakeCase);
     this.interfaceParser = new InterfaceParser(this.options.snakeCase);
     this.schemas = await this.getSchemas();
+    if (this.options.debug) {
+      console.log("Schemas", this.schemas);
+    }
     this.commentParser.exampleGenerator = new ExampleGenerator(this.schemas);
 
     if (this.options.debug) {
@@ -529,7 +532,12 @@ export class AutoSwagger {
   private async getModels() {
     const models = {};
     let p = path.join(this.options.appPath, "/Models");
-    const p6 = path.join(this.options.appPath, "/models");
+    let p6 = path.join(this.options.appPath, "/models");
+
+    if (typeof this.customPaths["#models"] !== "undefined") {
+      // it's v6
+      p6.replaceAll("app/models", this.customPaths["#models"]);
+    }
 
     if (!existsSync(p) && !existsSync(p6)) {
       if (this.options.debug) {
@@ -569,6 +577,12 @@ export class AutoSwagger {
     let interfaces = {};
     let p = path.join(this.options.appPath, "/Interfaces");
     const p6 = path.join(this.options.appPath, "/interfaces");
+
+    if (typeof this.customPaths["#interfaces"] !== "undefined") {
+      // it's v6
+      p6.replaceAll("app/interfaces", this.customPaths["#interfaces"]);
+    }
+
     if (!existsSync(p) && !existsSync(p6)) {
       if (this.options.debug) {
         console.log("Interface paths don't exist", p, p6);
