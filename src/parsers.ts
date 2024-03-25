@@ -41,7 +41,10 @@ export class CommentParser {
       }
 
       if (line.startsWith("@responseBody")) {
-        responses = { ...responses, ...this.parseResponseBody(line) };
+        responses = {
+          ...responses,
+          ...this.parseResponseBody(line),
+        };
       }
       if (line.startsWith("@responseHeader")) {
         const header = this.parseResponseHeader(line);
@@ -55,7 +58,7 @@ export class CommentParser {
         };
       }
       if (line.startsWith("@requestBody")) {
-        requestBody = this.parseRequestBody(line);
+        requestBody = this.parseBody(line, "requestBody");
       }
       if (line.startsWith("@requestFormDataBody")) {
         const parsedBody = this.parseRequestFormDataBody(line);
@@ -250,99 +253,10 @@ export class CommentParser {
   private parseResponseBody(responseLine: string) {
     let responses = {};
     const line = responseLine.replace("@responseBody ", "");
-    let [status, res] = line.split(" - ");
-    let sum = "";
+    let [status, res, desc] = line.split(" - ");
     if (typeof status === "undefined") return;
-    responses[status] = {};
-    if (typeof res === "undefined") {
-      res = HTTPStatusCode.getMessage(status);
-    } else {
-      res = HTTPStatusCode.getMessage(status) + ": " + res;
-      let ref = line.substring(line.indexOf("<") + 1, line.lastIndexOf(">"));
-      let json = line.substring(line.indexOf("{") + 1, line.lastIndexOf("}"));
-      if (json !== "") {
-        try {
-          let j = JSON.parse("{" + json + "}");
-          j = this.exampleGenerator.jsonToRef(j);
-          responses[status]["content"] = {
-            "application/json": {
-              schema: {
-                type: "object",
-              },
-              example: j,
-            },
-          };
-        } catch {
-          console.error("Invalid JSON for: " + line);
-        }
-      }
-      // references a schema
-      if (typeof ref !== "undefined" && ref !== "") {
-        const inc = getBetweenBrackets(res, "with");
-        const exc = getBetweenBrackets(res, "exclude");
-        const only = getBetweenBrackets(res, "only");
-        const append = getBetweenBrackets(res, "append");
-        let app = {};
-        try {
-          app = JSON.parse("{" + append + "}");
-        } catch {}
-
-        res = sum = "Returns a **single** instance of type `" + ref + "`";
-        // references a schema array
-        if (ref.includes("[]")) {
-          ref = ref.replace("[]", "");
-          res = sum = "Returns a **list** of type `" + ref + "`";
-          responses[status]["content"] = {
-            "application/json": {
-              schema: {
-                type: "array",
-                items: { $ref: "#/components/schemas/" + ref },
-              },
-              example: [
-                Object.assign(
-                  this.exampleGenerator.getSchemaExampleBasedOnAnnotation(
-                    ref,
-                    inc,
-                    exc,
-                    only
-                  ),
-                  app
-                ),
-              ],
-            },
-          };
-        } else {
-          responses[status]["content"] = {
-            "application/json": {
-              schema: { $ref: "#/components/schemas/" + ref },
-              example: Object.assign(
-                this.exampleGenerator.getSchemaExampleBasedOnAnnotation(
-                  ref,
-                  inc,
-                  exc,
-                  only
-                ),
-                app
-              ),
-            },
-          };
-        }
-        if (only !== "") {
-          res += " **only containing** _" + only.replace(/,/g, ", ") + "_";
-        }
-        if (inc !== "") {
-          res += " **including** _" + inc.replace(/,/g, ", ") + "_";
-        } else {
-          res += " **without** any _relations_";
-        }
-        if (exc !== "") {
-          res += " and **excludes** _" + exc.replace(/,/g, ", ") + "_";
-        }
-        res += ". Take a look at the example for further details.";
-      }
-    }
-    responses[status]["description"] = res;
-    // responses[status]['summary'] = sum
+    responses[status] = this.parseBody(res, "responseBody");
+    responses[status]["description"] = desc;
     return responses;
   }
 
@@ -370,8 +284,8 @@ export class CommentParser {
     };
   }
 
-  private parseRequestBody(rawLine: string) {
-    const line = rawLine.replace("@requestBody ", "");
+  private parseBody(rawLine: string, type: string) {
+    let line = rawLine.replace(`@${type} `, "");
 
     const isJson = isJSONString(line);
 
@@ -394,8 +308,14 @@ export class CommentParser {
     let rawRef = line.substring(line.indexOf("<") + 1, line.lastIndexOf(">"));
 
     if (rawRef === "") {
-      // No format valid, returning empty responseBody
-      return;
+      // No format valid, returning the line as text/plain
+      return {
+        content: {
+          "text/plain": {
+            example: line,
+          },
+        },
+      };
     }
 
     const inc = getBetweenBrackets(line, "with");
