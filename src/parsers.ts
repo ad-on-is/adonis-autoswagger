@@ -9,7 +9,7 @@ import type { options, AdonisRoutes, v6Handler } from "./types";
 import { standardTypes } from "./types";
 
 export class CommentParser {
-  private parsedFiles: string[] = [];
+  private parsedFiles: { [file: string]: string } = {};
   public exampleGenerator: ExampleGenerator;
 
   options: options;
@@ -457,27 +457,34 @@ export class CommentParser {
 
   async getAnnotations(file: string, action: string) {
     let annotations = {};
+    let newdata = "";
     if (typeof file === "undefined") return;
-    if (typeof this.parsedFiles[file] !== "undefined") return;
-    this.parsedFiles.push(file);
 
-    const readFile = util.promisify(fs.readFile);
-    const data = await readFile(file, "utf8");
+    if (typeof this.parsedFiles[file] !== "undefined") {
+      newdata = this.parsedFiles[file];
+    } else {
+      if (this.options.debug) {
+        console.log(`Parsing comments: ${file}`);
+      }
+      const readFile = util.promisify(fs.readFile);
+      const data = await readFile(file, "utf8");
+      for (const line of data.split("\n")) {
+        const l = line.trim();
+        if (!l.startsWith("@")) {
+          newdata += l + "\n";
+        }
+      }
+      this.parsedFiles[file] = newdata;
+    }
 
     // fix for decorators
-    let newdata = "";
-    for (const line of data.split("\n")) {
-      const l = line.trim();
-      if (!l.startsWith("@")) {
-        newdata += l + "\n";
-      }
-    }
+
     const comments = extract(newdata);
     if (comments.length > 0) {
       comments.forEach((comment) => {
         if (comment.type !== "BlockComment") return;
-        if (!comment.value.includes("@" + action)) return;
-        let lines = comment.value.split("\n");
+        let lines = comment.value.split("\n").filter((l) => l != "");
+        if (lines[0].trim() !== "@" + action) return;
         lines = lines.filter((l) => l != "");
 
         annotations[action] = this.parseAnnotations(lines);
