@@ -118,6 +118,21 @@ Route.get("/docs", async () => {
 });
 ```
 
+### Custom Paths in adonisJS v6
+
+AutoSwagger supports the paths set in `package.json`. Interfaces are expected to be in `app/interfaces`. However, you can override this, by modifying package.json as follows.
+
+```json
+//...
+"imports": {
+  // ...
+  "#interfaces/*": "./app/custom/path/interfaces/*.js"
+  // ...
+}
+//...
+
+```
+
 ---
 
 ## 📃 Configure
