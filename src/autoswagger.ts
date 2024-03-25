@@ -567,8 +567,8 @@ export class AutoSwagger {
 
   private async getInterfaces() {
     let interfaces = {};
-    let p = path.join(this.options.appPath, "/Interfaces");
-    const p6 = path.join(this.options.appPath, "/interfaces");
+    let p = path.join(this.options.appPath, this.options.interfacesPath ?? "/Interfaces");
+    const p6 = path.join(this.options.appPath, this.options.interfacesPath ?? "/interfaces");
     if (!existsSync(p) && !existsSync(p6)) {
       if (this.options.debug) {
         console.log("Interface paths don't exist", p, p6);

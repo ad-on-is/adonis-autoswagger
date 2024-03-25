@@ -12,6 +12,7 @@ export interface options {
   preferredPutPatch?: string;
   persistAuthorization?: boolean;
   appPath?: string;
+  interfacesPath?: string;
   debug?: boolean;
 }
 
