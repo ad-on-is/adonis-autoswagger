@@ -3,7 +3,7 @@ run-name: Deploying to npmjs 🥹🤞
 on:
   push:
     branches: 
-      - main
+      - xxx
 jobs:
   Deploy:
     runs-on: ubuntu-latest
