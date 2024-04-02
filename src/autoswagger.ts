@@ -196,6 +196,7 @@ export class AutoSwagger {
     } catch (e) {
       console.error(e);
     }
+
     this.commentParser = new CommentParser(this.options);
     this.routeParser = new RouteParser(this.options);
     this.modelParser = new ModelParser(this.options.snakeCase);
@@ -203,6 +204,7 @@ export class AutoSwagger {
     this.schemas = await this.getSchemas();
     if (this.options.debug) {
       console.log("Schemas", this.schemas);
+      console.log("CustomPaths", this.customPaths);
     }
     this.commentParser.exampleGenerator = new ExampleGenerator(this.schemas);
 
