@@ -494,6 +494,7 @@ export class AutoSwagger {
 
     if (sourceFile !== "" && action !== "") {
       sourceFile = sourceFile.replace("App/", "app/") + ".ts";
+      sourceFile = sourceFile.replace(".js", "");
 
       customAnnotations = await this.commentParser.getAnnotations(
         sourceFile,
@@ -554,6 +555,7 @@ export class AutoSwagger {
       console.log("Found model files", files);
     }
     for (let file of files) {
+      file = file.replace(".js", "");
       const data = await readFile(file, "utf8");
       file = file.replace(".ts", "");
       const split = file.split("/");
@@ -598,6 +600,7 @@ export class AutoSwagger {
     }
     const readFile = util.promisify(fs.readFile);
     for (let file of files) {
+      file = file.replace(".js", "");
       const data = await readFile(file, "utf8");
       file = file.replace(".ts", "");
       const split = file.split("/");
