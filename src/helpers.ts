@@ -20,7 +20,7 @@ export function getBetweenBrackets(value: string, start: string) {
     if (start !== "example") {
       m = m.replace(/ /g, "");
     }
-    if (value.includes("paginated()")) {
+    if (start === "paginated") {
       return "true";
     }
     return m;
