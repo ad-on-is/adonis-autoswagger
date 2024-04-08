@@ -255,7 +255,7 @@ This format should be a valid openapi 3.x json.
 
 `config/swagger.ts`
 
-```js
+```ts
 export default {
   path: __dirname + "../",
   title: "YourProject",
@@ -299,8 +299,7 @@ export default {
 
 `app/Controllers/Http/SomeController.ts`
 
-```js
-
+```ts
 export default class SomeController {
   /**
    * @index
@@ -330,7 +329,6 @@ export default class SomeController {
    */
   public async update({ request, response }: HttpContextContract) {}
 
-
   /**
    * @custom
    * @summary Lorem ipsum dolor sit amet
@@ -339,9 +337,7 @@ export default class SomeController {
    * @requestBody {"code": "xxxxxx"}
    */
   public async custom({ request, response }: HttpContextContract) {}
-
 }
-
 ```
 
 ---
