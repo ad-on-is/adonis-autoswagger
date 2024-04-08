@@ -222,9 +222,14 @@ This format should be a valid openapi 3.x json.
 
 @responseBody <status> - <Model[]>.append("some":"valid json") // append additional properties to a Model
 
+@responseBody <status> - <Model[]>.paginated() // helper function to return adonisJS conform structure like {"data": [], "meta": {}}
+
 @responseBody <status> - <Model>.only(property1, property2) // pick only specific properties
 
-@responseBody <status> - {"foo": "bar"} //returns custom json
+
+
+@responseBody <status> - {"foo": "bar", "baz": "<Model>"} //returns custom json object and also parses the model
+@responseBody <status> - ["foo", "bar"] //returns custom json array
 ```
 
 ## `@requestBody` examples
