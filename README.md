@@ -207,7 +207,7 @@ This format should be a valid openapi 3.x json.
 
 ## `@responseBody` examples
 
-```js
+```ts
 @responseBody <status> - Lorem ipsum Dolor sit amet
 
 @responseBody <status> // returns standard <status> message
