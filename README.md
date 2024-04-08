@@ -197,8 +197,13 @@ Format: `<body>`
 **@requestFormDataBody** (only one)
 A definition of the expected requestBody that will be sent with formData format.
 
-Format: `{}`
+**Model**
 
+Format: `<Model>`
+
+**Custom format**
+
+Format: `{"fieldname": {"type":"string", "format": "email"}}`
 This format should be a valid openapi 3.x json.
 
 ---
@@ -389,6 +394,9 @@ Although, autoswagger detects `serializeAs: null` fields automatically, and does
 
 **@enum(foo, bar)**
 If a field has defined values, you can add them into an enum. This is usesfull for something like a status field.
+
+**@format(string)**
+Specify a format for that field, i.e. uuid, email, binary, etc...
 
 **@example(foo bar)**
 Use this field to provide own example values for specific fields

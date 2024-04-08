@@ -1,6 +1,6 @@
 import { getBetweenBrackets } from "./helpers";
 export default class ExampleGenerator {
-  private schemas = {};
+  public schemas = {};
   constructor(schemas: any) {
     this.schemas = schemas;
   }

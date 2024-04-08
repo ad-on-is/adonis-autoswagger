@@ -262,15 +262,34 @@ export class CommentParser {
 
   private parseRequestFormDataBody(rawLine: string) {
     const line = rawLine.replace("@requestFormDataBody ", "");
-
+    let json = {};
     const isJson = isJSONString(line);
-
     if (!isJson) {
-      return;
+      // try to get json from reference
+      let rawRef = line.substring(line.indexOf("<") + 1, line.lastIndexOf(">"));
+      const cleandRef = rawRef.replace("[]", "");
+      if (cleandRef === "") {
+        return;
+      }
+      const ref = this.exampleGenerator.schemas[cleandRef];
+      let props = Object.entries(ref.properties).map(([key, value]) => {
+        return {
+          [key]: {
+            type:
+              typeof value["type"] === "undefined" ? "string" : value["type"],
+            format:
+              typeof value["format"] === "undefined"
+                ? "string"
+                : value["format"],
+          },
+        };
+      });
+      const p = props.reduce((acc, curr) => ({ ...acc, ...curr }), {});
+      json = p;
+    } else {
+      json = JSON.parse(line);
     }
-
     // No need to try/catch this JSON.parse as we already did that in the isJSONString function
-    const json = JSON.parse(line);
 
     return {
       content: {
@@ -460,6 +479,14 @@ export class ModelParser {
         if (en !== "") {
           enums = en.split(",");
           example = enums[0];
+        }
+      }
+
+      if (index > 0 && lines[index - 1].includes("@format")) {
+        const l = lines[index - 1];
+        let en = getBetweenBrackets(l, "format");
+        if (en !== "") {
+          format = en;
         }
       }
 
