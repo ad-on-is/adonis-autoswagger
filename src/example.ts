@@ -6,7 +6,9 @@ export default class ExampleGenerator {
   }
 
   jsonToRef(json) {
+    const jsonObjectIsArray = Array.isArray(json);
     let out = {};
+    let outArr = [];
     for (let [k, v] of Object.entries(json)) {
       if (typeof v === "object") {
         if (!Array.isArray(v)) {
@@ -34,7 +36,7 @@ export default class ExampleGenerator {
                 this.getSchemaExampleBasedOnAnnotation(ref, inc, exc, only),
                 app
               ),
-            ].reduce((a) => a);
+            ];
           } else {
             v = Object.assign(
               this.getSchemaExampleBasedOnAnnotation(ref, inc, exc, only),
@@ -43,9 +45,14 @@ export default class ExampleGenerator {
           }
         }
       }
-      out[k] = v;
+
+      if (jsonObjectIsArray) {
+        outArr.push(v);
+      } else {
+        out[k] = v;
+      }
     }
-    return out;
+    return outArr.length > 0 ? outArr.flat() : out;
   }
 
   getSchemaExampleBasedOnAnnotation(
@@ -205,5 +212,39 @@ export default class ExampleGenerator {
       return null;
     }
     return ex[field];
+  }
+}
+
+export abstract class ExampleInterfaces {
+  public static paginationInterface() {
+    return {
+      PaginationMeta: {
+        type: "object",
+        properties: {
+          total: { type: "number", example: 100, nullable: false },
+          page: { type: "number", example: 2, nullable: false },
+          perPage: { type: "number", example: 10, nullable: false },
+          currentPage: { type: "number", example: 3, nullable: false },
+          lastPage: { type: "number", example: 10, nullable: false },
+          firstPage: { type: "number", example: 1, nullable: false },
+          lastPageUrl: {
+            type: "string",
+            example: "/?page=10",
+            nullable: false,
+          },
+          firstPageUrl: {
+            type: "string",
+            example: "/?page=1",
+            nullable: false,
+          },
+          nextPageUrl: { type: "string", example: "/?page=6", nullable: false },
+          previousPageUrl: {
+            type: "string",
+            example: "/?page=5",
+            nullable: false,
+          },
+        },
+      },
+    };
   }
 }

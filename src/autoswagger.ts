@@ -18,7 +18,7 @@ import {
 import type { options, AdonisRoutes, v6Handler, AdonisRoute } from "./types";
 
 import { mergeParams, formatOperationId } from "./helpers";
-import ExampleGenerator from "./example";
+import ExampleGenerator, { ExampleInterfaces } from "./example";
 
 export class AutoSwagger {
   private options: options;
@@ -613,6 +613,11 @@ export class AutoSwagger {
         ...this.interfaceParser.parseInterfaces(data),
       };
     }
+
+    interfaces = {
+      ...interfaces,
+      ...ExampleInterfaces.paginationInterface(),
+    };
     return interfaces;
   }
 

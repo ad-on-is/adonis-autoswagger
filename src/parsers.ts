@@ -297,7 +297,7 @@ export class CommentParser {
         content: {
           "application/json": {
             schema: {
-              type: "object",
+              type: Array.isArray(json) ? "array" : "object",
             },
             example: this.exampleGenerator.jsonToRef(json),
           },
@@ -322,16 +322,23 @@ export class CommentParser {
     const exc = getBetweenBrackets(line, "exclude");
     const append = getBetweenBrackets(line, "append");
     const only = getBetweenBrackets(line, "only");
-
+    const paginated = getBetweenBrackets(line, "paginated");
     let app = {};
     try {
       app = JSON.parse("{" + append + "}");
     } catch {}
-
     // references a schema array
     if (rawRef.includes("[]")) {
       const cleandRef = rawRef.replace("[]", "");
-
+      const ex = Object.assign(
+        this.exampleGenerator.getSchemaExampleBasedOnAnnotation(
+          cleandRef,
+          inc,
+          exc,
+          only
+        ),
+        app
+      );
       return {
         content: {
           "application/json": {
@@ -339,17 +346,15 @@ export class CommentParser {
               type: "array",
               items: { $ref: "#/components/schemas/" + cleandRef },
             },
-            example: [
-              Object.assign(
-                this.exampleGenerator.getSchemaExampleBasedOnAnnotation(
-                  cleandRef,
-                  inc,
-                  exc,
-                  only
-                ),
-                app
-              ),
-            ],
+            example:
+              paginated === "true"
+                ? {
+                    data: [ex],
+                    meta: this.exampleGenerator.getSchemaExampleBasedOnAnnotation(
+                      "PaginationMeta"
+                    ),
+                  }
+                : [ex],
           },
         },
       };
