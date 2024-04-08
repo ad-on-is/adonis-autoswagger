@@ -16,34 +16,7 @@ export default class ExampleGenerator {
         }
       }
       if (typeof v === "string") {
-        let ref = v.substring(v.indexOf("<") + 1, v.lastIndexOf(">"));
-        if (ref !== "") {
-          const inc = getBetweenBrackets(v, "with");
-          const exc = getBetweenBrackets(v, "exclude");
-          const append = getBetweenBrackets(v, "append");
-          const only = getBetweenBrackets(v, "only");
-
-          let app = {};
-          try {
-            app = JSON.parse("{" + append + "}");
-          } catch {}
-
-          // references a schema array
-          if (ref.includes("[]")) {
-            ref = ref.replace("[]", "");
-            v = [
-              Object.assign(
-                this.getSchemaExampleBasedOnAnnotation(ref, inc, exc, only),
-                app
-              ),
-            ];
-          } else {
-            v = Object.assign(
-              this.getSchemaExampleBasedOnAnnotation(ref, inc, exc, only),
-              app
-            );
-          }
-        }
+        v = this.parseRef(v, true);
       }
 
       if (jsonObjectIsArray) {
@@ -53,6 +26,74 @@ export default class ExampleGenerator {
       }
     }
     return outArr.length > 0 ? outArr.flat() : out;
+  }
+
+  parseRef(line: string, exampleOnly = false) {
+    let rawRef = line.substring(line.indexOf("<") + 1, line.lastIndexOf(">"));
+
+    if (rawRef === "") {
+      if (exampleOnly) {
+        return line;
+      }
+      // No format valid, returning the line as text/plain
+      return {
+        content: {
+          "text/plain": {
+            example: line,
+          },
+        },
+      };
+    }
+
+    const inc = getBetweenBrackets(line, "with");
+    const exc = getBetweenBrackets(line, "exclude");
+    const append = getBetweenBrackets(line, "append");
+    const only = getBetweenBrackets(line, "only");
+    const paginated = getBetweenBrackets(line, "paginated");
+    let app = {};
+    try {
+      app = JSON.parse("{" + append + "}");
+    } catch {}
+
+    const cleandRef = rawRef.replace("[]", "");
+    let ex = Object.assign(
+      this.getSchemaExampleBasedOnAnnotation(cleandRef, inc, exc, only),
+      app
+    );
+
+    const paginatedEx = {
+      data: [ex],
+      meta: this.getSchemaExampleBasedOnAnnotation("PaginationMeta"),
+    };
+    if (rawRef.includes("[]")) {
+      if (exampleOnly) {
+        return paginated === "true" ? paginatedEx : [ex];
+      }
+      return {
+        content: {
+          "application/json": {
+            schema: {
+              type: "array",
+              items: { $ref: "#/components/schemas/" + cleandRef },
+            },
+            example: paginated === "true" ? paginatedEx : [ex],
+          },
+        },
+      };
+    }
+    if (exampleOnly) {
+      return ex;
+    }
+    return {
+      content: {
+        "application/json": {
+          schema: {
+            $ref: "#/components/schemas/" + rawRef,
+          },
+          example: ex,
+        },
+      },
+    };
   }
 
   getSchemaExampleBasedOnAnnotation(
