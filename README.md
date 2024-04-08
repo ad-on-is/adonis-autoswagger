@@ -234,7 +234,7 @@ This format should be a valid openapi 3.x json.
 
 ## `@requestBody` examples
 
-```js
+```ts
 // basicaly same as @response, just without a status
 @requestBody <Model> // Expects model specification
 @requestBody <Model>.with(relations) // Expects model and its relations
@@ -244,7 +244,7 @@ This format should be a valid openapi 3.x json.
 
 ## `@requestFormDataBody` examples
 
-```js
+```ts
 // basicaly same as @response, just without a status
 @requestFormDataBody {"name":{"type":"string"},"picture":{"type":"string","format":"binary"}} // Expects a valid OpenAPI 3.x JSON
 ```
