@@ -104,6 +104,15 @@ Visit `http://localhost:3333/docs` to see AutoSwagger in action.
 
 ---
 
+## 💡 Compatibility
+
+For controllers to get detected properly, please load them lazily.
+
+```ts
+✅ const TestController = () => import('#controllers/test_controller')
+❌ import TestController from '#controllers/test_controller'
+```
+
 ## 🧑‍💻 Advanced usage
 
 ```ts
