@@ -271,13 +271,21 @@ export class CommentParser {
     if (!isJson) {
       // try to get json from reference
       let rawRef = line.substring(line.indexOf("<") + 1, line.lastIndexOf(">"));
+
       const cleandRef = rawRef.replace("[]", "");
       if (cleandRef === "") {
         return;
       }
+      const parsedRef = this.exampleGenerator.parseRef(line, true);
+      let props = [];
       const ref = this.exampleGenerator.schemas[cleandRef];
-      let props = Object.entries(ref.properties).map(([key, value]) => {
-        return {
+      const ks = [];
+      Object.entries(ref.properties).map(([key, value]) => {
+        if (typeof parsedRef[key] === "undefined") {
+          return;
+        }
+        ks.push(key);
+        props.push({
           [key]: {
             type:
               typeof value["type"] === "undefined" ? "string" : value["type"],
@@ -286,10 +294,16 @@ export class CommentParser {
                 ? "string"
                 : value["format"],
           },
-        };
+        });
       });
       const p = props.reduce((acc, curr) => ({ ...acc, ...curr }), {});
+      const appends = Object.keys(parsedRef).filter((k) => !ks.includes(k));
       json = p;
+      if (appends.length > 0) {
+        appends.forEach((a) => {
+          json[a] = parsedRef[a];
+        });
+      }
     } else {
       json = JSON.parse(line);
     }
