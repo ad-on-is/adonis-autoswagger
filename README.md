@@ -176,6 +176,9 @@ Here's where you can set these and use them with `@paramUse()` and `@responseHea
 **@summary** (only one)
 A summary of what the action does
 
+**@tag** (only one)
+Set a custom tag for this action
+
 **@description** (only one)
 A detailed description of what the action does.
 
