@@ -268,6 +268,7 @@ This format should be a valid openapi 3.x json.
 
 ```ts
 // Providing a Model, and adding additional fields
+@requestFormDataBody <Model> // Expects a valid OpenAPI 3.x JSON
 @requestFormDataBody <Model>.exclude(property1).append("picture":{"type":"string","format":"binary"}) // Expects a valid OpenAPI 3.x JSON
 ```
 
