@@ -20,7 +20,7 @@ export class CommentParser {
 
   private parseAnnotations(lines: string[]) {
     let summary = "";
-    let upload = "";
+    let tag = "";
     let description = "";
     let operationId;
     let responses = {};
@@ -30,6 +30,9 @@ export class CommentParser {
     lines.forEach((line) => {
       if (line.startsWith("@summary")) {
         summary = line.replace("@summary ", "");
+      }
+      if (line.startsWith("@tag")) {
+        tag = line.replace("@tag ", "");
       }
 
       if (line.startsWith("@description")) {
@@ -84,6 +87,7 @@ export class CommentParser {
       parameters,
       summary,
       operationId,
+      tag,
     };
   }
 

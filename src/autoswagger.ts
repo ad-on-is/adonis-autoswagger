@@ -318,6 +318,7 @@ export class AutoSwagger {
 
         let description = "";
         let summary = "";
+        let tag = "";
         let operationId: string;
 
         if (security.length > 0) {
@@ -344,8 +345,17 @@ export class AutoSwagger {
           responses = { ...responses, ...customAnnotations[action].responses };
           requestBody = customAnnotations[action].requestBody;
           actionParams = customAnnotations[action].parameters;
+          tag = customAnnotations[action].tag;
         }
         parameters = mergeParams(parameters, actionParams);
+
+        if (tag != "") {
+          globalTags.push({
+            name: tag.toUpperCase(),
+            description: "Everything related to " + tag.toUpperCase(),
+          });
+          tags = [tag.toUpperCase()];
+        }
 
         if (isEmpty(responses)) {
           responses[responseCodes[method]] = {
