@@ -151,7 +151,7 @@ export class AutoSwagger {
     fs.writeFileSync(filePathJson, JSON.stringify(json, null, 2));
   }
 
-  private async readFile(rootPath, type = "yaml") {
+  private async readFile(rootPath, type = "yml") {
     const filePath = rootPath + "swagger." + type;
     const data = fs.readFileSync(filePath, "utf-8");
     if (!data) {
