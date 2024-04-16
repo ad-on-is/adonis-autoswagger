@@ -48,6 +48,9 @@ export default {
     parameters: {}, // OpenAPI conform parameters that are commonly used
     headers: {}, // OpenAPI conform headers that are commonly used
   },
+  securitySchemes: {}, // optional
+  authMiddlewares: ["auth", "auth:api"], // optional
+  defaultSecurityScheme: "BearerAuth", // optional
   persistAuthorization: true, // persist authorization between reloads on the swagger page
   showFullPath: false, // the path displayed after endpoint summary
 };
@@ -114,6 +117,27 @@ For controllers to get detected properly, please load them lazily.
 ```
 
 ## 🧑‍💻 Advanced usage
+
+### Additional configuration
+
+**securitySchemes**
+
+add/overwrite security schemes [Swagger Authentication](https://swagger.io/docs/specification/authentication/) for details.
+
+**defaultSecurityScheme**
+
+Override the default security scheme.
+
+- BearerAuth
+- BasicAuth
+- ApiKeyAuth
+- your own defined under `securitySchemes`
+
+**authMiddlewares**
+
+If a route uses a middleware named `auth`, `auth:api`, AutoSwagger will detect it as a Swagger security method. However, you can implement other middlewares that handle authentication.
+
+### Modify generated output
 
 ```ts
 Route.get("/myswagger", async () => {

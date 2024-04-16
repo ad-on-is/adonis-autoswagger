@@ -13,6 +13,9 @@ export interface options {
   persistAuthorization?: boolean;
   appPath?: string;
   debug?: boolean;
+  securitySchemes?: any;
+  authMiddlewares?: string[];
+  defaultSecurityScheme?: string;
 }
 
 export interface common {

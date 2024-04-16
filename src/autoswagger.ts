@@ -2,9 +2,8 @@ import YAML from "json-to-pretty-yaml";
 import fs from "fs";
 import path from "path";
 import util from "util";
-import extract from "extract-comments";
 import HTTPStatusCode from "http-status-code";
-import { camelCase, isEmpty, isUndefined, snakeCase, startCase } from "lodash";
+import { isEmpty, isUndefined } from "lodash";
 import { existsSync } from "fs";
 import { scalarCustomCss } from "./scalarCustomCss";
 import { serializeV6Middleware, serializeV6Handler } from "./adonishelpers";
@@ -243,6 +242,16 @@ export class AutoSwagger {
             type: "http",
             scheme: "bearer",
           },
+          BasicAuth: {
+            type: "http",
+            scheme: "basic",
+          },
+          ApiKeyAuth: {
+            type: "apiKey",
+            in: "header",
+            name: "X-API-Key",
+          },
+          ...this.options.securitySchemes,
         },
         schemas: this.schemas,
       },
@@ -251,9 +260,19 @@ export class AutoSwagger {
     };
     let paths = {};
 
+    let sscheme = "BearerAuth";
+    if (this.options.defaultSecurityScheme) {
+      sscheme = this.options.defaultSecurityScheme;
+    }
+
     let securities = {
-      "auth": { BearerAuth: ["access"] },
-      "auth:api": { BearerAuth: ["access"] },
+      "auth": { [sscheme]: ["access"] },
+      "auth:api": { [sscheme]: ["access"] },
+      ...this.options.authMiddlewares
+        ?.map((am) => ({
+          [am]: { [sscheme]: ["access"] },
+        }))
+        .reduce((acc, val) => ({ ...acc, ...val }), {}),
     };
 
     let globalTags = [];
