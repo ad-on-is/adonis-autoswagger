@@ -475,6 +475,9 @@ public email: string
 
 ## Production environment
 
+> [!WARNING]
+> Make sure **NODE_ENV=production** in your production environment
+
 To make it work in production environments, additional steps are required
 
 - Create a new command for `docs:generate` [See official documentation](https://docs.adonisjs.com/guides/ace-commandline#creating-a-new-command)
