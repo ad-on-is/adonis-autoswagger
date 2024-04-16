@@ -122,7 +122,18 @@ For controllers to get detected properly, please load them lazily.
 
 **securitySchemes**
 
-add/overwrite security schemes [Swagger Authentication](https://swagger.io/docs/specification/authentication/) for details.
+Add/Overwrite security schemes [Swagger Authentication](https://swagger.io/docs/specification/authentication/) for details.
+
+```ts
+// example to override ApiKeyAuth
+securitySchemes: {
+  ApiKeyAuth: {
+    type: "apiKey"
+    in: "header",
+    name: "X-API-Key"
+  }
+}
+```
 
 **defaultSecurityScheme**
 
