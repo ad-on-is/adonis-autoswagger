@@ -5,6 +5,7 @@ export interface options {
   title: string;
   ignore: string[];
   version: string;
+  description?: string;
   path: string;
   tagIndex: number;
   snakeCase: boolean;
