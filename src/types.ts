@@ -4,9 +4,9 @@ import { info } from "console";
  * Autoswagger interfaces
  */
 export interface options {
-  title: string;
+  title?: string;
   ignore: string[];
-  version: string;
+  version?: string;
   description?: string;
   path: string;
   tagIndex: number;
