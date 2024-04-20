@@ -37,11 +37,17 @@ import url from "node:url";
 export default {
   // path: __dirname + "/../", for AdonisJS v5
   path: path.dirname(url.fileURLToPath(import.meta.url)) + "/../", // for AdonisJS v6
-  title: "Foo",
-  version: "1.0.0",
+  title: "Foo", // use info instead
+  version: "1.0.0", // use info instead
+  description: "", // use info instead
   tagIndex: 2,
+  info: {
+    title: "title",
+    version: "1.0.0",
+    description: "",
+  },
   snakeCase: true,
-  description: "",
+
   debug: false, // set to true, to get some useful debug output
   ignore: ["/swagger", "/docs"],
   preferredPutPatch: "PUT", // if PUT/PATCH are provided for the same route, prefer PUT
@@ -120,6 +126,9 @@ For controllers to get detected properly, please load them lazily.
 ## 🧑‍💻 Advanced usage
 
 ### Additional configuration
+
+**info**
+See [Swagger API General Info](https://swagger.io/docs/specification/api-general-info/) for details.
 
 **securitySchemes**
 

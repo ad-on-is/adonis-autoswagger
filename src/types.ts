@@ -1,3 +1,5 @@
+import { info } from "console";
+
 /**
  * Autoswagger interfaces
  */
@@ -14,6 +16,7 @@ export interface options {
   persistAuthorization?: boolean;
   appPath?: string;
   debug?: boolean;
+  info?: any;
   securitySchemes?: any;
   authMiddlewares?: string[];
   defaultSecurityScheme?: string;

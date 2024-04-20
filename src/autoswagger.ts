@@ -214,7 +214,7 @@ export class AutoSwagger {
 
     const docs = {
       openapi: "3.0.0",
-      info: {
+      info: options.info || {
         title: options.title,
         version: options.version,
         description:
