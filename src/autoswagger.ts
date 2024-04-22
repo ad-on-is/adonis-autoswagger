@@ -425,16 +425,12 @@ export class AutoSwagger {
               break;
           }
         }
-        let summaryFilePath = sourceFile.replace(this.options.appPath, "");
 
-        // summaryFilePath = summaryFilePath.replace("App/Controllers/Http/", "");
-        // summaryFilePath = summaryFilePath.replace("/controllers/", "/");
+        const sf = sourceFile.split("/").at(-1).replace(".ts", "");
         let m = {
-          summary:
-            sourceFile === "" && action == ""
-              ? summary + " (route.ts)"
-              : summary + " (" + summaryFilePath + "::" + action + ")",
-          description: description,
+          summary: `${summary}${action !== "" ? ` (${action})` : "route"}`,
+          description:
+            description + "\n\n _" + sourceFile + "_ - **" + action + "**",
           operationId: operationId,
           parameters: parameters,
           tags: tags,

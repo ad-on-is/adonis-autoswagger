@@ -12,6 +12,7 @@ export interface options {
   tagIndex: number;
   snakeCase: boolean;
   common: common;
+  fileNameInSummary?: boolean;
   preferredPutPatch?: string;
   persistAuthorization?: boolean;
   appPath?: string;
