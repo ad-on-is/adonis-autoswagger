@@ -345,10 +345,10 @@ export class AutoSwagger {
 
         if (security.length > 0) {
           responses["401"] = {
-            description: HTTPStatusCode.getMessage(401),
+            description: `Returns **401** (${HTTPStatusCode.getMessage(401)})`,
           };
           responses["403"] = {
-            description: HTTPStatusCode.getMessage(403),
+            description: `Returns **403** (${HTTPStatusCode.getMessage(403)})`,
           };
         }
 

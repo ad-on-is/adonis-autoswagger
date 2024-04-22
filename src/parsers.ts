@@ -78,6 +78,13 @@ export class CommentParser {
       if (typeof headers[key] !== undefined) {
         responses[key]["headers"] = headers[key];
       }
+      if (!responses[key]["description"]) {
+        responses[key][
+          "description"
+        ] = `Returns **${key}** (${HTTPStatusCode.getMessage(key)}) as **${
+          Object.entries(responses[key]["content"])[0][0]
+        }**`;
+      }
     }
 
     return {
@@ -335,7 +342,11 @@ export class CommentParser {
           "application/json": {
             schema: {
               type: Array.isArray(json) ? "array" : "object",
+              ...(Array.isArray(json)
+                ? { items: { type: typeof json[0] } }
+                : {}),
             },
+
             example: this.exampleGenerator.jsonToRef(json),
           },
         },
@@ -776,7 +787,6 @@ export class InterfaceParser {
 
       let [f, t] = line.split(": ");
       if (f && t) {
-        // console.log(f, t);
         if (f.startsWith("'") && f.endsWith("'")) {
           f = f.replaceAll("'", '"');
         }
