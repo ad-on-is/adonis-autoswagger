@@ -652,19 +652,106 @@ export class InterfaceParser {
     this.exampleGenerator = new ExampleGenerator({});
   }
 
+  objToExample(obj) {
+    let example = {};
+    Object.entries(obj).map(([key, value]) => {
+      if (typeof value === "object") {
+        example[key] = this.objToExample(value);
+      } else {
+        example[key] = this.exampleGenerator.exampleByType(value as string);
+        if (example[key] === null) {
+          example[key] = this.exampleGenerator.exampleByField(key);
+        }
+      }
+    });
+    return example;
+  }
+
+  ifToJson(data) {}
+
+  parseProps(obj) {
+    const no = {};
+    Object.entries(obj).map(([f, value]) => {
+      if (typeof value === "object") {
+        no[f.replaceAll("?", "")] = {
+          type: "object",
+          nullable: f.includes("?"),
+          properties: this.parseProps(value),
+          example: this.objToExample(value),
+        };
+      } else {
+        no[f.replaceAll("?", "")] = {
+          ...this.parseType(value, f),
+        };
+      }
+    });
+    return no;
+  }
+
+  parseType(type, field) {
+    let isArray = false;
+    if (type.includes("[]")) {
+      type = type.replace("[]", "");
+      isArray = true;
+    }
+    let prop: any = { type: type };
+    let meta = "";
+    let en = getBetweenBrackets(meta, "enum");
+    let example = getBetweenBrackets(meta, "example");
+    let enums = [];
+    if (example === "") {
+      example = this.exampleGenerator.exampleByField(field);
+    }
+
+    if (example === null) {
+      example = this.exampleGenerator.exampleByType(type);
+    }
+
+    if (en !== "") {
+      enums = en.split(",");
+      example = enums[0];
+    }
+    let indicator = "type";
+    let notRequired = field.includes("?");
+
+    prop["nullable"] = notRequired;
+    if (type.toLowerCase() === "datetime") {
+      prop[indicator] = "string";
+      prop["format"] = "date-time";
+      prop["example"] = "2021-03-23T16:13:08.489+01:00";
+    } else if (type.toLowerCase() === "date") {
+      prop[indicator] = "string";
+      prop["format"] = "date";
+      prop["example"] = "2021-03-23";
+    } else {
+      if (!standardTypes.includes(type)) {
+        indicator = "$ref";
+        type = "#/components/schemas/" + type;
+      }
+
+      prop[indicator] = type;
+      prop["example"] = example;
+      prop["nullable"] = notRequired;
+    }
+    if (isArray) {
+      prop = { type: "array", items: prop };
+    }
+    return prop;
+  }
+
   parseInterfaces(data) {
-    let interfaces = {};
-    let name = "";
-    let props = {};
     // remove empty lines
     data = data.replace(/\t/g, "").replace(/^(?=\n)$|^\s*|\s*$|\n\n+/gm, "");
-    const lines = data.split("\n");
-    lines.forEach((line, index) => {
-      line = line.trim();
 
+    let name = "";
+    let props = {};
+    const l = data.split("\n");
+    let ifs = {};
+    l.forEach((line, index) => {
       if (
         line.startsWith("//") ||
         line.startsWith("/*") ||
+        line.startsWith("import") ||
         line.startsWith("*")
       )
         return;
@@ -675,96 +762,58 @@ export class InterfaceParser {
       ) {
         props = {};
         name = line;
-        name = name.replace("export default ", "");
+        name = name.replace("export default interface ", "");
+        name = name.replace("export interface ", "");
         name = name.replace("export ", "");
         name = name.replace("interface ", "");
         name = name.replace("{", "");
         name = name.trim();
+        ifs[name] = "{";
         return;
       }
 
-      if (line === "}") {
-        if (name === "") return;
-        interfaces[name] = {
-          type: "object",
-          properties: props,
-          description: "Interface",
-        };
-        return;
-      }
+      let nl = line;
 
-      let meta = "";
-      if (index > 0) {
-        meta = lines[index - 1];
-      }
-
-      const s = line.split(":");
-      let field = s[0];
-      let type = s[1];
-      let notRequired = false;
-
-      if (!field || !type) return;
-
-      if (field.endsWith("?")) {
-        field = field.replace("?", "");
-        notRequired = true;
-      }
-
-      let en = getBetweenBrackets(meta, "enum");
-      let example = getBetweenBrackets(meta, "example");
-      let enums = [];
-      if (example === "") {
-        example = this.exampleGenerator.exampleByField(field);
-      }
-      if (en !== "") {
-        enums = en.split(",");
-        example = enums[0];
-      }
-
-      field = field.trim();
-      type = type.trim();
-      if (this.snakeCase) {
-        field = snakeCase(field);
-      }
-      let isArray = false;
-      if (type.includes("[]")) {
-        type = type.replace("[]", "");
-        isArray = true;
-      }
-      let indicator = "type";
-      let prop = {};
-
-      if (type.toLowerCase() === "datetime") {
-        prop[indicator] = "string";
-        prop["format"] = "date-time";
-        prop["example"] = "2021-03-23T16:13:08.489+01:00";
-        prop["nullable"] = notRequired;
-      } else if (type.toLowerCase() === "date") {
-        prop[indicator] = "string";
-        prop["format"] = "date";
-        prop["example"] = "2021-03-23";
-        prop["nullable"] = notRequired;
-      } else {
-        if (!standardTypes.includes(type)) {
-          indicator = "$ref";
-          type = "#/components/schemas/" + type;
+      let [f, t] = line.split(": ");
+      if (f && t) {
+        // console.log(f, t);
+        if (f.startsWith("'") && f.endsWith("'")) {
+          f = f.replaceAll("'", '"');
+        }
+        if (!f.startsWith('"') && !f.endsWith('"')) {
+          f = `"${f}"`;
         }
 
-        prop[indicator] = type;
-        prop["example"] = example;
-        prop["nullable"] = notRequired;
+        let comma = "";
+        if (!t.endsWith("{")) {
+          if (l[index + 1] !== "}") {
+            comma = ",";
+          }
+          t = `"${t}"`;
+        }
+        nl = `${f}: ${t}${comma}`;
       }
-
-      if (isArray) {
-        props[field] = { type: "array", items: prop };
-      } else {
-        props[field] = prop;
-      }
-      if (enums.length > 0) {
-        props[field]["enum"] = enums;
-      }
+      ifs[name] += nl;
     });
 
-    return interfaces;
+    for (const [n, value] of Object.entries(ifs)) {
+      try {
+        let j = JSON.parse(value as string);
+        ifs[n] = {
+          type: "object",
+          properties: this.parseProps(j),
+          description: n + " (Interface)",
+        };
+      } catch (e) {
+        ifs[n] = {};
+      }
+    }
+    const cleaned = {};
+    Object.entries(ifs).map(([key, value]) => {
+      if (key !== "") {
+        cleaned[key] = value;
+      }
+    });
+    return cleaned;
   }
 }

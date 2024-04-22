@@ -226,8 +226,29 @@ export default class ExampleGenerator {
     return props;
   }
 
+  exampleByType(type) {
+    switch (type) {
+      case "string":
+        return this.exampleByField("title");
+      case "number":
+        return Math.floor(Math.random() * 1000);
+      case "integer":
+        return Math.floor(Math.random() * 1000);
+      case "boolean":
+        return true;
+      case "datetime":
+        return this.exampleByField("datetime");
+      case "date":
+        return this.exampleByField("date");
+      default:
+        return null;
+    }
+  }
+
   exampleByField(field) {
     const ex = {
+      datetime: "2021-03-23T16:13:08.489+01:00",
+      date: "2021-03-23",
       title: "Lorem Ipsum",
       description: "Lorem ipsum dolor sit amet",
       name: "John Doe",

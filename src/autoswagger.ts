@@ -602,7 +602,7 @@ export class AutoSwagger {
       let schema = {
         type: "object",
         properties: parsed.props,
-        description: "Model",
+        description: name + " (Model)",
       };
       models[name] = schema;
     }
