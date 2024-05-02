@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import util from "util";
 import HTTPStatusCode from "http-status-code";
+import _ from "lodash";
 import { isEmpty, isUndefined } from "lodash";
 import { existsSync } from "fs";
 import { scalarCustomCss } from "./scalarCustomCss";
@@ -452,10 +453,17 @@ export class AutoSwagger {
           [pattern]: { ...paths[pattern], [method.toLowerCase()]: m },
         };
       });
-
-      docs.tags = globalTags;
-      docs.paths = paths;
     }
+
+    // filter unused tags
+    const usedTags = _.uniq(
+      Object.entries(paths)
+        .map(([p, val]) => Object.entries(val)[0][1].tags)
+        .flat()
+    );
+
+    docs.tags = globalTags.filter((tag) => usedTags.includes(tag.name));
+    docs.paths = paths;
     return docs;
   }
 
