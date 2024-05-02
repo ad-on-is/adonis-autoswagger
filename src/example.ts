@@ -103,7 +103,7 @@ export default class ExampleGenerator {
     onl = "",
     first = "",
     parent = "",
-    level = 0
+    deepRels = [""]
   ) {
     let props = {};
     if (!this.schemas[schema]) {
@@ -130,7 +130,9 @@ export default class ExampleGenerator {
     ) {
       return null;
     }
-    level++;
+
+    deepRels.push(schema);
+
     for (const [key, value] of Object.entries(properties)) {
       let isArray = false;
       if (exclude.includes(key)) continue;
@@ -201,7 +203,9 @@ export default class ExampleGenerator {
         }
 
         let propdata: any = "";
-        if (level <= 20) {
+
+        if (!deepRels.includes(rel)) {
+          deepRels.push(rel);
           propdata = this.getSchemaExampleBasedOnAnnotation(
             rel,
             inc,
@@ -209,8 +213,10 @@ export default class ExampleGenerator {
             onl,
             parent,
             parent === "" ? key : parent + "." + key,
-            level
+            deepRels
           );
+        } else {
+          propdata = `$ref:/components/schemas/${rel}`;
         }
 
         if (propdata === null) {
