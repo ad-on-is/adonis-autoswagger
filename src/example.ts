@@ -130,9 +130,9 @@ export default class ExampleGenerator {
     ) {
       return null;
     }
+    level++;
     for (const [key, value] of Object.entries(properties)) {
       let isArray = false;
-
       if (exclude.includes(key)) continue;
       if (exclude.includes(parent + "." + key)) continue;
 
@@ -201,7 +201,7 @@ export default class ExampleGenerator {
         }
 
         let propdata: any = "";
-        if (level <= 10) {
+        if (level <= 20) {
           propdata = this.getSchemaExampleBasedOnAnnotation(
             rel,
             inc,
@@ -209,7 +209,7 @@ export default class ExampleGenerator {
             onl,
             parent,
             parent === "" ? key : parent + "." + key,
-            level++
+            level
           );
         }
 
