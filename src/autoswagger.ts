@@ -575,7 +575,7 @@ export class AutoSwagger {
 
     if (typeof this.customPaths["#models"] !== "undefined") {
       // it's v6
-      p6.replaceAll("app/models", this.customPaths["#models"]);
+      p6 = p6.replaceAll("app/models", this.customPaths["#models"]);
     }
 
     if (!existsSync(p) && !existsSync(p6)) {
@@ -616,11 +616,11 @@ export class AutoSwagger {
   private async getInterfaces() {
     let interfaces = {};
     let p = path.join(this.options.appPath, "/Interfaces");
-    const p6 = path.join(this.options.appPath, "/interfaces");
+    let p6 = path.join(this.options.appPath, "/interfaces");
 
     if (typeof this.customPaths["#interfaces"] !== "undefined") {
       // it's v6
-      p6.replaceAll("app/interfaces", this.customPaths["#interfaces"]);
+      p6 = p6.replaceAll("app/interfaces", this.customPaths["#interfaces"]);
     }
 
     if (!existsSync(p) && !existsSync(p6)) {
