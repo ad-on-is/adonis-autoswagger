@@ -124,6 +124,7 @@ export default class ExampleGenerator {
       schema !== "" &&
       parent.includes(".") &&
       this.schemas[schema].description === "Model" &&
+      !inc.includes("relations") &&
       !inc.includes(parent) &&
       !inc.includes(parent + ".relations") &&
       !inc.includes(first + ".relations")
@@ -182,12 +183,12 @@ export default class ExampleGenerator {
       if (rel !== "") {
         // skip related models of main schema
         if (
-          parent === "" &&
-          rel !== "" &&
-          typeof this.schemas[rel] !== "undefined" &&
-          this.schemas[rel].description === "Model" &&
-          !include.includes("relations") &&
-          !include.includes(key)
+          (parent === "" &&
+            typeof this.schemas[rel] !== "undefined" &&
+            this.schemas[rel].description.includes("Model") &&
+            !include.includes("relations") &&
+            !include.includes(key)) ||
+          exclude.includes(parent + ".relations")
         ) {
           continue;
         }
