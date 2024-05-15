@@ -467,9 +467,8 @@ Use this field to provide own example values for specific fields
 **@props({"minLength": 10, "foo": "bar"})**
 Use this field to provide additional properties to a field, like minLength, maxLength, etc. Needs to bee valid JSON.
 
-Product.js
-
-```js
+```ts
+// SomeModel.js
 @hasMany(() => ProductView)
 // @no-swagger
 public views: HasMany<typeof ProductView>
@@ -482,6 +481,11 @@ public status: string
 @column()
 // @example(johndoe@example.com)
 public email: string
+
+@column()
+// @props({"minLength": 10})
+public age: number
+
 ```
 
 ---
