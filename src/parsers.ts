@@ -465,12 +465,14 @@ export class ModelParser {
       ) {
         softDelete = true;
       }
+
       if (
         line.startsWith("//") ||
         line.startsWith("/*") ||
         line.startsWith("*")
       )
         return;
+
       if (index > 0 && lines[index - 1].includes("serializeAs: null")) return;
       if (index > 0 && lines[index - 1].includes("@no-swagger")) return;
       if (
@@ -479,7 +481,7 @@ export class ModelParser {
         !line.includes("declare ")
       )
         return;
-      
+
       let s = [];
 
       if (line.includes("declare ")) {
@@ -500,6 +502,7 @@ export class ModelParser {
       let type = s2[1];
       let enums = [];
       let format = "";
+      let keyprops = {};
       let example: any = this.exampleGenerator.exampleByField(field);
       if (index > 0 && lines[index - 1].includes("@enum")) {
         const l = lines[index - 1];
@@ -524,6 +527,14 @@ export class ModelParser {
         if (match !== null) {
           const m = match[0].replace("example(", "").replace(")", "");
           example = m;
+        }
+      }
+
+      if (index > 0 && lines[index - 1].includes("@props")) {
+        const l = lines[index - 1].replace("@props", "props");
+        const j = getBetweenBrackets(l, "props");
+        if (isJSONString(j)) {
+          keyprops = JSON.parse(j);
         }
       }
 
@@ -637,6 +648,9 @@ export class ModelParser {
           props[field]["format"] = format;
         }
       }
+      Object.entries(keyprops).map(([key, value]) => {
+        props[field][key] = value;
+      });
       if (enums.length > 0) {
         props[field]["enum"] = enums;
       }
