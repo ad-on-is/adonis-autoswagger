@@ -476,14 +476,13 @@ export class ModelParser {
       if (
         !line.startsWith("public ") &&
         !line.startsWith("public get") &&
-        !line.startsWith("declare ")
+        !line.includes("declare ")
       )
         return;
-      if (line.includes("(") && !line.startsWith("public get")) return;
-
+      
       let s = [];
 
-      if (line.startsWith("declare ")) {
+      if (line.includes("declare ")) {
         s = line.split("declare ");
       }
       if (line.startsWith("public ")) {
