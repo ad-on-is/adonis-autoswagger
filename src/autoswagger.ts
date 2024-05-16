@@ -617,7 +617,9 @@ export class AutoSwagger {
   }
 
   private async getInterfaces() {
-    let interfaces = {};
+    let interfaces = {
+      ...ExampleInterfaces.paginationInterface(),
+    };
     let p = path.join(this.options.appPath, "/Interfaces");
     let p6 = path.join(this.options.appPath, "/interfaces");
 
@@ -653,10 +655,6 @@ export class AutoSwagger {
       };
     }
 
-    interfaces = {
-      ...interfaces,
-      ...ExampleInterfaces.paginationInterface(),
-    };
     return interfaces;
   }
 
