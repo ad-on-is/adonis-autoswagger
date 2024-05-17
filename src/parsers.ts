@@ -448,6 +448,7 @@ export class ModelParser {
 
   parseModelProperties(data) {
     let props = {};
+    let required = []
     // remove empty lines
     data = data.replace(/\t/g, "").replace(/^(?=\n)$|^\s*|\s*$|\n\n+/gm, "");
     const lines = data.split("\n");
@@ -526,6 +527,10 @@ export class ModelParser {
           const m = match[0].replace("example(", "").replace(")", "");
           example = m;
         }
+      }
+
+      if (index > 0 && lines[index - 1].includes("@required")) {
+          required.push(field)
       }
 
       if (typeof type === "undefined") {
@@ -651,7 +656,7 @@ export class ModelParser {
       };
     }
 
-    return { name: name, props: props };
+    return { name: name, props: props, required: required };
   }
 }
 
