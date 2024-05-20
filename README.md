@@ -464,6 +464,9 @@ Specify a format for that field, i.e. uuid, email, binary, etc...
 **@example(foo bar)**
 Use this field to provide own example values for specific fields
 
+**@required**
+Specify that the field is required
+
 Product.js
 
 ```js
