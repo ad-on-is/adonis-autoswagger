@@ -1,3 +1,4 @@
+import { snakeCase } from "lodash";
 import { getBetweenBrackets } from "./helpers";
 export default class ExampleGenerator {
   public schemas = {};
@@ -284,10 +285,13 @@ export default class ExampleGenerator {
       avatar: "https://example.com/avatar.png",
       url: "https://example.com",
     };
-    if (typeof ex[field] === "undefined") {
-      return null;
+    if (typeof ex[field] !== "undefined") {
+      return ex[field];
     }
-    return ex[field];
+    if (typeof ex[snakeCase(field)] !== "undefined") {
+      return ex[snakeCase(field)];
+    }
+    return null;
   }
 }
 
