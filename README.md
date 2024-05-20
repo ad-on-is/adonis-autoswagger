@@ -467,6 +467,10 @@ Use this field to provide own example values for specific fields
 **@props({"minLength": 10, "foo": "bar"})**
 Use this field to provide additional properties to a field, like minLength, maxLength, etc. Needs to bee valid JSON.
 
+**@required**
+Specify that the field is required
+
+
 ```ts
 // SomeModel.js
 @hasMany(() => ProductView)
