@@ -608,6 +608,7 @@ export class AutoSwagger {
       }
       let schema = {
         type: "object",
+	required: parsed.required,
         properties: parsed.props,
         description: name + " (Model)",
       };
