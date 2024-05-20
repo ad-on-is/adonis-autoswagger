@@ -1,11 +1,12 @@
 {
   "name": "adonis-autoswagger",
-  "version": "3.21.0",
+  "version": "3.25.0",
   "description": "Auto-Generate swagger docs for AdonisJS",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "watchexec -e ts -- tsc",
     "build": "tsc",
     "prepare": "npm run build"
   },

@@ -123,7 +123,8 @@ export default class ExampleGenerator {
       parent !== "" &&
       schema !== "" &&
       parent.includes(".") &&
-      this.schemas[schema].description === "Model" &&
+      this.schemas[schema].description.includes("Model") &&
+      !inc.includes("relations") &&
       !inc.includes(parent) &&
       !inc.includes(parent + ".relations") &&
       !inc.includes(first + ".relations")
@@ -183,11 +184,18 @@ export default class ExampleGenerator {
         // skip related models of main schema
         if (
           parent === "" &&
-          rel !== "" &&
           typeof this.schemas[rel] !== "undefined" &&
-          this.schemas[rel].description === "Model" &&
+          this.schemas[rel].description.includes("Model") &&
           !include.includes("relations") &&
           !include.includes(key)
+        ) {
+          continue;
+        }
+
+        if (
+          parent !== "" &&
+          !include.includes(parent + ".relations") &&
+          !include.includes(parent + "." + key)
         ) {
           continue;
         }
@@ -204,20 +212,20 @@ export default class ExampleGenerator {
 
         let propdata: any = "";
 
-        if (!deepRels.includes(rel)) {
-          deepRels.push(rel);
-          propdata = this.getSchemaExampleBasedOnAnnotation(
-            rel,
-            inc,
-            exc,
-            onl,
-            parent,
-            parent === "" ? key : parent + "." + key,
-            deepRels
-          );
-        } else {
-          propdata = `$ref:/components/schemas/${rel}`;
-        }
+        // if (!deepRels.includes(rel)) {
+        // deepRels.push(rel);
+        propdata = this.getSchemaExampleBasedOnAnnotation(
+          rel,
+          inc,
+          exc,
+          onl,
+          parent,
+          parent === "" ? key : parent + "." + key,
+          deepRels
+        );
+        // } else {
+        //   propdata = `$ref:/components/schemas/${rel}`;
+        // }
 
         if (propdata === null) {
           continue;

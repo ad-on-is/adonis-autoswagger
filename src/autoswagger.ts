@@ -81,7 +81,10 @@ export class AutoSwagger {
       `"
       theme = "dark"
       bg-color = "#24283b"
+      schema-style="tree"
+      schema-expand-level = "10"
       header-color = "#1a1b26"
+      allow-try = "true"
       nav-hover-bg-color = "#1a1b26"
       nav-bg-color = "#24283b"
       text-color = "#c0caf5"
@@ -575,7 +578,7 @@ export class AutoSwagger {
 
     if (typeof this.customPaths["#models"] !== "undefined") {
       // it's v6
-      p6.replaceAll("app/models", this.customPaths["#models"]);
+      p6 = p6.replaceAll("app/models", this.customPaths["#models"]);
     }
 
     if (!existsSync(p) && !existsSync(p6)) {
@@ -615,13 +618,15 @@ export class AutoSwagger {
   }
 
   private async getInterfaces() {
-    let interfaces = {};
+    let interfaces = {
+      ...ExampleInterfaces.paginationInterface(),
+    };
     let p = path.join(this.options.appPath, "/Interfaces");
-    const p6 = path.join(this.options.appPath, "/interfaces");
+    let p6 = path.join(this.options.appPath, "/interfaces");
 
     if (typeof this.customPaths["#interfaces"] !== "undefined") {
       // it's v6
-      p6.replaceAll("app/interfaces", this.customPaths["#interfaces"]);
+      p6 = p6.replaceAll("app/interfaces", this.customPaths["#interfaces"]);
     }
 
     if (!existsSync(p) && !existsSync(p6)) {
@@ -651,10 +656,6 @@ export class AutoSwagger {
       };
     }
 
-    interfaces = {
-      ...interfaces,
-      ...ExampleInterfaces.paginationInterface(),
-    };
     return interfaces;
   }
 
