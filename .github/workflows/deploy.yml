@@ -2,8 +2,8 @@ name: Deploy
 run-name: Deploying to npmjs 🥹🤞
 on:
   push:
-    branches: 
-      - xxx
+    tags:
+      - "*"
 jobs:
   Deploy:
     runs-on: ubuntu-latest
@@ -12,13 +12,12 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: '18.x'
-          registry-url: "https://registry.npmjs.org"
+          registry-url: "https://registry.npmjs.com"
       - uses: pnpm/action-setup@v2
      
-      - run: pnpm install
-      - run: pnpm build
+      - run: npm install
+      - run: npm build
       - run: git config user.email "deploy@github" && git config user.name "GitHub Action"
-      - run: pnpm version patch
-      - run: pnpm publish
+      - run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
