@@ -14,10 +14,9 @@ jobs:
           node-version: '18.x'
           registry-url: "https://registry.npmjs.com"
       - uses: pnpm/action-setup@v2
-     
-      - run: npm install
-      - run: npm build
+      - run: pnpm install
+      - run: pnpm build
       - run: git config user.email "deploy@github" && git config user.name "GitHub Action"
-      - run: npm publish
+      - run: pnpm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
