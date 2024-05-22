@@ -3,7 +3,7 @@ Adonis AutoSwagger <br />
 <img src="https://upload.wikimedia.org/wikipedia/commons/a/ab/Swagger-logo.png" height="50" />
 </h1>
 
-[![Version](https://img.shields.io/github/tag/ad-on-is/adonis-autoswagger.svg?style=flat?branch=)]()
+[![Version](https://img.shields.io/github/tag/ad-on-is/adonis-autoswagger.svg?style=flat?branch=main)]()
 [![GitHub stars](https://img.shields.io/github/stars/ad-on-is/adonis-autoswagger.svg?style=social&label=Star)]()
 [![GitHub watchers](https://img.shields.io/github/watchers/ad-on-is/adonis-autoswagger.svg?style=social&label=Watch)]()
 [![GitHub forks](https://img.shields.io/github/forks/ad-on-is/adonis-autoswagger.svg?style=social&label=Fork)]()
