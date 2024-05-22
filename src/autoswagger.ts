@@ -13,12 +13,18 @@ import {
   ModelParser,
   CommentParser,
   RouteParser,
+  ValidatorParser,
 } from "./parsers";
 
 import type { options, AdonisRoutes, v6Handler, AdonisRoute } from "./types";
 
 import { mergeParams, formatOperationId } from "./helpers";
 import ExampleGenerator, { ExampleInterfaces } from "./example";
+
+interface VineValidator {
+  validate(data: any): any;
+  toJSON(): any;
+}
 
 export class AutoSwagger {
   private options: options;
@@ -27,6 +33,7 @@ export class AutoSwagger {
   private modelParser: ModelParser;
   private interfaceParser: InterfaceParser;
   private routeParser: RouteParser;
+  private validatorParser: ValidatorParser;
   private customPaths = {};
 
   ui(url: string, options?: options) {
@@ -566,9 +573,42 @@ export class AutoSwagger {
       ...schemas,
       ...(await this.getInterfaces()),
       ...(await this.getModels()),
+      ...(await this.getValidators()),
     };
 
     return schemas;
+  }
+
+  private async getValidators() {
+    const models = {};
+    let p = path.join(this.options.appPath, "/Validators");
+    let p6 = path.join(this.options.appPath, "/validators");
+
+    if (typeof this.customPaths["#validators"] !== "undefined") {
+      // it's v6
+      p6 = p6.replaceAll("app/validators", this.customPaths["#validators"]);
+    }
+
+    if (!existsSync(p) && !existsSync(p6)) {
+      if (this.options.debug) {
+        console.log("Validators paths don't exist", p, p6);
+      }
+      return models;
+    }
+    if (existsSync(p6)) {
+      p = p6;
+    }
+    const files = await this.getFiles(p, []);
+    console.log(files);
+
+    for (const file of files) {
+      const val = await import(file);
+      // for (const [key, value] of Object.entries(val)) {
+      //   if (value.constructor.name.includes("VineValidator")) {
+      //     console.log((value as VineValidator).toJSON());
+      //   }
+      // }
+    }
   }
 
   private async getModels() {
