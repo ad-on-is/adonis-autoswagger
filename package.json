@@ -8,8 +8,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "watchexec -e ts -- tsc",
     "build": "tsc",
-    "prepare": "npm run build",
-    "publish": "./publish.sh"
+    "prepare": "npm run build"
   },
   "author": "Adis Durakovic <adis.durakovic@gmail.com>",
   "repository": {
