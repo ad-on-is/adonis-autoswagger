@@ -121,7 +121,7 @@ export class CommentParser {
     }
 
     if (line.startsWith("@paramPath")) {
-      required = true;
+      required = false;
     }
     if (line.startsWith("@paramQuery")) {
       required = false;
@@ -448,7 +448,7 @@ export class ModelParser {
 
   parseModelProperties(data) {
     let props = {};
-    let required = []
+    let required = [];
     // remove empty lines
     data = data.replace(/\t/g, "").replace(/^(?=\n)$|^\s*|\s*$|\n\n+/gm, "");
     const lines = data.split("\n");
@@ -532,9 +532,9 @@ export class ModelParser {
       }
 
       if (index > 0 && lines[index - 1].includes("@required")) {
-          required.push(field)
+        required.push(field);
       }
-        
+
       if (index > 0 && lines[index - 1].includes("@props")) {
         const l = lines[index - 1].replace("@props", "props");
         const j = getBetweenBrackets(l, "props");

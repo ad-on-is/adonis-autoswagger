@@ -387,7 +387,8 @@ export default class SomeController {
 
   /**
    * @show
-   * @paramPath id - Describe the param
+   * @paramPath id - Describe the path param - @type(string) @required
+   * @paramQuery foo - Describe the query param - @type(string) @required
    * @description Returns a product with it's relation on user and user relations
    * @responseBody 200 - <Product>.with(user, user.relations)
    * @responseBody 404
