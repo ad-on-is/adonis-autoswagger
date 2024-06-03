@@ -419,13 +419,13 @@ export default class SomeController {
   public async update({ request, response }: HttpContextContract) {}
 
   /**
-   * @custom
+   * @myCustomFunction
    * @summary Lorem ipsum dolor sit amet
    * @paramPath provider - The login provider to be used - @enum(google, facebook, apple)
    * @responseBody 200 - {"token": "xxxxxxx"}
    * @requestBody {"code": "xxxxxx"}
    */
-  public async custom({ request, response }: HttpContextContract) {}
+  public async myCustomFunction({ request, response }: HttpContextContract) {}
 }
 ```
 
