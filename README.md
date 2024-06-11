@@ -299,6 +299,21 @@ This format should be a valid openapi 3.x json.
 @responseBody <status> - ["foo", "bar"] //returns custom json array
 ```
 
+## `@paramPath` and `@paramQuery` examples
+
+```ts
+// basicaly same as @response, just without a status
+@paramPath <paramName> - Description - (meta)
+@paramQuery <paramName> - Description - (meta)
+
+@paramPath id - The ID of the source - @type(number) @required
+@paramPath slug - The ID of the source - @type(string)
+
+@paramQuery q - Search term - @type(string) @required
+@paramQuery page - the Page number - @type(number)
+
+```
+
 ## `@requestBody` examples
 
 ```ts
@@ -387,7 +402,8 @@ export default class SomeController {
 
   /**
    * @show
-   * @paramPath id - Describe the param
+   * @paramPath id - Describe the path param - @type(string) @required
+   * @paramQuery foo - Describe the query param - @type(string) @required
    * @description Returns a product with it's relation on user and user relations
    * @responseBody 200 - <Product>.with(user, user.relations)
    * @responseBody 404

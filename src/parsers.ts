@@ -121,7 +121,7 @@ export class CommentParser {
     }
 
     if (line.startsWith("@paramPath")) {
-      required = true;
+      required = false;
     }
     if (line.startsWith("@paramQuery")) {
       required = false;
