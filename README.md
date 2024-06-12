@@ -23,7 +23,7 @@ pnpm i adonis-autoswagger #using pnpm
 - Creates **paths** automatically based on `routes.ts`
 - Creates **schemas** automatically based on `app/Models/*`
 - Creates **schemas** automatically based on `app/Interfaces/*`
-- Creates **schemas** automatically based on `app/Validators/*`
+- Creates **schemas** automatically based on `app/Validators/*` (only for adonisJS v6)
 - **Rich configuration** via comments
 - Works also in **production** mode
 - `node ace docs:generate` command
