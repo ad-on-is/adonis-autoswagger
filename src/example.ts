@@ -198,7 +198,7 @@ export default class ExampleGenerator {
         if (
           parent === "" &&
           typeof this.schemas[rel] !== "undefined" &&
-          this.schemas[rel].description.includes("Model") &&
+          this.schemas[rel].description?.includes("Model") &&
           !include.includes("relations") &&
           !include.includes(key)
         ) {

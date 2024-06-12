@@ -540,7 +540,6 @@ export class AutoSwagger {
 
     if (sourceFile !== "" && action !== "") {
       sourceFile = sourceFile.replace("App/", "app/") + ".ts";
-      sourceFile = sourceFile.replace("App\\", "app\\") + ".ts";
       sourceFile = sourceFile.replace(".js", "");
 
       customAnnotations = await this.commentParser.getAnnotations(
