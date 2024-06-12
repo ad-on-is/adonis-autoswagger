@@ -97,6 +97,15 @@ export default class ExampleGenerator {
     };
   }
 
+  exampleByValidatorRule(rule: string) {
+    switch (rule) {
+      case "email":
+        return "user@example.com";
+      default:
+        return "Some string";
+    }
+  }
+
   getSchemaExampleBasedOnAnnotation(
     schema: string,
     inc = "",
@@ -109,6 +118,9 @@ export default class ExampleGenerator {
     let props = {};
     if (!this.schemas[schema]) {
       return props;
+    }
+    if (this.schemas[schema].example) {
+      return this.schemas[schema].example;
     }
     let properties = this.schemas[schema].properties;
     let include = inc.toString().split(",");
@@ -255,6 +267,8 @@ export default class ExampleGenerator {
         return this.exampleByField("datetime");
       case "date":
         return this.exampleByField("date");
+      case "object":
+        return {};
       default:
         return null;
     }

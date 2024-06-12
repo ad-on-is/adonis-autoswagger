@@ -20,11 +20,8 @@ import type { options, AdonisRoutes, v6Handler, AdonisRoute } from "./types";
 
 import { mergeParams, formatOperationId } from "./helpers";
 import ExampleGenerator, { ExampleInterfaces } from "./example";
-
-interface VineValidator {
-  validate(data: any): any;
-  toJSON(): any;
-}
+// @ts-expect-error moduleResolution:nodenext issue 54523
+import { VineValidator } from "@vinejs/vine";
 
 export class AutoSwagger {
   private options: options;
@@ -211,6 +208,7 @@ export class AutoSwagger {
     this.routeParser = new RouteParser(this.options);
     this.modelParser = new ModelParser(this.options.snakeCase);
     this.interfaceParser = new InterfaceParser(this.options.snakeCase);
+    this.validatorParser = new ValidatorParser();
     this.schemas = await this.getSchemas();
     if (this.options.debug) {
       console.log("Schemas", this.schemas);
@@ -599,16 +597,21 @@ export class AutoSwagger {
       p = p6;
     }
     const files = await this.getFiles(p, []);
-    console.log(files);
 
+    const validators = {};
     for (const file of files) {
       const val = await import(file);
-      // for (const [key, value] of Object.entries(val)) {
-      //   if (value.constructor.name.includes("VineValidator")) {
-      //     console.log((value as VineValidator).toJSON());
-      //   }
-      // }
+      for (const [key, value] of Object.entries(val)) {
+        if (value.constructor.name.includes("VineValidator")) {
+          validators[key] = await this.validatorParser.validatorToObject(
+            value as VineValidator<any, any>
+          );
+          validators[key].description = key + " (Validator)";
+        }
+      }
     }
+
+    return validators;
   }
 
   private async getModels() {

@@ -17,6 +17,7 @@
   },
   "license": "MIT",
   "dependencies": {
+    "@vinejs/vine": "^2.1.0",
     "abstract-syntax-tree": "^2.20.5",
     "change-case": "^4.1.2",
     "espree": "^9.3.1",

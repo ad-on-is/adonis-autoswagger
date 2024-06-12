@@ -3,10 +3,21 @@ import { isJSONString, getBetweenBrackets } from "./helpers";
 import util from "util";
 import extract from "extract-comments";
 import fs from "fs";
-import { camelCase, isEmpty, isUndefined, snakeCase, startCase } from "lodash";
+import {
+  camelCase,
+  isEmpty,
+  isUndefined,
+  max,
+  min,
+  snakeCase,
+  startCase,
+} from "lodash";
 import ExampleGenerator from "./example";
 import type { options, AdonisRoutes, v6Handler } from "./types";
 import { standardTypes } from "./types";
+import _ from "lodash";
+// @ts-expect-error moduleResolution:nodenext issue 54523
+import { VineValidator } from "@vinejs/vine";
 
 export class CommentParser {
   private parsedFiles: { [file: string]: string } = {};
@@ -673,7 +684,199 @@ export class ModelParser {
   }
 }
 
-export class ValidatorParser {}
+export class ValidatorParser {
+  exampleGenerator: ExampleGenerator;
+  constructor() {
+    this.exampleGenerator = new ExampleGenerator({});
+  }
+  async validatorToObject(validator: VineValidator<any, any>) {
+    // console.dir(validator.toJSON()["refs"], { depth: null });
+    // console.dir(json, { depth: null });
+    const obj = {
+      type: "object",
+      properties: this.parseSchema(
+        validator.toJSON()["schema"]["schema"],
+        validator.toJSON()["refs"]
+      ),
+    };
+    // console.dir(obj, { depth: null });
+    const testObj = this.objToTest(obj["properties"]);
+    return await this.parsePropsAndMeta(obj, testObj, validator);
+  }
+
+  async parsePropsAndMeta(obj, testObj, validator: VineValidator<any, any>) {
+    let valid = false;
+    let i = 0;
+
+    // console.log(Object.keys(errors));
+    const { SimpleMessagesProvider } = await import("@vinejs/vine");
+    while (!valid) {
+      i++;
+      const [e] = await validator.tryValidate(testObj, {
+        messagesProvider: new SimpleMessagesProvider({
+          required: "REQUIRED",
+          string: "TYPE",
+          object: "TYPE",
+          number: "TYPE",
+          boolean: "TYPE",
+          email: "FORMAT",
+          min: "MININT",
+          max: "MAXINT",
+          minLength: "MINSTRING",
+          maxLength: "MAXSTRING",
+          enum: "ENUM",
+          regex: "REGEX",
+        }),
+      });
+      // valid = true;
+
+      // try to parse the types and meta from the errors
+      if (e === null) {
+        valid = true;
+        break;
+      }
+      const msgs = e.messages;
+      // console.log(msgs);
+
+      // console.log(testObj);
+      for (const m of msgs) {
+        const err = m["message"];
+        let objField = m["field"].replace(".", ".properties.");
+        if (m["field"].includes(".0")) {
+          objField = objField.replaceAll(`.0`, ".items");
+        }
+        if (err === "TYPE") {
+          _.set(obj["properties"], objField, {
+            ..._.get(obj["properties"], objField),
+            type: m["rule"],
+            example: this.exampleGenerator.exampleByType(m["rule"]),
+          });
+          if (m["rule"] === "string") {
+            if (_.get(obj["properties"], objField)["minimum"]) {
+              _.set(obj["properties"], objField, {
+                ..._.get(obj["properties"], objField),
+                minLength: _.get(obj["properties"], objField)["minimum"],
+              });
+              _.unset(obj["properties"], objField + ".minimum");
+            }
+            if (_.get(obj["properties"], objField)["maximum"]) {
+              _.set(obj["properties"], objField, {
+                ..._.get(obj["properties"], objField),
+                maxLength: _.get(obj["properties"], objField)["maximum"],
+              });
+              _.unset(obj["properties"], objField + ".maximum");
+            }
+          }
+
+          _.set(
+            testObj,
+            m["field"],
+            this.exampleGenerator.exampleByType(m["rule"])
+          );
+        }
+
+        if (err === "FORMAT") {
+          _.set(obj["properties"], objField, {
+            ..._.get(obj["properties"], objField),
+            format: m["rule"],
+            type: "string",
+            example: this.exampleGenerator.exampleByValidatorRule(m["rule"]),
+          });
+          _.set(
+            testObj,
+            m["field"],
+            this.exampleGenerator.exampleByValidatorRule(m["rule"])
+          );
+        }
+      }
+
+      if (i === 10) {
+        valid = true;
+      }
+    }
+
+    // console.dir(obj, { depth: null });
+    obj["example"] = testObj;
+    return obj;
+  }
+
+  objToTest(obj) {
+    const res = {};
+    Object.keys(obj).forEach((key) => {
+      if (obj[key]["type"] === "object") {
+        res[key] = this.objToTest(obj[key]["properties"]);
+      } else if (obj[key]["type"] === "array") {
+        if (obj[key]["items"]["type"] === "object") {
+          res[key] = [this.objToTest(obj[key]["items"]["properties"])];
+        } else {
+          res[key] = [obj[key]["items"]["example"]];
+        }
+      } else {
+        res[key] = obj[key]["example"];
+      }
+    });
+    return res;
+  }
+
+  parseSchema(json, refs) {
+    const obj = {};
+    for (const p of json["properties"]) {
+      let meta: {
+        minimum?: number;
+        maximum?: number;
+        choices?: any;
+        pattern?: string;
+      } = {};
+      for (const v of p["validations"]) {
+        if (refs[v["ruleFnId"]].options?.min) {
+          meta = { ...meta, minimum: refs[v["ruleFnId"]].options.min };
+        }
+        if (refs[v["ruleFnId"]].options?.max) {
+          meta = { ...meta, maximum: refs[v["ruleFnId"]].options.max };
+        }
+        if (refs[v["ruleFnId"]].options?.choices) {
+          meta = { ...meta, choices: refs[v["ruleFnId"]].options.choices };
+        }
+        if (refs[v["ruleFnId"]].options?.toString().includes("/")) {
+          meta = { ...meta, pattern: refs[v["ruleFnId"]].options.toString() };
+        }
+      }
+
+      // console.dir(p, { depth: null });
+      // console.dir(validations, { depth: null });
+      // console.log(min, max, choices, regex);
+
+      obj[p["fieldName"]] =
+        p["type"] === "object"
+          ? { type: "object", properties: this.parseSchema(p, refs) }
+          : p["type"] === "array"
+          ? {
+              type: "array",
+              items:
+                p["each"]["type"] === "object"
+                  ? {
+                      type: "object",
+                      properties: this.parseSchema(p["each"], refs),
+                    }
+                  : {
+                      type: "number",
+                      example: meta.minimum
+                        ? meta.minimum
+                        : this.exampleGenerator.exampleByType("number"),
+                      ...meta,
+                    },
+            }
+          : {
+              type: "number",
+              example: meta.minimum
+                ? meta.minimum
+                : this.exampleGenerator.exampleByType("number"),
+              ...meta,
+            };
+    }
+    return obj;
+  }
+}
 
 export class InterfaceParser {
   exampleGenerator: ExampleGenerator;
