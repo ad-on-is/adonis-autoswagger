@@ -540,6 +540,7 @@ export class AutoSwagger {
 
     if (sourceFile !== "" && action !== "") {
       sourceFile = sourceFile.replace("App/", "app/") + ".ts";
+      sourceFile = sourceFile.replace("App\\", "app\\") + ".ts";
       sourceFile = sourceFile.replace(".js", "");
 
       customAnnotations = await this.commentParser.getAnnotations(
@@ -578,27 +579,24 @@ export class AutoSwagger {
   }
 
   private async getValidators() {
-    const models = {};
-    let p = path.join(this.options.appPath, "/Validators");
-    let p6 = path.join(this.options.appPath, "/validators");
+    const validators = {};
+    let p6 = path.join(this.options.appPath, "validators");
 
     if (typeof this.customPaths["#validators"] !== "undefined") {
       // it's v6
       p6 = p6.replaceAll("app/validators", this.customPaths["#validators"]);
+      p6 = p6.replaceAll("app\\validators", this.customPaths["#validators"]);
     }
 
-    if (!existsSync(p) && !existsSync(p6)) {
+    if (!existsSync(p6)) {
       if (this.options.debug) {
-        console.log("Validators paths don't exist", p, p6);
+        console.log("Validators paths don't exist", p6);
       }
-      return models;
+      return validators;
     }
-    if (existsSync(p6)) {
-      p = p6;
-    }
-    const files = await this.getFiles(p, []);
 
-    const validators = {};
+    const files = await this.getFiles(p6, []);
+
     for (const file of files) {
       const val = await import(file);
       for (const [key, value] of Object.entries(val)) {
@@ -616,12 +614,13 @@ export class AutoSwagger {
 
   private async getModels() {
     const models = {};
-    let p = path.join(this.options.appPath, "/Models");
-    let p6 = path.join(this.options.appPath, "/models");
+    let p = path.join(this.options.appPath, "Models");
+    let p6 = path.join(this.options.appPath, "models");
 
     if (typeof this.customPaths["#models"] !== "undefined") {
       // it's v6
       p6 = p6.replaceAll("app/models", this.customPaths["#models"]);
+      p6 = p6.replaceAll("app\\models", this.customPaths["#models"]);
     }
 
     if (!existsSync(p) && !existsSync(p6)) {
@@ -664,12 +663,13 @@ export class AutoSwagger {
     let interfaces = {
       ...ExampleInterfaces.paginationInterface(),
     };
-    let p = path.join(this.options.appPath, "/Interfaces");
-    let p6 = path.join(this.options.appPath, "/interfaces");
+    let p = path.join(this.options.appPath, "Interfaces");
+    let p6 = path.join(this.options.appPath, "interfaces");
 
     if (typeof this.customPaths["#interfaces"] !== "undefined") {
       // it's v6
       p6 = p6.replaceAll("app/interfaces", this.customPaths["#interfaces"]);
+      p6 = p6.replaceAll("app\\interfaces", this.customPaths["#interfaces"]);
     }
 
     if (!existsSync(p) && !existsSync(p6)) {

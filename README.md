@@ -23,6 +23,7 @@ pnpm i adonis-autoswagger #using pnpm
 - Creates **paths** automatically based on `routes.ts`
 - Creates **schemas** automatically based on `app/Models/*`
 - Creates **schemas** automatically based on `app/Interfaces/*`
+- Creates **schemas** automatically based on `app/Validators/*`
 - **Rich configuration** via comments
 - Works also in **production** mode
 - `node ace docs:generate` command
@@ -259,9 +260,9 @@ Format: `<body>`
 **@requestFormDataBody** (only one)
 A definition of the expected requestBody that will be sent with formData format.
 
-**Model**
-
-Format: `<Model>`
+**Schema**
+A model or a validator.
+Format: `<Schema>`
 
 **Custom format**
 
@@ -293,7 +294,7 @@ This format should be a valid openapi 3.x json.
 
 @responseBody <status> - <Model>.only(property1, property2) // pick only specific properties
 
-
+@requestBody <status> <myCustomValidator> // returns a validator object
 
 @responseBody <status> - {"foo": "bar", "baz": "<Model>"} //returns custom json object and also parses the model
 @responseBody <status> - ["foo", "bar"] //returns custom json array
@@ -319,6 +320,7 @@ This format should be a valid openapi 3.x json.
 ```ts
 // basicaly same as @response, just without a status
 @requestBody <Model> // Expects model specification
+@requestBody <myCustomValidator> // Expects validator specification
 @requestBody <Model>.with(relations) // Expects model and its relations
 @requestBody <Model[]>.append("some":"valid json") // append additional properties to a Model
 @requestBody {"foo": "bar"} // Expects a specific JSON
