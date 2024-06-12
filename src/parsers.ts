@@ -710,88 +710,67 @@ export class ValidatorParser {
 
     // console.log(Object.keys(errors));
     const { SimpleMessagesProvider } = await import("@vinejs/vine");
-    while (!valid) {
-      i++;
-      const [e] = await validator.tryValidate(testObj, {
-        messagesProvider: new SimpleMessagesProvider({
-          required: "REQUIRED",
-          string: "TYPE",
-          object: "TYPE",
-          number: "TYPE",
-          boolean: "TYPE",
-          email: "FORMAT",
-          min: "MININT",
-          max: "MAXINT",
-          minLength: "MINSTRING",
-          maxLength: "MAXSTRING",
-          enum: "ENUM",
-          regex: "REGEX",
-        }),
-      });
-      // valid = true;
+    const [e] = await validator.tryValidate(testObj, {
+      messagesProvider: new SimpleMessagesProvider({
+        required: "REQUIRED",
+        string: "TYPE",
+        object: "TYPE",
+        number: "TYPE",
+        boolean: "TYPE",
+      }),
+    });
+    // valid = true;
 
-      // try to parse the types and meta from the errors
-      if (e === null) {
-        valid = true;
-        break;
+    const msgs = e.messages;
+
+    for (const m of msgs) {
+      const err = m["message"];
+      let objField = m["field"].replace(".", ".properties.");
+      if (m["field"].includes(".0")) {
+        objField = objField.replaceAll(`.0`, ".items");
       }
-      const msgs = e.messages;
-      // console.log(msgs);
-
-      // console.log(testObj);
-      for (const m of msgs) {
-        const err = m["message"];
-        let objField = m["field"].replace(".", ".properties.");
-        if (m["field"].includes(".0")) {
-          objField = objField.replaceAll(`.0`, ".items");
-        }
-        if (err === "TYPE") {
-          _.set(obj["properties"], objField, {
-            ..._.get(obj["properties"], objField),
-            type: m["rule"],
-            example: this.exampleGenerator.exampleByType(m["rule"]),
-          });
-          if (m["rule"] === "string") {
-            if (_.get(obj["properties"], objField)["minimum"]) {
-              _.set(obj["properties"], objField, {
-                ..._.get(obj["properties"], objField),
-                minLength: _.get(obj["properties"], objField)["minimum"],
-              });
-              _.unset(obj["properties"], objField + ".minimum");
-            }
-            if (_.get(obj["properties"], objField)["maximum"]) {
-              _.set(obj["properties"], objField, {
-                ..._.get(obj["properties"], objField),
-                maxLength: _.get(obj["properties"], objField)["maximum"],
-              });
-              _.unset(obj["properties"], objField + ".maximum");
-            }
+      if (err === "TYPE") {
+        _.set(obj["properties"], objField, {
+          ..._.get(obj["properties"], objField),
+          type: m["rule"],
+          example: this.exampleGenerator.exampleByType(m["rule"]),
+        });
+        if (m["rule"] === "string") {
+          if (_.get(obj["properties"], objField)["minimum"]) {
+            _.set(obj["properties"], objField, {
+              ..._.get(obj["properties"], objField),
+              minLength: _.get(obj["properties"], objField)["minimum"],
+            });
+            _.unset(obj["properties"], objField + ".minimum");
           }
-
-          _.set(
-            testObj,
-            m["field"],
-            this.exampleGenerator.exampleByType(m["rule"])
-          );
+          if (_.get(obj["properties"], objField)["maximum"]) {
+            _.set(obj["properties"], objField, {
+              ..._.get(obj["properties"], objField),
+              maxLength: _.get(obj["properties"], objField)["maximum"],
+            });
+            _.unset(obj["properties"], objField + ".maximum");
+          }
         }
 
-        if (err === "FORMAT") {
-          _.set(obj["properties"], objField, {
-            ..._.get(obj["properties"], objField),
-            format: m["rule"],
-            type: "string",
-            example: this.exampleGenerator.exampleByValidatorRule(m["rule"]),
-          });
-          _.set(
-            testObj,
-            m["field"],
-            this.exampleGenerator.exampleByValidatorRule(m["rule"])
-          );
-        }
+        _.set(
+          testObj,
+          m["field"],
+          this.exampleGenerator.exampleByType(m["rule"])
+        );
       }
 
-      if (i === 10) {
-        valid = true;
+      if (err === "FORMAT") {
+        _.set(obj["properties"], objField, {
+          ..._.get(obj["properties"], objField),
+          format: m["rule"],
+          type: "string",
+          example: this.exampleGenerator.exampleByValidatorRule(m["rule"]),
+        });
+        _.set(
+          testObj,
+          m["field"],
+          this.exampleGenerator.exampleByValidatorRule(m["rule"])
+        );
       }
     }
 
