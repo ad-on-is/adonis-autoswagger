@@ -596,7 +596,10 @@ export class AutoSwagger {
 
     const files = await this.getFiles(p6, []);
 
-    for (const file of files) {
+    for (let file of files) {
+      if (/^[a-zA-Z]:/.test(file)) {
+        file = "file:///" + file;
+      }
       const val = await import(file);
       for (const [key, value] of Object.entries(val)) {
         if (value.constructor.name.includes("VineValidator")) {
