@@ -596,19 +596,26 @@ export class AutoSwagger {
 
     const files = await this.getFiles(p6, []);
 
-    for (let file of files) {
-      if (/^[a-zA-Z]:/.test(file)) {
-        file = "file:///" + file;
-      }
-      const val = await import(file);
-      for (const [key, value] of Object.entries(val)) {
-        if (value.constructor.name.includes("VineValidator")) {
-          validators[key] = await this.validatorParser.validatorToObject(
-            value as VineValidator<any, any>
-          );
-          validators[key].description = key + " (Validator)";
+    try {
+      for (let file of files) {
+        if (/^[a-zA-Z]:/.test(file)) {
+          file = "file:///" + file;
+        }
+        const val = await import(file);
+        for (const [key, value] of Object.entries(val)) {
+          if (value.constructor.name.includes("VineValidator")) {
+            validators[key] = await this.validatorParser.validatorToObject(
+              value as VineValidator<any, any>
+            );
+            validators[key].description = key + " (Validator)";
+          }
         }
       }
+    } catch (e) {
+      console.log(
+        "**You are probably using 'node ace serve --hmr', which is not supported yet. Use 'node ace serve --watch' instead.**"
+      );
+      console.error(e.message);
     }
 
     return validators;
