@@ -549,7 +549,10 @@ export class ModelParser {
       if (
         line.startsWith("//") ||
         line.startsWith("/*") ||
-        line.startsWith("*")
+        line.startsWith("*") ||
+        line.startsWith("public static ") ||
+        line.startsWith("private static ") ||
+        line.startsWith("static ")
       )
         return;
 
