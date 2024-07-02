@@ -705,9 +705,6 @@ export class ValidatorParser {
   }
 
   async parsePropsAndMeta(obj, testObj, validator: VineValidator<any, any>) {
-    let valid = false;
-    let i = 0;
-
     // console.log(Object.keys(errors));
     const { SimpleMessagesProvider } = await import("@vinejs/vine");
     const [e] = await validator.tryValidate(testObj, {
@@ -719,7 +716,11 @@ export class ValidatorParser {
         boolean: "TYPE",
       }),
     });
-    // valid = true;
+
+    // if no erros, then the type is already a number (which we use by default)
+    if (e === null) {
+      return obj;
+    }
 
     const msgs = e.messages;
 
