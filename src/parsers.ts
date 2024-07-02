@@ -717,7 +717,8 @@ export class ValidatorParser {
       }),
     });
 
-    // if no erros, then the type is already a number (which we use by default)
+    // if no errors, this means all object-fields are of type number (which we use by default)
+    // and we can return the object
     if (e === null) {
       return obj;
     }
