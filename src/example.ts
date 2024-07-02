@@ -66,6 +66,23 @@ export default class ExampleGenerator {
       data: [ex],
       meta: this.getSchemaExampleBasedOnAnnotation("PaginationMeta"),
     };
+
+    const paginatedSchema = {
+      type: "object",
+      properties: {
+        data: {
+          type: "array",
+          items: { $ref: "#/components/schemas/" + cleandRef },
+        },
+        meta: { $ref: "#/components/schemas/PaginationMeta" },
+      },
+    };
+
+    const normalArraySchema = {
+      type: "array",
+      items: { $ref: "#/components/schemas/" + cleandRef },
+    };
+
     if (rawRef.includes("[]")) {
       if (exampleOnly) {
         return paginated === "true" ? paginatedEx : [ex];
@@ -73,10 +90,7 @@ export default class ExampleGenerator {
       return {
         content: {
           "application/json": {
-            schema: {
-              type: "array",
-              items: { $ref: "#/components/schemas/" + cleandRef },
-            },
+            schema: paginated === "true" ? paginatedSchema : normalArraySchema,
             example: paginated === "true" ? paginatedEx : [ex],
           },
         },
@@ -85,6 +99,7 @@ export default class ExampleGenerator {
     if (exampleOnly) {
       return ex;
     }
+
     return {
       content: {
         "application/json": {

@@ -347,15 +347,13 @@ export class CommentParser {
     if (isJson) {
       // No need to try/catch this JSON.parse as we already did that in the isJSONString function
       const json = JSON.parse(line);
-
+      const o = this.jsonToObj(json);
       return {
         content: {
           "application/json": {
             schema: {
               type: Array.isArray(json) ? "array" : "object",
-              ...(Array.isArray(json)
-                ? { items: { type: typeof json[0] } }
-                : {}),
+              ...(Array.isArray(json) ? { items: this.arrayItems(json) } : o),
             },
 
             example: this.exampleGenerator.jsonToRef(json),
@@ -364,6 +362,76 @@ export class CommentParser {
       };
     }
     return this.exampleGenerator.parseRef(line);
+  }
+
+  arrayItems(json) {
+    const oneOf = [];
+
+    const t = typeof json[0];
+
+    if (t === "string") {
+      json.forEach((j) => {
+        const value = this.exampleGenerator.parseRef(j);
+
+        if (_.has(value, "content.application/json.schema.$ref")) {
+          oneOf.push({
+            $ref: value["content"]["application/json"]["schema"]["$ref"],
+          });
+        }
+      });
+    }
+
+    if (oneOf.length > 0) {
+      return { oneOf: oneOf };
+    }
+    return { type: typeof json[0] };
+  }
+
+  jsonToObj(json) {
+    const o = {
+      type: "object",
+      properties: Object.keys(json)
+        .map((key) => {
+          const t = typeof json[key];
+          const v = json[key];
+          let value = v;
+          if (t === "object") {
+            value = this.jsonToObj(json[key]);
+          }
+          if (t === "string" && v.includes("<") && v.includes(">")) {
+            value = this.exampleGenerator.parseRef(v);
+            if (v.includes("[]")) {
+              let ref = "";
+              if (_.has(value, "content.application/json.schema.$ref")) {
+                ref = value["content"]["application/json"]["schema"]["$ref"];
+              }
+              if (_.has(value, "content.application/json.schema.items.$ref")) {
+                ref =
+                  value["content"]["application/json"]["schema"]["items"][
+                    "$ref"
+                  ];
+              }
+              value = {
+                type: "array",
+                items: {
+                  $ref: ref,
+                },
+              };
+            } else {
+              value = {
+                $ref: value["content"]["application/json"]["schema"]["$ref"],
+              };
+            }
+          }
+          return {
+            [key]: value,
+          };
+        })
+        .reduce((acc, curr) => ({ ...acc, ...curr }), {}),
+    };
+    // console.dir(o, { depth: null });
+    // console.log(json);
+    return o;
   }
 
   async getAnnotations(file: string, action: string) {
