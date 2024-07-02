@@ -718,7 +718,7 @@ export class AutoSwagger {
     for (let i in files) {
       var name = dir + "/" + files[i];
       if (fs.statSync(name).isDirectory()) {
-        this.getFiles(name, files_);
+        await this.getFiles(name, files_);
       } else {
         files_.push(name);
       }
