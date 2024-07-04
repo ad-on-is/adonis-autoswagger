@@ -442,9 +442,6 @@ export class CommentParser {
     if (typeof this.parsedFiles[file] !== "undefined") {
       newdata = this.parsedFiles[file];
     } else {
-      if (this.options.debug) {
-        console.log(`Parsing comments: ${file}`);
-      }
       const readFile = util.promisify(fs.readFile);
       const data = await readFile(file, "utf8");
       for (const line of data.split("\n")) {

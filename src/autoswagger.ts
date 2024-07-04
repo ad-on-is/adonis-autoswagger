@@ -211,15 +211,11 @@ export class AutoSwagger {
     this.validatorParser = new ValidatorParser();
     this.schemas = await this.getSchemas();
     if (this.options.debug) {
-      console.log("Schemas", this.schemas);
-      console.log("CustomPaths", this.customPaths);
+      console.log(this.options);
+      console.log("Found Schemas", Object.keys(this.schemas));
+      console.log("Using custom paths", this.customPaths);
     }
     this.commentParser.exampleGenerator = new ExampleGenerator(this.schemas);
-
-    if (this.options.debug) {
-      console.log("AdonisJS AutoSwagger");
-      console.log(this.options);
-    }
 
     const docs = {
       openapi: "3.0.0",
@@ -288,6 +284,12 @@ export class AutoSwagger {
     };
 
     let globalTags = [];
+
+    if (this.options.debug) {
+      console.log("Route annotations:");
+      console.log("-----");
+    }
+
     for await (const route of routes) {
       let ignore = false;
       for (const i of options.ignore) {
@@ -555,7 +557,18 @@ export class AutoSwagger {
       operationId = customAnnotations.operationId;
     }
     if (this.options.debug) {
-      console.log(route.pattern, sourceFile, action);
+      console.log(
+        typeof customAnnotations !== "undefined" &&
+          !_.isEmpty(customAnnotations)
+          ? "\x1b[32m✓ OK\x1b[0m"
+          : "\x1b[31m✗ NO\x1b[0m",
+        "file",
+        sourceFile || "routes.ts",
+        "pattern",
+        route.pattern,
+        "action",
+        action
+      );
     }
     return { sourceFile, action, customAnnotations, operationId };
   }
@@ -595,12 +608,16 @@ export class AutoSwagger {
     }
 
     const files = await this.getFiles(p6, []);
+    if (this.options.debug) {
+      console.log("Found validator files", files);
+    }
 
     try {
       for (let file of files) {
         if (/^[a-zA-Z]:/.test(file)) {
           file = "file:///" + file;
         }
+
         const val = await import(file);
         for (const [key, value] of Object.entries(val)) {
           if (value.constructor.name.includes("VineValidator")) {
