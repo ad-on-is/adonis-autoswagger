@@ -13,7 +13,7 @@ jobs:
         with:
           node-version: '20.x'
           registry-url: "https://registry.npmjs.com"
-      - uses: pnpm/action-setup@v2
+      - uses: pnpm/action-setup@v4
       - run: pnpm install
       - run: pnpm build
       - run: git config user.email "deploy@github" && git config user.name "GitHub Action"
