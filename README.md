@@ -292,6 +292,8 @@ This format should be a valid openapi 3.x json.
 
 @responseBody <status> - <Model[]>.paginated() // helper function to return adonisJS conform structure like {"data": [], "meta": {}}
 
+@responseBody <status> - <Model[]>.as('contents').paginated() // returns a paginated model with a custom key for the data array
+
 @responseBody <status> - <Model>.only(property1, property2) // pick only specific properties
 
 @requestBody <status> <myCustomValidator> // returns a validator object
