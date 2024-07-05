@@ -51,10 +51,12 @@ export default class ExampleGenerator {
     const append = getBetweenBrackets(line, "append");
     const only = getBetweenBrackets(line, "only");
     const paginated = getBetweenBrackets(line, "paginated");
+    const as = getBetweenBrackets(line, "as");
+
     let app = {};
     try {
       app = JSON.parse("{" + append + "}");
-    } catch {}
+    } catch { }
 
     const cleandRef = rawRef.replace("[]", "");
     let ex = Object.assign(
@@ -62,15 +64,23 @@ export default class ExampleGenerator {
       app
     );
 
+    let contentName = "data";
+    if (as) {
+      const asMatch = line.match(/\.as\('([^']+)'\)/);
+      if (asMatch) {
+        contentName = asMatch[1];
+      }
+    }
+
     const paginatedEx = {
-      data: [ex],
+      [contentName]: [ex],
       meta: this.getSchemaExampleBasedOnAnnotation("PaginationMeta"),
     };
 
     const paginatedSchema = {
       type: "object",
       properties: {
-        data: {
+        [contentName]: {
           type: "array",
           items: { $ref: "#/components/schemas/" + cleandRef },
         },
