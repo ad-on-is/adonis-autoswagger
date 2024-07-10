@@ -211,7 +211,10 @@ export default class ExampleGenerator {
         example = value["items"]["example"];
       }
 
-      if (rel !== "") {
+
+      const isDoubleType = value["$ref"] && value["$ref"].includes('|');
+
+      if (rel !== "" && !isDoubleType) {
         // skip related models of main schema
         if (
           parent === "" &&
