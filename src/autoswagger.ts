@@ -130,7 +130,7 @@ export class AutoSwagger {
           <script
             id="api-reference"
             data-url="${url}"
-            data-proxy-url="https://api.scalar.com/request-proxy"></script>
+            data-proxy-url="https://proxy.scalar.com"></script>
           <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
         </body>
       </html>
