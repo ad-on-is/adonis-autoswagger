@@ -51,10 +51,11 @@ export default class ExampleGenerator {
     const append = getBetweenBrackets(line, "append");
     const only = getBetweenBrackets(line, "only");
     const paginated = getBetweenBrackets(line, "paginated");
+
     let app = {};
     try {
       app = JSON.parse("{" + append + "}");
-    } catch {}
+    } catch { }
 
     const cleandRef = rawRef.replace("[]", "");
     let ex = Object.assign(
@@ -62,19 +63,21 @@ export default class ExampleGenerator {
       app
     );
 
+    const { dataName, metaName } = this.getPaginatedData(line);
+
     const paginatedEx = {
-      data: [ex],
-      meta: this.getSchemaExampleBasedOnAnnotation("PaginationMeta"),
+      [dataName]: [ex],
+      [metaName]: this.getSchemaExampleBasedOnAnnotation("PaginationMeta"),
     };
 
     const paginatedSchema = {
       type: "object",
       properties: {
-        data: {
+        [dataName]: {
           type: "array",
           items: { $ref: "#/components/schemas/" + cleandRef },
         },
-        meta: { $ref: "#/components/schemas/PaginationMeta" },
+        [metaName]: { $ref: "#/components/schemas/PaginationMeta" },
       },
     };
 
@@ -321,6 +324,19 @@ export default class ExampleGenerator {
       return ex[snakeCase(field)];
     }
     return null;
+  }
+
+  getPaginatedData(line: string): { dataName: string, metaName: string } {
+    const match = line.match(/<.*>\.paginated\((.*)\)/);
+    if (!match) {
+      return { dataName: "data", metaName: "meta" };
+    }
+
+    const params = match[1].split(",").map(s => s.trim());
+    const dataName = params[0] || "data";
+    const metaName = params[1] || "meta";
+
+    return { dataName, metaName };
   }
 }
 
