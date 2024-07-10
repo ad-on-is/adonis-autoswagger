@@ -987,7 +987,11 @@ export class InterfaceParser {
     }
 
     if (example === null) {
-      example = this.exampleGenerator.exampleByType(type);
+      if (type.includes("|")) {
+        example = this.exampleGenerator.exampleByType(type.split("|")[0].trim());
+      } else {
+        example = this.exampleGenerator.exampleByType(type);
+      }
     }
 
     if (en !== "") {
@@ -995,7 +999,8 @@ export class InterfaceParser {
       example = enums[0];
     }
     let indicator = "type";
-    let notRequired = field.includes("?");
+
+    let notRequired = field.includes("?") || type.split("|").map(t => t.trim()).includes('null');
 
     prop["nullable"] = notRequired;
     if (type.toLowerCase() === "datetime") {
