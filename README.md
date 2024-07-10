@@ -292,7 +292,7 @@ This format should be a valid openapi 3.x json.
 
 @responseBody <status> - <Model[]>.paginated() // helper function to return adonisJS conform structure like {"data": [], "meta": {}}
 
-@responseBody <status> - <Model[]>.as('contents').paginated() // returns a paginated model with a custom key for the data array
+@responseBody <status> - <Model[]>.paginated(dataName, metaName) // returns a paginated model with custom keys for the data array and meta object, use `.paginated(dataName)` or `.paginated(,metaName)` if you want to override only one. Don't forget the ',' for the second parameter.
 
 @responseBody <status> - <Model>.only(property1, property2) // pick only specific properties
 
