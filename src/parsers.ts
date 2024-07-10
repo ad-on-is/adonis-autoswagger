@@ -1031,6 +1031,9 @@ export class InterfaceParser {
     const l = data.split("\n");
     let ifs = {};
     l.forEach((line, index) => {
+      if (line.includes(";")) {
+        line = line.replace(";", "");
+      }
       if (
         line.startsWith("//") ||
         line.startsWith("/*") ||
