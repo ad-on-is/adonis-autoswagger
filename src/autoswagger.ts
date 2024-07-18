@@ -294,7 +294,7 @@ export class AutoSwagger {
       let ignore = false;
       for (const i of options.ignore) {
         if (
-          route.pattern.includes(i) ||
+          route.pattern == i ||
           (i.endsWith("*") && route.pattern.startsWith(i.slice(0, -1))) ||
           (i.startsWith("*") && route.pattern.endsWith(i.slice(1)))
         ) {
