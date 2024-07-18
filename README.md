@@ -85,7 +85,7 @@ router.get("/swagger", async () => {
 router.get("/docs", async () => {
   return AutoSwagger.default.ui("/swagger", swagger);
   // return AutoSwagger.default.scalar("/swagger"); to use Scalar instead
-  // return AutoSwagger.default.rapidoc("/swagger", swagger); to use RapiDoc instead
+  // return AutoSwagger.default.rapidoc("/swagger", "view"); to use RapiDoc instead (pass "view" default, or "read" to change the render-style)
 });
 ```
 
@@ -525,7 +525,7 @@ public age: number
 
 To make it work in production environments, additional steps are required
 
-- Create a new command for `docs:generate` [See official documentation](https://docs.adonisjs.com/guides/ace/creating-commands) 
+- Create a new command for `docs:generate` [See official documentation](https://docs.adonisjs.com/guides/ace/creating-commands)
 
   - This should create a new file in `commands/DocsGenerate.ts`
 
