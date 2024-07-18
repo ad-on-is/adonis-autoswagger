@@ -55,7 +55,7 @@ export default class ExampleGenerator {
     let app = {};
     try {
       app = JSON.parse("{" + append + "}");
-    } catch { }
+    } catch {}
 
     const cleandRef = rawRef.replace("[]", "");
     let ex = Object.assign(
@@ -281,6 +281,8 @@ export default class ExampleGenerator {
         return Math.floor(Math.random() * 1000);
       case "boolean":
         return true;
+      case "DateTime":
+        return this.exampleByField("datetime");
       case "datetime":
         return this.exampleByField("datetime");
       case "date":
@@ -292,11 +294,13 @@ export default class ExampleGenerator {
     }
   }
 
-  exampleByField(field) {
+  exampleByField(field, type: string = "") {
     const ex = {
       datetime: "2021-03-23T16:13:08.489+01:00",
+      DateTime: "2021-03-23T16:13:08.489+01:00",
       date: "2021-03-23",
       title: "Lorem Ipsum",
+      year: 2023,
       description: "Lorem ipsum dolor sit amet",
       name: "John Doe",
       full_name: "John Doe",
@@ -326,13 +330,13 @@ export default class ExampleGenerator {
     return null;
   }
 
-  getPaginatedData(line: string): { dataName: string, metaName: string } {
+  getPaginatedData(line: string): { dataName: string; metaName: string } {
     const match = line.match(/<.*>\.paginated\((.*)\)/);
     if (!match) {
       return { dataName: "data", metaName: "meta" };
     }
 
-    const params = match[1].split(",").map(s => s.trim());
+    const params = match[1].split(",").map((s) => s.trim());
     const dataName = params[0] || "data";
     const metaName = params[1] || "meta";
 

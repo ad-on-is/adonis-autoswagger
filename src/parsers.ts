@@ -168,20 +168,6 @@ export class CommentParser {
       }
     }
 
-    if (example === "" || example === null) {
-      switch (type) {
-        case "string":
-          example = "string";
-          break;
-        case "integer":
-          example = 1;
-          break;
-        case "float":
-          example = 1.5;
-          break;
-      }
-    }
-
     let p = {
       in: where,
       name: param,
@@ -580,10 +566,12 @@ export class ModelParser {
 
       let field = s2[0];
       let type = s2[1];
+      type = type.trim();
       let enums = [];
       let format = "";
       let keyprops = {};
-      let example: any = this.exampleGenerator.exampleByField(field);
+      let example: any = null;
+
       if (index > 0 && lines[index - 1].includes("@enum")) {
         const l = lines[index - 1];
         let en = getBetweenBrackets(l, "enum");
@@ -607,6 +595,9 @@ export class ModelParser {
         if (match !== null) {
           const m = match[0].replace("example(", "").replace(")", "");
           example = m;
+          if (type === "number") {
+            example = parseInt(m);
+          }
         }
       }
 
@@ -679,26 +670,28 @@ export class ModelParser {
           type = type.split("[]")[0];
         }
       }
+      if (example === null || example === "string") {
+        example =
+          this.exampleGenerator.exampleByField(field) ||
+          this.exampleGenerator.exampleByType(type);
+      }
 
       if (type === "datetime") {
         indicator = "type";
         type = "string";
         format = "date-time";
-        example = "2021-03-23T16:13:08.489+01:00";
       }
 
       if (type === "date") {
         indicator = "type";
         type = "string";
         format = "date";
-        example = "2021-03-23";
       }
 
       if (field === "email") {
         indicator = "type";
         type = "string";
         format = "email";
-        example = "johndoe@example.com";
       }
       if (field === "password") {
         indicator = "type";
