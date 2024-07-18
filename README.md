@@ -525,11 +525,11 @@ public age: number
 
 To make it work in production environments, additional steps are required
 
-- Create a new command for `docs:generate` [See official documentation](https://docs.adonisjs.com/guides/ace-commandline#creating-a-new-command)
+- Create a new command for `docs:generate` [See official documentation](https://docs.adonisjs.com/guides/ace/creating-commands) 
 
   - This should create a new file in `commands/DocsGenerate.ts`
 
-- Use the provided `DocsGenerate.ts.examle`/`DocsGeneratev6.ts.example` and put its contents into your newly created `DocsGenerate.ts`
+- Use the provided [`DocsGenerate.ts.examle`](https://github.com/ad-on-is/adonis-autoswagger/blob/main/DocsGenerate.ts.example)/[`DocsGeneratev6.ts.example`](https://github.com/ad-on-is/adonis-autoswagger/blob/main/DocsGeneratev6.ts.example) and put its contents into your newly created `DocsGenerate.ts`
 
 - Execute the following
 
