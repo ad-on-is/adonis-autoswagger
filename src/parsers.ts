@@ -270,7 +270,7 @@ export class CommentParser {
 
   private parseRequestFormDataBody(rawLine: string) {
     const line = rawLine.replace("@requestFormDataBody ", "");
-    let json = {};
+    let json = {}, required = [];
     const isJson = isJSONString(line);
     if (!isJson) {
       // try to get json from reference
@@ -284,11 +284,13 @@ export class CommentParser {
       let props = [];
       const ref = this.exampleGenerator.schemas[cleandRef];
       const ks = [];
+      if (ref.required && Array.isArray(ref.required)) required.push(...ref.required)
       Object.entries(ref.properties).map(([key, value]) => {
         if (typeof parsedRef[key] === "undefined") {
           return;
         }
         ks.push(key);
+        if (value["required"]) required.push(key);
         props.push({
           [key]: {
             type:
@@ -310,6 +312,11 @@ export class CommentParser {
       }
     } else {
       json = JSON.parse(line);
+      for (let key in json) {
+        if (json[key].required === "true") {
+          required.push(key)
+        }
+    }
     }
     // No need to try/catch this JSON.parse as we already did that in the isJSONString function
 
@@ -319,6 +326,7 @@ export class CommentParser {
           schema: {
             type: "object",
             properties: json,
+            required,
           },
         },
       },
@@ -915,6 +923,7 @@ export class ValidatorParser {
                 : this.exampleGenerator.exampleByType("number"),
               ...meta,
             };
+      if(!p["isOptinal"]) obj[p["fieldName"]]["required"] = true;
     }
     return obj;
   }
