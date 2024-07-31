@@ -923,7 +923,7 @@ export class ValidatorParser {
                 : this.exampleGenerator.exampleByType("number"),
               ...meta,
             };
-      if(!p["isOptinal"]) obj[p["fieldName"]]["required"] = true;
+      if(!p["isOptional"]) obj[p["fieldName"]]["required"] = true;
     }
     return obj;
   }
