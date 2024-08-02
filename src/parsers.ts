@@ -270,7 +270,8 @@ export class CommentParser {
 
   private parseRequestFormDataBody(rawLine: string) {
     const line = rawLine.replace("@requestFormDataBody ", "");
-    let json = {}, required = [];
+    let json = {},
+      required = [];
     const isJson = isJSONString(line);
     if (!isJson) {
       // try to get json from reference
@@ -284,7 +285,8 @@ export class CommentParser {
       let props = [];
       const ref = this.exampleGenerator.schemas[cleandRef];
       const ks = [];
-      if (ref.required && Array.isArray(ref.required)) required.push(...ref.required)
+      if (ref.required && Array.isArray(ref.required))
+        required.push(...ref.required);
       Object.entries(ref.properties).map(([key, value]) => {
         if (typeof parsedRef[key] === "undefined") {
           return;
@@ -314,9 +316,9 @@ export class CommentParser {
       json = JSON.parse(line);
       for (let key in json) {
         if (json[key].required === "true") {
-          required.push(key)
+          required.push(key);
         }
-    }
+      }
     }
     // No need to try/catch this JSON.parse as we already did that in the isJSONString function
 
@@ -923,7 +925,7 @@ export class ValidatorParser {
                 : this.exampleGenerator.exampleByType("number"),
               ...meta,
             };
-      if(!p["isOptional"]) obj[p["fieldName"]]["required"] = true;
+      if (!p["isOptional"]) obj[p["fieldName"]]["required"] = true;
     }
     return obj;
   }
@@ -979,8 +981,13 @@ export class InterfaceParser {
       type = type.replace("[]", "");
       isArray = true;
     }
-    let prop: any = { type: type };
     let meta = "";
+    if (type.includes("@enum")) {
+      // Extract the enum values from the line
+      meta = type.substring(type.indexOf("@enum"));
+      type = "string";
+    }
+    let prop: any = { type: type };
     let en = getBetweenBrackets(meta, "enum");
     let example = getBetweenBrackets(meta, "example");
     let enums = [];
@@ -1016,6 +1023,9 @@ export class InterfaceParser {
 
       prop[indicator] = type;
       prop["example"] = example;
+      if (enums.length > 0) {
+        prop["enum"] = enums.map((e) => e.trim()); // Clean the enum by removing start and end spaces
+      }
       prop["nullable"] = notRequired;
     }
     if (isArray) {

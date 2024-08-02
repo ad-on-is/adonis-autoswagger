@@ -463,6 +463,18 @@ Automatically generates swagger schema-descriptions based on your models
 
 Instead of using `param: any` you can now use custom interfaces `param: UserDetails`. The interfaces files need to be located at `app/Interfaces/`
 
+#### Usage of enums
+
+Adding the @enum() at the end of the property will allow the correct values to be added to the specification.
+
+```ts
+export interface ICustomer {
+  email: string;
+  name: string;
+  gender: string; // @enum(male,female,genderless)
+}
+```
+
 ## Extend Models
 
 Add additional documentation to your Models properties.
