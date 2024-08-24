@@ -789,6 +789,7 @@ export class ValidatorParser {
     // if no errors, this means all object-fields are of type number (which we use by default)
     // and we can return the object
     if (e === null) {
+      obj["example"] = testObj;
       return obj;
     }
 
