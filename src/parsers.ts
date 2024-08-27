@@ -389,7 +389,7 @@ export class CommentParser {
           const t = typeof json[key];
           const v = json[key];
           let value = v;
-          if (t === "object" && json[key]) {
+          if (t === "object") {
             value = this.jsonToObj(json[key]);
           }
           if (t === "string" && v.includes("<") && v.includes(">")) {

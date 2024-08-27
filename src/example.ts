@@ -11,7 +11,7 @@ export default class ExampleGenerator {
     let out = {};
     let outArr = [];
     for (let [k, v] of Object.entries(json)) {
-      if (typeof v === "object" && v) {
+      if (typeof v === "object") {
         if (!Array.isArray(v)) {
           v = this.jsonToRef(v);
         }
