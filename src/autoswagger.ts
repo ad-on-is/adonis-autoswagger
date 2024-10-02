@@ -14,6 +14,7 @@ import {
   CommentParser,
   RouteParser,
   ValidatorParser,
+  EnumParser,
 } from "./parsers";
 
 import type { options, AdonisRoutes, v6Handler, AdonisRoute } from "./types";
@@ -29,6 +30,7 @@ export class AutoSwagger {
   private commentParser: CommentParser;
   private modelParser: ModelParser;
   private interfaceParser: InterfaceParser;
+  private enumParser: EnumParser;
   private routeParser: RouteParser;
   private validatorParser: ValidatorParser;
   private customPaths = {};
@@ -209,6 +211,7 @@ export class AutoSwagger {
     this.modelParser = new ModelParser(this.options.snakeCase);
     this.interfaceParser = new InterfaceParser(this.options.snakeCase);
     this.validatorParser = new ValidatorParser();
+    this.enumParser = new EnumParser();
     this.schemas = await this.getSchemas();
     if (this.options.debug) {
       console.log(this.options);
@@ -585,6 +588,7 @@ export class AutoSwagger {
       ...(await this.getInterfaces()),
       ...(await this.getModels()),
       ...(await this.getValidators()),
+      ...(await this.getEnums()),
     };
 
     return schemas;
@@ -741,5 +745,57 @@ export class AutoSwagger {
       }
     }
     return files_;
+  }
+
+  private async getEnums() {
+    let enums = {
+      // Se hai degli enum di esempio predefiniti, puoi aggiungerli qui
+      // ...ExampleEnums.statusEnum(),
+    };
+
+    const enumParser = new EnumParser();
+
+    let p = path.join(this.options.appPath, "Types");
+    let p6 = path.join(this.options.appPath, "types");
+
+    if (typeof this.customPaths["#types"] !== "undefined") {
+      // it's v6
+      p6 = p6.replaceAll("app/types", this.customPaths["#types"]);
+      p6 = p6.replaceAll("app\\types", this.customPaths["#types"]);
+    }
+
+    if (!existsSync(p) && !existsSync(p6)) {
+      if (this.options.debug) {
+        console.log("Enum paths don't exist", p, p6);
+      }
+      return enums;
+    }
+
+    if (existsSync(p6)) {
+      p = p6;
+    }
+
+    const files = await this.getFiles(p, []);
+    if (this.options.debug) {
+      console.log("Found enum files", files);
+    }
+
+    const readFile = util.promisify(fs.readFile);
+    for (let file of files) {
+      file = file.replace(".js", "");
+      const data = await readFile(file, "utf8");
+      file = file.replace(".ts", "");
+      const split = file.split("/");
+      const name = split[split.length - 1].replace(".ts", "");
+      file = file.replace("app/", "/app/");
+
+      const parsedEnums = enumParser.parseEnums(data);
+      enums = {
+        ...enums,
+        ...parsedEnums,
+      };
+    }
+
+    return enums;
   }
 }

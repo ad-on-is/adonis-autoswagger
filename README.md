@@ -24,6 +24,7 @@ pnpm i adonis-autoswagger #using pnpm
 - Creates **schemas** automatically based on `app/Models/*`
 - Creates **schemas** automatically based on `app/Interfaces/*`
 - Creates **schemas** automatically based on `app/Validators/*` (only for adonisJS v6)
+- Creates **schemas** automatically based on `app/Types/*` (only for adonisJS v6)
 - **Rich configuration** via comments
 - Works also in **production** mode
 - `node ace docs:generate` command
@@ -462,6 +463,17 @@ Automatically generates swagger schema-descriptions based on your models
 ### Interfaces
 
 Instead of using `param: any` you can now use custom interfaces `param: UserDetails`. The interfaces files need to be located at `app/Interfaces/`
+
+### Enums
+
+If you use enums in your models, AutoSwagger will detect them from `app/Types/` folder and add them to the schema.
+If you want to add enum on ExampleValue, you can use `.append(enumFieldExample)`
+
+Example:
+
+```ts
+ @responseBody 200 - <Model>.with(relations).append(enumFieldExample)
+```
 
 ## Extend Models
 
