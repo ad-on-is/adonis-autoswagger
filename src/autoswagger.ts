@@ -410,7 +410,7 @@ export class AutoSwagger {
           if (
             typeof responses[responseCodes[method]] !== "undefined" &&
             typeof responses[responseCodes[method]]["description"] !==
-              "undefined"
+            "undefined"
           ) {
             description = responses[responseCodes[method]]["description"];
           }
@@ -580,12 +580,20 @@ export class AutoSwagger {
       },
     };
 
-    schemas = {
-      ...schemas,
-      ...(await this.getInterfaces()),
-      ...(await this.getModels()),
-      ...(await this.getValidators()),
-    };
+    const modelSchemas = await this.getModels();
+    schemas = { ...schemas, ...modelSchemas };
+
+    this.interfaceParser = new InterfaceParser(this.options.snakeCase, schemas);
+
+    const interfaceSchemas = await this.getInterfaces();
+    schemas = { ...schemas, ...interfaceSchemas };
+
+    const validatorSchemas = await this.getValidators();
+    schemas = { ...schemas, ...validatorSchemas };
+
+    if (this.options.debug) {
+      console.log("Found Schemas", Object.keys(schemas));
+    }
 
     return schemas;
   }
@@ -716,9 +724,6 @@ export class AutoSwagger {
       file = file.replace(".js", "");
       const data = await readFile(file, "utf8");
       file = file.replace(".ts", "");
-      const split = file.split("/");
-      const name = split[split.length - 1].replace(".ts", "");
-      file = file.replace("app/", "/app/");
       interfaces = {
         ...interfaces,
         ...this.interfaceParser.parseInterfaces(data),
