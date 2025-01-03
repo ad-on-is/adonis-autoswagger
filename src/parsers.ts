@@ -706,6 +706,11 @@ export class ModelParser {
         format = "password";
       }
 
+      if (enums.length > 0) {
+        indicator = "type";
+        type = "string";
+      }
+
       if (type === "any") {
         indicator = "$ref";
         type = "#/components/schemas/Any";
