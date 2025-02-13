@@ -143,7 +143,8 @@ export class AutoSwagger {
 
   async json(routes: any, options: options) {
     if (process.env.NODE_ENV === "production") {
-      return this.readFile(options.path, "json");
+      const str = await this.readFile(options.path, "json");
+      return JSON.parse(str)
     }
     return await this.generate(routes, options);
   }
