@@ -92,8 +92,7 @@ export class CommentParser {
       if (!responses[key]["description"]) {
         responses[key][
           "description"
-        ] = `Returns **${key}** (${HTTPStatusCode.getMessage(key)}) as **${
-          Object.entries(responses[key]["content"])[0][0]
+        ] = `Returns **${key}** (${HTTPStatusCode.getMessage(key)}) as **${Object.entries(responses[key]["content"])[0][0]
         }**`;
       }
     }
@@ -404,7 +403,7 @@ export class CommentParser {
               if (_.has(value, "content.application/json.schema.items.$ref")) {
                 ref =
                   value["content"]["application/json"]["schema"]["items"][
-                    "$ref"
+                  "$ref"
                   ];
               }
               value = {
@@ -575,7 +574,7 @@ export class ModelParser {
       let s2 = s[1].replace(/;/g, "").split(":");
 
       let field = s2[0];
-      let type = s2[1];
+      let type = s2[1] || "";
       type = type.trim();
       let enums = [];
       let format = "";
@@ -903,23 +902,23 @@ export class ValidatorParser {
         p["type"] === "object"
           ? { type: "object", properties: this.parseSchema(p, refs) }
           : p["type"] === "array"
-          ? {
+            ? {
               type: "array",
               items:
                 p["each"]["type"] === "object"
                   ? {
-                      type: "object",
-                      properties: this.parseSchema(p["each"], refs),
-                    }
+                    type: "object",
+                    properties: this.parseSchema(p["each"], refs),
+                  }
                   : {
-                      type: "number",
-                      example: meta.minimum
-                        ? meta.minimum
-                        : this.exampleGenerator.exampleByType("number"),
-                      ...meta,
-                    },
+                    type: "number",
+                    example: meta.minimum
+                      ? meta.minimum
+                      : this.exampleGenerator.exampleByType("number"),
+                    ...meta,
+                  },
             }
-          : {
+            : {
               type: "number",
               example: meta.minimum
                 ? meta.minimum
@@ -935,9 +934,12 @@ export class ValidatorParser {
 export class InterfaceParser {
   exampleGenerator: ExampleGenerator;
   snakeCase: boolean;
-  constructor(snakeCase: boolean) {
+  schemas: any = {};
+
+  constructor(snakeCase: boolean, schemas: any = {}) {
     this.snakeCase = snakeCase;
     this.exampleGenerator = new ExampleGenerator({});
+    this.schemas = schemas;
   }
 
   objToExample(obj) {
@@ -954,8 +956,6 @@ export class InterfaceParser {
     });
     return example;
   }
-
-  ifToJson(data) {}
 
   parseProps(obj) {
     const no = {};
@@ -976,135 +976,204 @@ export class InterfaceParser {
     return no;
   }
 
-  parseType(type, field) {
-    let isArray = false;
-    if (type.includes("[]")) {
-      type = type.replace("[]", "");
-      isArray = true;
-    }
-    let prop: any = { type: type };
-    let meta = "";
-    let en = getBetweenBrackets(meta, "enum");
-    let example = getBetweenBrackets(meta, "example");
-    let enums = [];
-    if (example === "") {
-      example = this.exampleGenerator.exampleByField(field);
+  getInheritedProperties(baseType: string): any {
+
+    if (this.schemas[baseType]?.properties) {
+      return {
+        properties: this.schemas[baseType].properties,
+        required: this.schemas[baseType].required || []
+      };
     }
 
-    if (example === null) {
-      example = this.exampleGenerator.exampleByType(type);
+    const cleanType = baseType
+      .split('/')
+      .pop()
+      ?.replace('.ts', '')
+      ?.replace(/^[#@]/, '');
+
+    if (!cleanType) return { properties: {}, required: [] };
+
+    if (this.schemas[cleanType]?.properties) {
+      return {
+        properties: this.schemas[cleanType].properties,
+        required: this.schemas[cleanType].required || []
+      };
     }
 
-    if (en !== "") {
-      enums = en.split(",");
-      example = enums[0];
-    }
-    let indicator = "type";
-    let notRequired = field.includes("?");
+    const variations = [
+      cleanType,
+      `#models/${cleanType}`,
+      cleanType.replace(/Model$/, ''),
+      `${cleanType}Model`
+    ];
 
-    prop["nullable"] = notRequired;
-    if (type.toLowerCase() === "datetime") {
-      prop[indicator] = "string";
-      prop["format"] = "date-time";
-      prop["example"] = "2021-03-23T16:13:08.489+01:00";
-    } else if (type.toLowerCase() === "date") {
-      prop[indicator] = "string";
-      prop["format"] = "date";
-      prop["example"] = "2021-03-23";
-    } else {
-      if (!standardTypes.includes(type)) {
-        indicator = "$ref";
-        type = "#/components/schemas/" + type;
+    for (const variation of variations) {
+      if (this.schemas[variation]?.properties) {
+        return {
+          properties: this.schemas[variation].properties,
+          required: this.schemas[variation].required || []
+        };
       }
+    }
 
-      prop[indicator] = type;
-      prop["example"] = example;
-      prop["nullable"] = notRequired;
-    }
-    if (isArray) {
-      prop = { type: "array", items: prop };
-    }
-    return prop;
+    return { properties: {}, required: [] };
   }
 
   parseInterfaces(data) {
-    // remove empty lines
     data = data.replace(/\t/g, "").replace(/^(?=\n)$|^\s*|\s*$|\n\n+/gm, "");
 
-    let name = "";
-    let props = {};
-    const l = data.split("\n");
-    let ifs = {};
-    l.forEach((line, index) => {
-      if (line.includes(";")) {
-        line = line.replace(";", "");
-      }
-      if (
-        line.startsWith("//") ||
-        line.startsWith("/*") ||
-        line.startsWith("import") ||
-        line.startsWith("*")
-      )
-        return;
-      if (
-        line.startsWith("interface ") ||
-        line.startsWith("export default interface ") ||
-        line.startsWith("export interface ")
-      ) {
-        props = {};
-        name = line;
-        name = name.replace("export default interface ", "");
-        name = name.replace("export interface ", "");
-        name = name.replace("export ", "");
-        name = name.replace("interface ", "");
-        name = name.replace("{", "");
-        name = name.trim();
-        ifs[name] = "{";
-        return;
+    let currentInterface = null;
+    const interfaces = {};
+    const interfaceDefinitions = new Map();
+
+    const lines = data.split("\n");
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+
+      if (line.startsWith("interface") || line.startsWith("export interface") || line.startsWith("export default interface")) {
+        const name = line.split(/\s+/)[line.startsWith("export") ? 2 : 1].split(/[{\s]/)[0];
+        const extendedTypes = this.parseExtends(line);
+        interfaceDefinitions.set(name, {
+          extends: extendedTypes,
+          properties: {},
+          required: [],
+          startLine: i
+        });
+        currentInterface = name;
+        continue;
       }
 
-      let nl = line;
+      if (currentInterface && line === "}") {
+        currentInterface = null;
+        continue;
+      }
 
-      let [f, t] = line.split(": ");
-      if (f && t) {
-        if (f.startsWith("'") && f.endsWith("'")) {
-          f = f.replaceAll("'", '"');
-        }
-        if (!f.startsWith('"') && !f.endsWith('"')) {
-          f = `"${f}"`;
-        }
+      if (currentInterface && line && !line.startsWith("//") && !line.startsWith("/*") && !line.startsWith("*")) {
+        const def = interfaceDefinitions.get(currentInterface);
+        if (def) {
+          const previousLine = i > 0 ? lines[i - 1].trim() : "";
+          const isRequired = previousLine.includes("@required");
 
-        let comma = "";
-        if (!t.endsWith("{")) {
-          if (l[index + 1] !== "}") {
-            comma = ",";
+          const [prop, type] = line.split(":").map(s => s.trim());
+          if (prop && type) {
+            const cleanProp = prop.replace("?", "");
+            def.properties[cleanProp] = type.replace(";", "");
+
+            if (isRequired || !prop.includes("?")) {
+              def.required.push(cleanProp);
+            }
           }
-          t = `"${t}"`;
         }
-        nl = `${f}: ${t}${comma}`;
-      }
-      ifs[name] += nl;
-    });
-
-    for (const [n, value] of Object.entries(ifs)) {
-      try {
-        let j = JSON.parse(value as string);
-        ifs[n] = {
-          type: "object",
-          properties: this.parseProps(j),
-          description: n + " (Interface)",
-        };
-      } catch (e) {
-        ifs[n] = {};
       }
     }
-    const cleaned = {};
-    Object.entries(ifs).map(([key, value]) => {
-      if (key !== "") {
-        cleaned[key] = value;
+
+    for (const [name, def] of interfaceDefinitions) {
+      let allProperties = {};
+      let requiredFields = new Set(def.required);
+
+      for (const baseType of def.extends) {
+        const baseSchema = this.schemas[baseType];
+        if (baseSchema) {
+          if (baseSchema.properties) {
+            Object.assign(allProperties, baseSchema.properties);
+          }
+
+          if (baseSchema.required) {
+            baseSchema.required.forEach(field => requiredFields.add(field));
+          }
+        }
       }
-    });
-    return cleaned;
+
+      Object.assign(allProperties, def.properties);
+
+      const parsedProperties = {};
+      for (const [key, value] of Object.entries(allProperties)) {
+        if (typeof value === 'object' && value !== null && 'type' in value) {
+          parsedProperties[key] = value;
+        } else {
+          parsedProperties[key] = this.parseType(value, key);
+        }
+      }
+
+      const schema = {
+        type: "object",
+        properties: parsedProperties,
+        required: Array.from(requiredFields),
+        description: `${name}${def.extends.length ? ` extends ${def.extends.join(", ")}` : ""} (Interface)`
+      };
+
+      if (schema.required.length === 0) {
+        delete schema.required;
+      }
+
+      interfaces[name] = schema;
+    }
+
+    return interfaces;
+  }
+
+  parseExtends(line: string): string[] {
+    const matches = line.match(/extends\s+([^{]+)/);
+    if (!matches) return [];
+
+    return matches[1]
+      .split(",")
+      .map(type => type.trim())
+      .map(type => {
+        const cleanType = type.split('/').pop();
+        return cleanType?.replace(/\.ts$/, '') || type;
+      });
+  }
+
+  parseType(type: string | any, field: string) {
+    if (typeof type === 'object' && type !== null && 'type' in type) {
+      return type;
+    }
+
+    let isArray = false;
+    if (typeof type === 'string' && type.includes("[]")) {
+      type = type.replace("[]", "");
+      isArray = true;
+    }
+
+    if (typeof type === 'string') {
+      type = type.replace(/[;\r\n]/g, '').trim();
+    }
+
+    let prop: any = { type: type };
+    let notRequired = field.includes("?");
+    prop.nullable = notRequired;
+
+    if (typeof type === 'string' && type.toLowerCase() === "datetime") {
+      prop.type = "string";
+      prop.format = "date-time";
+      prop.example = "2021-03-23T16:13:08.489+01:00";
+    } else if (typeof type === 'string' && type.toLowerCase() === "date") {
+      prop.type = "string";
+      prop.format = "date";
+      prop.example = "2021-03-23";
+    } else {
+      const standardTypes = ["string", "number", "boolean", "integer"];
+      if (typeof type === 'string' && !standardTypes.includes(type.toLowerCase())) {
+        delete prop.type;
+        prop.$ref = `#/components/schemas/${type}`;
+      } else {
+        if (typeof type === 'string') {
+          prop.type = type.toLowerCase();
+        }
+        prop.example = this.exampleGenerator.exampleByType(type) ||
+          this.exampleGenerator.exampleByField(field);
+      }
+    }
+
+    if (isArray) {
+      return {
+        type: "array",
+        items: prop
+      };
+    }
+
+    return prop;
   }
 }
 

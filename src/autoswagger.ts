@@ -114,7 +114,7 @@ export class AutoSwagger {
     );
   }
 
-  scalar(url: string) {
+  scalar(url: string, proxyUrl: string = "https://proxy.scalar.com") {
     return `
       <!doctype html>
       <html>
@@ -132,7 +132,7 @@ export class AutoSwagger {
           <script
             id="api-reference"
             data-url="${url}"
-            data-proxy-url="https://proxy.scalar.com"></script>
+            data-proxy-url="${proxyUrl}"></script>
           <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
         </body>
       </html>
@@ -145,7 +145,8 @@ export class AutoSwagger {
 
   async json(routes: any, options: options) {
     if (process.env.NODE_ENV === "production") {
-      return this.readFile(options.path, "json");
+      const str = await this.readFile(options.path, "json");
+      return JSON.parse(str)
     }
     return await this.generate(routes, options);
   }
@@ -413,7 +414,7 @@ export class AutoSwagger {
           if (
             typeof responses[responseCodes[method]] !== "undefined" &&
             typeof responses[responseCodes[method]]["description"] !==
-              "undefined"
+            "undefined"
           ) {
             description = responses[responseCodes[method]]["description"];
           }
@@ -551,6 +552,7 @@ export class AutoSwagger {
         sourceFile,
         action
       );
+
     }
     if (
       typeof customAnnotations !== "undefined" &&
@@ -639,6 +641,7 @@ export class AutoSwagger {
       console.error(e.message);
     }
 
+
     return validators;
   }
 
@@ -720,9 +723,6 @@ export class AutoSwagger {
       file = file.replace(".js", "");
       const data = await readFile(file, "utf8");
       file = file.replace(".ts", "");
-      const split = file.split("/");
-      const name = split[split.length - 1].replace(".ts", "");
-      file = file.replace("app/", "/app/");
       interfaces = {
         ...interfaces,
         ...this.interfaceParser.parseInterfaces(data),

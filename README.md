@@ -85,7 +85,7 @@ router.get("/swagger", async () => {
 // Renders Swagger-UI and passes YAML-output of /swagger
 router.get("/docs", async () => {
   return AutoSwagger.default.ui("/swagger", swagger);
-  // return AutoSwagger.default.scalar("/swagger"); to use Scalar instead
+  // return AutoSwagger.default.scalar("/swagger"); to use Scalar instead. If you want, you can pass proxy url as second argument here.
   // return AutoSwagger.default.rapidoc("/swagger", "view"); to use RapiDoc instead (pass "view" default, or "read" to change the render-style)
 });
 ```
