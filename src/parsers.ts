@@ -1178,7 +1178,7 @@ export class InterfaceParser {
 }
 
 export class EnumParser {
-  constructor() {}
+  constructor() { }
 
   parseEnums(data: string): Record<string, any> {
     const enums: Record<string, any> = {};
@@ -1223,6 +1223,8 @@ export class EnumParser {
         currentEnum = null;
       }
     }
+
+    console.log(enums)
 
     return enums;
   }

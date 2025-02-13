@@ -55,7 +55,7 @@ export default class ExampleGenerator {
     let app = {};
     try {
       app = JSON.parse("{" + append + "}");
-    } catch {}
+    } catch { }
 
     const cleandRef = rawRef.replace("[]", "");
     let ex = Object.assign(

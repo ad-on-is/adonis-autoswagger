@@ -748,10 +748,7 @@ export class AutoSwagger {
   }
 
   private async getEnums() {
-    let enums = {
-      // Se hai degli enum di esempio predefiniti, puoi aggiungerli qui
-      // ...ExampleEnums.statusEnum(),
-    };
+    let enums = {};
 
     const enumParser = new EnumParser();
 
