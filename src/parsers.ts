@@ -572,7 +572,7 @@ export class ModelParser {
       let s2 = s[1].replace(/;/g, "").split(":");
 
       let field = s2[0];
-      let type = s2[1];
+      let type = s2[1] || "";
       type = type.trim();
       let enums = [];
       let format = "";

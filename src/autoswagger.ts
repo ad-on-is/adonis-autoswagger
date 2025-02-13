@@ -548,6 +548,7 @@ export class AutoSwagger {
         sourceFile,
         action
       );
+
     }
     if (
       typeof customAnnotations !== "undefined" &&
@@ -591,9 +592,8 @@ export class AutoSwagger {
     const validatorSchemas = await this.getValidators();
     schemas = { ...schemas, ...validatorSchemas };
 
-    if (this.options.debug) {
-      console.log("Found Schemas", Object.keys(schemas));
-    }
+
+
 
     return schemas;
   }
@@ -642,6 +642,7 @@ export class AutoSwagger {
       );
       console.error(e.message);
     }
+
 
     return validators;
   }
