@@ -435,6 +435,16 @@ export class AutoSwagger {
             case "destroy":
               summary = "Delete " + tags[0].toLowerCase();
               break;
+     		case "store":
+              summary = "Create " + tags[0].toLowerCase();
+              break;
+			// frontend defaults
+            case "create":
+              summary = "Create (Frontend) " + tags[0].toLowerCase();
+              break;
+   			case "edit":
+              summary = "Update (Frontend) " + tags[0].toLowerCase();
+              break;
           }
         }
 
