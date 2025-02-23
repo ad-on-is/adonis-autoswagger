@@ -116,6 +116,7 @@ Visit `http://localhost:3333/docs` to see AutoSwagger in action.
 - `ui(path, conf)`: get default swagger UI
 - `rapidoc(path, style)`: get rapidoc UI
 - `scalar(path)`: get scalar UI
+- `spotlight(path, theme)`: get spotlight elements UI
 - `jsonToYaml(json)`: can be used to convert `json()` back to yaml
 
 ---
