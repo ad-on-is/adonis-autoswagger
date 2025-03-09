@@ -142,7 +142,7 @@ export class AutoSwagger {
   }
 
   async json(routes: any, options: options) {
-    if (process.env.NODE_ENV === "production") {
+    if (process.env.NODE_ENV === options.productionEnv || "production") {
       const str = await this.readFile(options.path, "json");
       return JSON.parse(str)
     }
@@ -170,7 +170,7 @@ export class AutoSwagger {
   }
 
   async docs(routes: any, options: options) {
-    if (process.env.NODE_ENV === "production") {
+    if (process.env.NODE_ENV === options.productionEnv || "production") {
       return this.readFile(options.path);
     }
     return this.jsonToYaml(await this.generate(routes, options));

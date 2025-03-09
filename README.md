@@ -47,6 +47,7 @@ export default {
   version: "1.0.0", // use info instead
   description: "", // use info instead
   tagIndex: 2,
+  productionEnv: "production", // optional
   info: {
     title: "title",
     version: "1.0.0",
@@ -105,7 +106,7 @@ Route.get("/docs", async () => {
 });
 ```
 
-### 👍️ Done!
+### 👍️ Done
 
 Visit `http://localhost:3333/docs` to see AutoSwagger in action.
 
@@ -222,7 +223,7 @@ Here's where you can set these and use them with `@paramUse()` and `@responseHea
 
 # 💫 Extend Controllers
 
-## Add additional documentation to your Controller-files.
+## Add additional documentation to your Controller-files
 
 **@summary** (only one)
 A summary of what the action does
@@ -471,7 +472,7 @@ Add additional documentation to your Models properties.
 
 Either use `compose(BaseModel, SoftDeletes)` or add a line `@swagger-softdeletes` to your Model.
 
-## Attention!
+## Attention
 
 The below comments MUST be placed **1 line** above the property.
 
@@ -521,7 +522,7 @@ public age: number
 ## Production environment
 
 > [!WARNING]
-> Make sure **NODE_ENV=production** in your production environment
+> Make sure **NODE_ENV=production** in your production environment or whatever you set in `options.productionEnv`
 
 To make it work in production environments, additional steps are required
 
