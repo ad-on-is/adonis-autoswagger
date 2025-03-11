@@ -19,7 +19,7 @@ export interface options {
   debug?: boolean;
   info?: any;
   securitySchemes?: any;
-  productionEnv: string;
+  productionEnv?: string;
   authMiddlewares?: string[];
   defaultSecurityScheme?: string;
 }
