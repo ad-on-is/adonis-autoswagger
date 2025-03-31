@@ -139,6 +139,29 @@ export class AutoSwagger {
     `;
   }
 
+  spotlight(url: string, theme: "light"|"dark" = "dark") {
+	return `
+      <!doctype html>
+      <html data-theme="${theme}">
+        <head>
+          <title>API Documentation - Spotlight</title>
+          <meta charset="utf-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		  <script src="https://unpkg.com/@stoplight/elements/web-components.min.js"></script>
+          <link rel="stylesheet" href="https://unpkg.com/@stoplight/elements/styles.min.css">
+        </head>
+        <body style="min-height:100vh">
+	      <elements-api
+		    style="display:block;height:100vh;width:100%;"
+		    apiDescriptionUrl=${url}
+		    router="hash"
+		    layout="sidebar"
+		  />
+        </body>
+      </html>
+    `;
+  }
+
   jsonToYaml(json: any) {
     return YAML.stringify(json);
   }
