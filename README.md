@@ -539,3 +539,8 @@ node ace docs:generate
 node ace build --production
 cp swagger.yml build/
 ```
+
+## Known Issues
+
+- Interfaces with objects are not working like `interface Test {foo: {bar: string}}`
+  - Solution, just extract the object as it's own interface
