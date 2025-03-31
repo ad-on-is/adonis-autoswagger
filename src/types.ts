@@ -1,4 +1,3 @@
-import { info } from "console";
 
 /**
  * Autoswagger interfaces
@@ -19,6 +18,7 @@ export interface options {
   debug?: boolean;
   info?: any;
   securitySchemes?: any;
+  productionEnv?: string;
   authMiddlewares?: string[];
   defaultSecurityScheme?: string;
 }

@@ -1029,9 +1029,12 @@ export class InterfaceParser {
     const lines = data.split("\n");
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
+      const isDefault = line.startsWith("export default interface")
 
-      if (line.startsWith("interface") || line.startsWith("export interface") || line.startsWith("export default interface")) {
-        const name = line.split(/\s+/)[line.startsWith("export") ? 2 : 1].split(/[{\s]/)[0];
+      if (line.startsWith("interface") || line.startsWith("export interface") || isDefault) {
+        const sp = line.split(/\s+/)
+        const idx = line.endsWith("}") ? sp.length - 1 : sp.length - 2
+        const name = sp[idx].split(/[{\s]/)[0];
         const extendedTypes = this.parseExtends(line);
         interfaceDefinitions.set(name, {
           extends: extendedTypes,
@@ -1058,6 +1061,7 @@ export class InterfaceParser {
           if (prop && type) {
             const cleanProp = prop.replace("?", "");
             def.properties[cleanProp] = type.replace(";", "");
+
 
             if (isRequired || !prop.includes("?")) {
               def.required.push(cleanProp);

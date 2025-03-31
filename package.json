@@ -1,6 +1,6 @@
 {
   "name": "adonis-autoswagger",
-  "version": "3.66.0",
+  "version": "3.68.0",
   "description": "Auto-Generate swagger docs for AdonisJS",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -26,7 +26,7 @@
     "json-to-pretty-yaml": "^1.2.2",
     "lodash": "^4.17.21",
     "parse-imports": "^1.1.2",
-    "typescript": "^5.3.3",
+    "typescript": "^5.8.2",
     "typescript-parser": "^2.6.1"
   },
   "devDependencies": {
