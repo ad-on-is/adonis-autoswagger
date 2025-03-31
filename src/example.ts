@@ -57,11 +57,18 @@ export default class ExampleGenerator {
       app = JSON.parse("{" + append + "}");
     } catch { }
 
-    const cleandRef = rawRef.replace("[]", "");
-    let ex = Object.assign(
-      this.getSchemaExampleBasedOnAnnotation(cleandRef, inc, exc, only),
-      app
-    );
+    const cleanedRef = rawRef.replace("[]", "");
+
+    let ex = {}
+    try {
+      ex = Object.assign(
+        this.getSchemaExampleBasedOnAnnotation(cleanedRef, inc, exc, only),
+        app
+      );
+
+    } catch (e) {
+      console.error("Error", cleanedRef)
+    }
 
     const { dataName, metaName } = this.getPaginatedData(line);
 
@@ -75,7 +82,7 @@ export default class ExampleGenerator {
       properties: {
         [dataName]: {
           type: "array",
-          items: { $ref: "#/components/schemas/" + cleandRef },
+          items: { $ref: "#/components/schemas/" + cleanedRef },
         },
         [metaName]: { $ref: "#/components/schemas/PaginationMeta" },
       },
@@ -83,7 +90,7 @@ export default class ExampleGenerator {
 
     const normalArraySchema = {
       type: "array",
-      items: { $ref: "#/components/schemas/" + cleandRef },
+      items: { $ref: "#/components/schemas/" + cleanedRef },
     };
 
     if (rawRef.includes("[]")) {
@@ -140,14 +147,15 @@ export default class ExampleGenerator {
     if (this.schemas[schema].example) {
       return this.schemas[schema].example;
     }
+
     let properties = this.schemas[schema].properties;
     let include = inc.toString().split(",");
     let exclude = exc.toString().split(",");
     let only = onl.toString().split(",");
-
     only = only.length === 1 && only[0] === "" ? [] : only;
 
-    if (typeof properties === "undefined") return;
+
+    if (typeof properties === "undefined") return null;
 
     // skip nested if not requested
     if (
@@ -160,8 +168,11 @@ export default class ExampleGenerator {
       !inc.includes(parent + ".relations") &&
       !inc.includes(first + ".relations")
     ) {
+
       return null;
     }
+
+
 
     deepRels.push(schema);
 

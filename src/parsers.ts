@@ -1208,6 +1208,7 @@ export class EnumParser {
           enums[currentEnum] = {
             type: "string",
             enum: [],
+            properties: {},
             description: description || `${startCase(currentEnum)} enumeration`,
           };
           description = null;
@@ -1228,7 +1229,6 @@ export class EnumParser {
       }
     }
 
-    console.log(enums)
 
     return enums;
   }
