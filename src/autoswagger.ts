@@ -139,8 +139,8 @@ export class AutoSwagger {
     `;
   }
 
-  spotlight(url: string, theme: "light"|"dark" = "dark") {
-	return `
+  stoplight(url: string, theme: "light" | "dark" = "dark") {
+    return `
       <!doctype html>
       <html data-theme="${theme}">
         <head>
@@ -461,14 +461,14 @@ export class AutoSwagger {
             case "destroy":
               summary = "Delete " + tags[0].toLowerCase();
               break;
-     		case "store":
+            case "store":
               summary = "Create " + tags[0].toLowerCase();
               break;
-			// frontend defaults
+            // frontend defaults
             case "create":
               summary = "Create (Frontend) " + tags[0].toLowerCase();
               break;
-   			case "edit":
+            case "edit":
               summary = "Update (Frontend) " + tags[0].toLowerCase();
               break;
           }
