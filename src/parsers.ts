@@ -437,15 +437,19 @@ export class CommentParser {
     if (typeof this.parsedFiles[file] !== "undefined") {
       newdata = this.parsedFiles[file];
     } else {
-      const readFile = util.promisify(fs.readFile);
-      const data = await readFile(file, "utf8");
-      for (const line of data.split("\n")) {
-        const l = line.trim();
-        if (!l.startsWith("@")) {
-          newdata += l + "\n";
+      try {
+        const readFile = util.promisify(fs.readFile);
+        const data = await readFile(file, "utf8");
+        for (const line of data.split("\n")) {
+          const l = line.trim();
+          if (!l.startsWith("@")) {
+            newdata += l + "\n";
+          }
         }
+        this.parsedFiles[file] = newdata;
+      } catch (e) {
+        console.error("\x1b[31m✗ File not found\x1b[0m", file)
       }
-      this.parsedFiles[file] = newdata;
     }
 
     const comments = extract(newdata);

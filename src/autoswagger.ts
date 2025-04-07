@@ -314,6 +314,7 @@ export class AutoSwagger {
 
     if (this.options.debug) {
       console.log("Route annotations:");
+      console.log("Checking if controllers have propper comment annotations")
       console.log("-----");
     }
 
@@ -595,18 +596,16 @@ export class AutoSwagger {
       operationId = customAnnotations.operationId;
     }
     if (this.options.debug) {
-      console.log(
-        typeof customAnnotations !== "undefined" &&
-          !_.isEmpty(customAnnotations)
-          ? "\x1b[32m✓ OK\x1b[0m"
-          : "\x1b[31m✗ NO\x1b[0m",
-        "file",
-        sourceFile || "routes.ts",
-        "pattern",
-        route.pattern,
-        "action",
-        action
-      );
+      if (sourceFile !== "") {
+        console.log(
+          typeof customAnnotations !== "undefined" &&
+            !_.isEmpty(customAnnotations)
+            ? `\x1b[32m✓ FOUND for ${action}\x1b[0m`
+            : `\x1b[33m✗ MISSING for ${action}\x1b[0m`,
+
+          `${sourceFile} (${route.methods[0].toUpperCase()} ${route.pattern})`,
+        );
+      }
     }
     return { sourceFile, action, customAnnotations, operationId };
   }
