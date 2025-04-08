@@ -545,6 +545,33 @@ To make it work in production environments, additional steps are required
 
 - Use the provided [`DocsGenerate.ts.examle`](https://github.com/ad-on-is/adonis-autoswagger/blob/main/DocsGenerate.ts.example)/[`DocsGeneratev6.ts.example`](https://github.com/ad-on-is/adonis-autoswagger/blob/main/DocsGeneratev6.ts.example) and put its contents into your newly created `DocsGenerate.ts`
 
+- Modify `/start/env.ts` as follows
+
+```ts
+//...
+// this is necessary to make sure that the `DocsGenerate` command will run in CI/CD pipelines without setting environment variables
+const isNodeAce = process.argv.some(
+  (arg) => arg.endsWith("/ace") || arg === "ace"
+);
+
+export default await Env.create(
+  new URL("../", import.meta.url),
+  isNodeAce
+    ? {}
+    : {
+        // leave other settings as is
+        NODE_ENV: Env.schema.enum([
+          "development",
+          "production",
+          "test",
+        ] as const),
+        PORT: Env.schema.number(),
+      }
+);
+
+//...
+```
+
 - Execute the following
 
 ```bash
