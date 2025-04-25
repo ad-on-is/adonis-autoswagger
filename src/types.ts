@@ -72,6 +72,7 @@ export const standardTypes = [
   "date",
   "boolean",
   "any",
+  "uuid",
 ]
   .map((type) => [type, type + "[]"])
   .flat();
