@@ -46,28 +46,57 @@ export default class ExampleGenerator {
       };
     }
 
-    const inc = getBetweenBrackets(line, "with");
-    const exc = getBetweenBrackets(line, "exclude");
+    let inc = getBetweenBrackets(line, "with");
+    let exc = getBetweenBrackets(line, "exclude");
     const append = getBetweenBrackets(line, "append");
-    const only = getBetweenBrackets(line, "only");
+    let only = getBetweenBrackets(line, "only");
     const paginated = getBetweenBrackets(line, "paginated");
+    const serializer = getBetweenBrackets(line, "serialized");
+
+    if (serializer) {
+      // we override to be sure
+      inc = "";
+      exc = "";
+      only = "";
+
+      if (this.schemas[serializer].fields.pick) {
+        only += this.schemas[serializer].fields.pick.join(",");
+      }
+      if (this.schemas[serializer].fields.omit) {
+        exc += this.schemas[serializer].fields.omit.join(",");
+      }
+      if (this.schemas[serializer].relations) {
+        // get relations names and add them to inc
+        const relations = Object.keys(this.schemas[serializer].relations);
+        inc = relations.join(",");
+
+        // we need to add the relation name to only and also we add the relation fields we want to only
+        // ex : comment,comment.id,comment.createdAt
+        relations.forEach((relation) => {
+          const relationFields = this.schemas[serializer].relations[
+            relation
+          ].map((field) => relation + "." + field);
+
+          only += "," + relation + "," + relationFields.join(",");
+        });
+      }
+    }
 
     let app = {};
     try {
       app = JSON.parse("{" + append + "}");
-    } catch { }
+    } catch {}
 
     const cleanedRef = rawRef.replace("[]", "");
 
-    let ex = {}
+    let ex = {};
     try {
       ex = Object.assign(
         this.getSchemaExampleBasedOnAnnotation(cleanedRef, inc, exc, only),
         app
       );
-
     } catch (e) {
-      console.error("Error", cleanedRef)
+      console.error("Error", cleanedRef);
     }
 
     const { dataName, metaName } = this.getPaginatedData(line);
@@ -154,7 +183,6 @@ export default class ExampleGenerator {
     let only = onl.toString().split(",");
     only = only.length === 1 && only[0] === "" ? [] : only;
 
-
     if (typeof properties === "undefined") return null;
 
     // skip nested if not requested
@@ -168,11 +196,8 @@ export default class ExampleGenerator {
       !inc.includes(parent + ".relations") &&
       !inc.includes(first + ".relations")
     ) {
-
       return null;
     }
-
-
 
     deepRels.push(schema);
 
@@ -205,6 +230,15 @@ export default class ExampleGenerator {
       let example = value["example"];
 
       if (parent === "" && only.length > 0 && !only.includes(key)) continue;
+
+      // for relations we can select the fields we want with this syntax
+      // ex : comment.id,comment.createdAt
+      if (
+        parent !== "" &&
+        only.length > 0 &&
+        !only.includes(parent + "." + key)
+      )
+        continue;
 
       if (typeof value["$ref"] !== "undefined") {
         rel = value["$ref"].replace("#/components/schemas/", "");
@@ -265,9 +299,6 @@ export default class ExampleGenerator {
           parent === "" ? key : parent + "." + key,
           deepRels
         );
-        // } else {
-        //   propdata = `$ref:/components/schemas/${rel}`;
-        // }
 
         if (propdata === null) {
           continue;

@@ -169,7 +169,7 @@ export class AutoSwagger {
   async json(routes: any, options: options) {
     if (process.env.NODE_ENV === (options.productionEnv || "production")) {
       const str = await this.readFile(options.path, "json");
-      return JSON.parse(str)
+      return JSON.parse(str);
     }
     return await this.generate(routes, options);
   }
@@ -314,7 +314,7 @@ export class AutoSwagger {
 
     if (this.options.debug) {
       console.log("Route annotations:");
-      console.log("Checking if controllers have propper comment annotations")
+      console.log("Checking if controllers have propper comment annotations");
       console.log("-----");
     }
 
@@ -438,7 +438,7 @@ export class AutoSwagger {
           if (
             typeof responses[responseCodes[method]] !== "undefined" &&
             typeof responses[responseCodes[method]]["description"] !==
-            "undefined"
+              "undefined"
           ) {
             description = responses[responseCodes[method]]["description"];
           }
@@ -586,7 +586,6 @@ export class AutoSwagger {
         sourceFile,
         action
       );
-
     }
     if (
       typeof customAnnotations !== "undefined" &&
@@ -603,7 +602,7 @@ export class AutoSwagger {
             ? `\x1b[32m✓ FOUND for ${action}\x1b[0m`
             : `\x1b[33m✗ MISSING for ${action}\x1b[0m`,
 
-          `${sourceFile} (${route.methods[0].toUpperCase()} ${route.pattern})`,
+          `${sourceFile} (${route.methods[0].toUpperCase()} ${route.pattern})`
         );
       }
     }
@@ -620,6 +619,7 @@ export class AutoSwagger {
     schemas = {
       ...schemas,
       ...(await this.getInterfaces()),
+      ...(await this.getSerializers()),
       ...(await this.getModels()),
       ...(await this.getValidators()),
       ...(await this.getEnums()),
@@ -673,8 +673,46 @@ export class AutoSwagger {
       console.error(e.message);
     }
 
-
     return validators;
+  }
+
+  private async getSerializers() {
+    const serializers = {};
+    let p6 = path.join(this.options.appPath, "serializers");
+
+    if (typeof this.customPaths["#serializers"] !== "undefined") {
+      // it's v6
+      p6 = p6.replaceAll("app/serializers", this.customPaths["#serializers"]);
+      p6 = p6.replaceAll("app\\serializers", this.customPaths["#serializers"]);
+    }
+
+    if (!existsSync(p6)) {
+      if (this.options.debug) {
+        console.log("Serializers paths don't exist", p6);
+      }
+      return serializers;
+    }
+
+    const files = await this.getFiles(p6, []);
+    if (this.options.debug) {
+      console.log("Found serializer files", files);
+    }
+
+    for (let file of files) {
+      if (/^[a-zA-Z]:/.test(file)) {
+        file = "file:///" + file;
+      }
+
+      const val = await import(file);
+
+      for (const [key, value] of Object.entries(val)) {
+        if (key.indexOf("Serializer") > -1) {
+          serializers[key] = value;
+        }
+      }
+    }
+
+    return serializers;
   }
 
   private async getModels() {
