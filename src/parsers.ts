@@ -701,6 +701,12 @@ export class ModelParser {
         format = "date";
       }
 
+      if (type === "uuid") {
+        indicator = "type";
+        type = "string";
+        format = "uuid";
+      }
+
       if (field === "email") {
         indicator = "type";
         type = "string";

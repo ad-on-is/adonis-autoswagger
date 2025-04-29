@@ -331,6 +331,8 @@ export default class ExampleGenerator {
         return this.exampleByField("date");
       case "object":
         return {};
+      case "uuid":
+        return this.exampleByField("uuid");
       default:
         return null;
     }
@@ -362,6 +364,7 @@ export default class ExampleGenerator {
       price: 10.5,
       avatar: "https://example.com/avatar.png",
       url: "https://example.com",
+      uuid: "2b0bf725-d404-481f-b431-17f1182a5e57"
     };
     if (typeof ex[field] !== "undefined") {
       return ex[field];
