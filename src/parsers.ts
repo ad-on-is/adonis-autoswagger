@@ -773,7 +773,7 @@ export class ValidatorParser {
     // console.dir(json, { depth: null });
     const obj = {
       type: "object",
-      properties: this.parseSchema(
+      ...this.parseSchema(
         validator.toJSON()["schema"]["schema"],
         validator.toJSON()["refs"]
       ),
@@ -881,6 +881,7 @@ export class ValidatorParser {
 
   parseSchema(json, refs) {
     const obj = {};
+    const required = [];
     for (const p of json["properties"]) {
       let meta: {
         minimum?: number;
@@ -909,7 +910,7 @@ export class ValidatorParser {
 
       obj[p["fieldName"]] =
         p["type"] === "object"
-          ? { type: "object", properties: this.parseSchema(p, refs) }
+          ? { type: "object", ...this.parseSchema(p, refs) }
           : p["type"] === "array"
             ? {
               type: "array",
@@ -917,7 +918,7 @@ export class ValidatorParser {
                 p["each"]["type"] === "object"
                   ? {
                     type: "object",
-                    properties: this.parseSchema(p["each"], refs),
+                    ...this.parseSchema(p["each"], refs),
                   }
                   : {
                     type: "number",
@@ -934,9 +935,9 @@ export class ValidatorParser {
                 : this.exampleGenerator.exampleByType("number"),
               ...meta,
             };
-      if (!p["isOptional"]) obj[p["fieldName"]]["required"] = true;
+      if (!p["isOptional"]) required.push(p["fieldName"]);
     }
-    return obj;
+    return { properties: obj, required: required };
   }
 }
 
